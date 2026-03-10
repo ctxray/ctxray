@@ -48,6 +48,7 @@ def run_scan(
         adapters = [a for a in adapters if a.name == source]
 
     all_prompts: list[Prompt] = []
+    scanned_files: list[tuple[str, str]] = []  # (file_path, adapter_name)
 
     for adapter in adapters:
         # Determine scan root
@@ -68,7 +69,7 @@ def run_scan(
             prompts = adapter.parse_session(jsonl_file)
             all_prompts.extend(prompts)
             result.sessions_scanned += 1
-            db.mark_session_processed(str(jsonl_file), source=adapter.name)
+            scanned_files.append((str(jsonl_file), adapter.name))
 
     result.total_parsed = len(all_prompts)
 
@@ -91,6 +92,10 @@ def run_scan(
             timestamp=p.timestamp,
         ):
             result.new_stored += 1
+
+    # Mark sessions processed only after successful dedup+store
+    for file_path, adapter_name in scanned_files:
+        db.mark_session_processed(file_path, source=adapter_name)
 
     return result
 
@@ -115,6 +120,9 @@ def build_report_data(settings: Settings | None = None) -> dict:
 
     # Extract patterns
     patterns = extract_patterns(texts, min_frequency=settings.library_min_frequency)
+
+    # Clear old patterns before storing fresh ones
+    db.clear_patterns()
 
     # Store patterns
     for p in patterns:

@@ -200,6 +200,13 @@ class PromptDB:
             result.append(d)
         return result
 
+    def clear_patterns(self) -> None:
+        """Delete all stored patterns (called before re-computing)."""
+        conn = self._conn()
+        conn.execute("DELETE FROM prompt_patterns")
+        conn.commit()
+        conn.close()
+
     def upsert_term_stats(self, term: str, count: int, df: int, tfidf_avg: float) -> None:
         """Insert or update term statistics."""
         conn = self._conn()
