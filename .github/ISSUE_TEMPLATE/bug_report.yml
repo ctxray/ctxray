@@ -1,0 +1,29 @@
+name: Bug Report
+description: Report a bug in reprompt
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this?
+  - type: input
+    id: version
+    attributes:
+      label: reprompt version
+      description: "Output of `reprompt --version` (if available)"
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
