@@ -1,4 +1,5 @@
 """Rich terminal report output."""
+
 from __future__ import annotations
 
 from io import StringIO
@@ -36,9 +37,7 @@ def render_report(data: dict) -> str:
         table.add_column("Count", justify="right")
         table.add_column("Category")
         for i, p in enumerate(data["top_patterns"][:10], 1):
-            table.add_row(
-                str(i), p["pattern_text"][:40], str(p["frequency"]), p["category"]
-            )
+            table.add_row(str(i), p["pattern_text"][:40], str(p["frequency"]), p["category"])
         console.print(table)
 
     # Projects bar chart
@@ -57,7 +56,8 @@ def render_report(data: dict) -> str:
         for cat, count in sorted(data["categories"].items(), key=lambda x: -x[1]):
             pct = int(count / total * 100)
             bar_len = int(count / total * 20)
-            console.print(f"  {cat:<12} {'\u2588' * bar_len} {pct}%")
+            bar = "\u2588" * bar_len
+            console.print(f"  {cat:<12} {bar} {pct}%")
 
     console.print("\nRun `reprompt library` to see your reusable prompt collection")
 

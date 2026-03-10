@@ -1,4 +1,5 @@
 """TF-IDF embedding backend using scikit-learn."""
+
 from __future__ import annotations
 
 import numpy as np

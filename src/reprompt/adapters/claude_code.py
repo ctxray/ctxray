@@ -1,4 +1,5 @@
 """Claude Code session adapter."""
+
 from __future__ import annotations
 
 import json
@@ -10,11 +11,32 @@ from reprompt.adapters.base import BaseAdapter
 from reprompt.core.models import Prompt
 
 SKIP_EXACT = {
-    "\u597d\u7684", "OK", "ok", "Ok", "\u662f\u7684", "\u53ef\u4ee5",
-    "sure", "Sure", "yes", "Yes",
-    "Done", "done", "Sent", "sent",
-    "\u597d", "\u5bf9", "\u884c", "\u55ef",
-    "Tool loaded.", "1", "2", "3", "A", "B", "C", "D",
+    "\u597d\u7684",
+    "OK",
+    "ok",
+    "Ok",
+    "\u662f\u7684",
+    "\u53ef\u4ee5",
+    "sure",
+    "Sure",
+    "yes",
+    "Yes",
+    "Done",
+    "done",
+    "Sent",
+    "sent",
+    "\u597d",
+    "\u5bf9",
+    "\u884c",
+    "\u55ef",
+    "Tool loaded.",
+    "1",
+    "2",
+    "3",
+    "A",
+    "B",
+    "C",
+    "D",
 }
 
 SKIP_PREFIXES = (
@@ -44,9 +66,7 @@ def _extract_text(message: dict) -> str:
     content = message.get("content", "")
     if isinstance(content, list):
         parts = [
-            p.get("text", "")
-            for p in content
-            if isinstance(p, dict) and p.get("type") == "text"
+            p.get("text", "") for p in content if isinstance(p, dict) and p.get("type") == "text"
         ]
         return " ".join(parts).strip()
     return str(content).strip()
@@ -59,9 +79,7 @@ class ClaudeCodeAdapter(BaseAdapter):
     default_session_path = "~/.claude/projects"
 
     def __init__(self, session_path: Path | None = None) -> None:
-        self._session_path = session_path or Path(
-            os.path.expanduser(self.default_session_path)
-        )
+        self._session_path = session_path or Path(os.path.expanduser(self.default_session_path))
 
     def detect_installed(self) -> bool:
         """Check if Claude Code session directory exists."""

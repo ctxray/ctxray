@@ -1,4 +1,5 @@
 """OpenClaw/OpenCode session adapter."""
+
 from __future__ import annotations
 
 import json
@@ -23,9 +24,7 @@ class OpenClawAdapter(BaseAdapter):
     default_session_path = "~/.opencode/sessions"
 
     def __init__(self, session_path: Path | None = None) -> None:
-        self._session_path = session_path or Path(
-            os.path.expanduser(self.default_session_path)
-        )
+        self._session_path = session_path or Path(os.path.expanduser(self.default_session_path))
 
     def detect_installed(self) -> bool:
         """Check if OpenClaw session directory exists."""

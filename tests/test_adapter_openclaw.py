@@ -1,7 +1,6 @@
 """Tests for OpenClaw adapter."""
-from __future__ import annotations
 
-from pathlib import Path
+from __future__ import annotations
 
 from reprompt.adapters.openclaw import OpenClawAdapter
 
@@ -56,9 +55,7 @@ def test_prompts_have_session_id(fixtures_path):
 
 def test_extracts_project_from_path():
     adapter = OpenClawAdapter()
-    name = adapter._project_from_path(
-        "/Users/chris/.opencode/sessions/my-project/sess.jsonl"
-    )
+    name = adapter._project_from_path("/Users/chris/.opencode/sessions/my-project/sess.jsonl")
     assert name == "my-project"
 
 

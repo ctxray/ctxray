@@ -1,4 +1,5 @@
 """Tests for core data models."""
+
 from reprompt.core.models import Prompt
 
 
@@ -20,7 +21,12 @@ def test_prompt_strips_whitespace():
 
 
 def test_prompt_from_dict():
-    d = {"text": "test prompt", "source": "claude-code", "session_id": "s1",
-         "project": "myproject", "timestamp": "2026-01-01T00:00:00Z"}
+    d = {
+        "text": "test prompt",
+        "source": "claude-code",
+        "session_id": "s1",
+        "project": "myproject",
+        "timestamp": "2026-01-01T00:00:00Z",
+    }
     p = Prompt(**d)
     assert p.project == "myproject"

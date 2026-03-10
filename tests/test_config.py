@@ -1,4 +1,5 @@
 """Tests for reprompt configuration module."""
+
 from reprompt.config import Settings
 
 

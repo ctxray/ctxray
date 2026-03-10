@@ -1,4 +1,5 @@
 """Tests for install-hook command."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -67,5 +68,6 @@ def test_install_hook_creates_executable(tmp_path, monkeypatch):
     assert hook_path.exists()
     # Check executable bit
     import stat
+
     mode = hook_path.stat().st_mode
     assert mode & stat.S_IXUSR  # owner execute bit set

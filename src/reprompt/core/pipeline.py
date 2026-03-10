@@ -1,4 +1,5 @@
 """Pipeline orchestrator."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -149,7 +150,11 @@ def build_report_data(settings: Settings | None = None) -> dict:
             "date_range": (stats.get("earliest", ""), stats.get("latest", "")),
         },
         "top_patterns": [
-            {"pattern_text": p["pattern_text"], "frequency": p["frequency"], "category": p["category"]}
+            {
+                "pattern_text": p["pattern_text"],
+                "frequency": p["frequency"],
+                "category": p["category"],
+            }
             for p in patterns[:10]
         ],
         "projects": projects,

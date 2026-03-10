@@ -1,4 +1,5 @@
 """Tests for Ollama embedding backend (mocked HTTP)."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -23,9 +24,7 @@ def test_embed_multiple_texts():
     embedder = OllamaEmbedder(url="http://localhost:11434")
     mock_resp = MagicMock()
     mock_resp.status_code = 200
-    mock_resp.json.return_value = {
-        "embeddings": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
-    }
+    mock_resp.json.return_value = {"embeddings": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]}
     with patch("requests.post", return_value=mock_resp):
         result = embedder.embed(["hello", "world"])
         assert result.shape == (2, 3)

@@ -1,4 +1,5 @@
 """SQLite storage for prompts, patterns, and term statistics."""
+
 from __future__ import annotations
 
 import hashlib
@@ -122,9 +123,7 @@ class PromptDB:
     def mark_duplicate(self, prompt_id: int, duplicate_of: int) -> None:
         """Mark a prompt as a duplicate of another."""
         conn = self._conn()
-        conn.execute(
-            "UPDATE prompts SET duplicate_of = ? WHERE id = ?", (duplicate_of, prompt_id)
-        )
+        conn.execute("UPDATE prompts SET duplicate_of = ? WHERE id = ?", (duplicate_of, prompt_id))
         conn.commit()
         conn.close()
 
@@ -191,9 +190,7 @@ class PromptDB:
                 (category,),
             ).fetchall()
         else:
-            rows = conn.execute(
-                "SELECT * FROM prompt_patterns ORDER BY frequency DESC"
-            ).fetchall()
+            rows = conn.execute("SELECT * FROM prompt_patterns ORDER BY frequency DESC").fetchall()
         conn.close()
         result = []
         for r in rows:
@@ -257,15 +254,11 @@ class PromptDB:
         """Return summary statistics."""
         conn = self._conn()
         total = conn.execute("SELECT COUNT(*) FROM prompts").fetchone()[0]
-        unique = conn.execute(
-            "SELECT COUNT(*) FROM prompts WHERE duplicate_of IS NULL"
-        ).fetchone()[0]
-        sessions = conn.execute(
-            "SELECT COUNT(*) FROM processed_sessions"
-        ).fetchone()[0]
-        patterns = conn.execute(
-            "SELECT COUNT(*) FROM prompt_patterns"
-        ).fetchone()[0]
+        unique = conn.execute("SELECT COUNT(*) FROM prompts WHERE duplicate_of IS NULL").fetchone()[
+            0
+        ]
+        sessions = conn.execute("SELECT COUNT(*) FROM processed_sessions").fetchone()[0]
+        patterns = conn.execute("SELECT COUNT(*) FROM prompt_patterns").fetchone()[0]
         date_range = conn.execute(
             "SELECT MIN(timestamp), MAX(timestamp) FROM prompts WHERE timestamp != ''"
         ).fetchone()

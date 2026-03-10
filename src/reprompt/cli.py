@@ -1,8 +1,8 @@
 """CLI entry point."""
+
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -17,8 +17,8 @@ console = Console()
 
 @app.command()
 def scan(
-    source: Optional[str] = typer.Option(None, help="Source adapter (claude-code, openclaw)"),
-    path: Optional[str] = typer.Option(None, help="Custom session path"),
+    source: str | None = typer.Option(None, help="Source adapter (claude-code, openclaw)"),
+    path: str | None = typer.Option(None, help="Custom session path"),
 ) -> None:
     """Scan AI tool sessions for prompts."""
     from reprompt.config import Settings
@@ -57,8 +57,8 @@ def report(
 
 @app.command()
 def library(
-    category: Optional[str] = typer.Option(None, help="Filter by category"),
-    export: Optional[str] = typer.Argument(None, help="Export to file path (Markdown)"),
+    category: str | None = typer.Option(None, help="Filter by category"),
+    export: str | None = typer.Argument(None, help="Export to file path (Markdown)"),
 ) -> None:
     """Show or export your prompt library."""
     from reprompt.config import Settings

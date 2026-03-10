@@ -1,8 +1,8 @@
 """Tests for CLI entry point."""
+
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from typer.testing import CliRunner
 
@@ -32,7 +32,9 @@ def test_scan_no_sources(tmp_path, monkeypatch):
 
 def test_scan_with_source(tmp_path, monkeypatch):
     monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
-    result = runner.invoke(app, ["scan", "--source", "claude-code", "--path", str(tmp_path / "empty")])
+    result = runner.invoke(
+        app, ["scan", "--source", "claude-code", "--path", str(tmp_path / "empty")]
+    )
     assert result.exit_code == 0
     assert "Scan complete" in result.output
 
@@ -69,11 +71,19 @@ def test_scan_shows_counts(tmp_path, monkeypatch):
     sessions = tmp_path / "sessions" / "-Users-test-projects-app"
     sessions.mkdir(parents=True)
     session_file = sessions / "session-001.jsonl"
-    msg = {"type": "user", "message": {"role": "user", "content": "implement the search feature with full-text search"},
-           "timestamp": "2026-01-15T10:00:00Z"}
+    msg = {
+        "type": "user",
+        "message": {
+            "role": "user",
+            "content": "implement the search feature with full-text search",
+        },
+        "timestamp": "2026-01-15T10:00:00Z",
+    }
     session_file.write_text(json.dumps(msg) + "\n")
 
-    result = runner.invoke(app, ["scan", "--source", "claude-code", "--path", str(tmp_path / "sessions")])
+    result = runner.invoke(
+        app, ["scan", "--source", "claude-code", "--path", str(tmp_path / "sessions")]
+    )
     assert result.exit_code == 0
     assert "Sessions scanned" in result.output
     assert "Prompts found" in result.output

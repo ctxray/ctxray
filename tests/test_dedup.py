@@ -1,4 +1,5 @@
 """Tests for the two-layer dedup engine."""
+
 from __future__ import annotations
 
 from reprompt.core.dedup import DedupEngine

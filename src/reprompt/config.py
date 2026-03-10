@@ -1,4 +1,5 @@
 """Configuration with env var override support."""
+
 from __future__ import annotations
 
 import os
@@ -33,5 +34,11 @@ class Settings(BaseSettings):
     # Library
     library_min_frequency: int = 3
     library_categories: list[str] = [
-        "debug", "implement", "review", "test", "refactor", "explain", "config",
+        "debug",
+        "implement",
+        "review",
+        "test",
+        "refactor",
+        "explain",
+        "config",
     ]

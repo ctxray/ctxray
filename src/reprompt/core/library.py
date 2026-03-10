@@ -1,11 +1,9 @@
 """Prompt pattern extraction and categorization."""
-from __future__ import annotations
 
-from collections import defaultdict
+from __future__ import annotations
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-
 
 # Keyword-based categorization rules (order matters -- first match wins)
 CATEGORY_RULES: list[tuple[str, list[str]]] = [

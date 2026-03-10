@@ -1,5 +1,6 @@
 """Tests for prompt pattern extraction and categorization."""
-from reprompt.core.library import extract_patterns, categorize_prompt
+
+from reprompt.core.library import categorize_prompt, extract_patterns
 
 
 def test_extract_patterns_groups_similar():

@@ -3,6 +3,7 @@
 L0: SHA-256 exact hash dedup (always runs)
 L1: TF-IDF cosine similarity dedup (runs on hash-unique prompts)
 """
+
 from __future__ import annotations
 
 from reprompt.core.models import Prompt
@@ -30,9 +31,7 @@ class DedupEngine:
         self._backend = backend
         self._threshold = threshold
 
-    def deduplicate(
-        self, prompts: list[Prompt]
-    ) -> tuple[list[Prompt], list[Prompt]]:
+    def deduplicate(self, prompts: list[Prompt]) -> tuple[list[Prompt], list[Prompt]]:
         """Deduplicate prompts using hash then semantic similarity.
 
         Returns:

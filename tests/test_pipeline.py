@@ -1,16 +1,17 @@
 """Tests for pipeline orchestrator."""
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-import pytest
-
 from reprompt.config import Settings
-from reprompt.core.pipeline import ScanResult, get_adapters, run_scan, build_report_data
+from reprompt.core.pipeline import ScanResult, build_report_data, get_adapters, run_scan
 
 
-def _create_claude_session(root: Path, project_name: str, session_name: str, messages: list[dict]) -> Path:
+def _create_claude_session(
+    root: Path, project_name: str, session_name: str, messages: list[dict]
+) -> Path:
     """Helper to create a fake Claude Code session file."""
     project_dir = root / project_name
     project_dir.mkdir(parents=True, exist_ok=True)
@@ -64,12 +65,27 @@ class TestRunScan:
             "-Users-test-projects-myapp",
             "session-001",
             [
-                {"type": "user", "message": {"role": "user", "content": "fix the failing test in the auth module"},
-                 "timestamp": "2026-01-15T10:00:00Z"},
-                {"type": "assistant", "message": {"role": "assistant", "content": "Let me look..."},
-                 "timestamp": "2026-01-15T10:00:05Z"},
-                {"type": "user", "message": {"role": "user", "content": "add a new REST endpoint for user management"},
-                 "timestamp": "2026-01-15T10:05:00Z"},
+                {
+                    "type": "user",
+                    "message": {
+                        "role": "user",
+                        "content": "fix the failing test in the auth module",
+                    },
+                    "timestamp": "2026-01-15T10:00:00Z",
+                },
+                {
+                    "type": "assistant",
+                    "message": {"role": "assistant", "content": "Let me look..."},
+                    "timestamp": "2026-01-15T10:00:05Z",
+                },
+                {
+                    "type": "user",
+                    "message": {
+                        "role": "user",
+                        "content": "add a new REST endpoint for user management",
+                    },
+                    "timestamp": "2026-01-15T10:05:00Z",
+                },
             ],
         )
         settings = Settings(db_path=tmp_path / "test.db")
@@ -87,8 +103,14 @@ class TestRunScan:
             "-Users-test-projects-app",
             "session-001",
             [
-                {"type": "user", "message": {"role": "user", "content": "implement the search feature with full-text search"},
-                 "timestamp": "2026-01-15T10:00:00Z"},
+                {
+                    "type": "user",
+                    "message": {
+                        "role": "user",
+                        "content": "implement the search feature with full-text search",
+                    },
+                    "timestamp": "2026-01-15T10:00:00Z",
+                },
             ],
         )
         settings = Settings(db_path=tmp_path / "test.db")
@@ -110,8 +132,11 @@ class TestRunScan:
                 f"-Users-test-projects-app{i}",
                 f"session-{i:03d}",
                 [
-                    {"type": "user", "message": {"role": "user", "content": same_prompt},
-                     "timestamp": f"2026-01-{15+i}T10:00:00Z"},
+                    {
+                        "type": "user",
+                        "message": {"role": "user", "content": same_prompt},
+                        "timestamp": f"2026-01-{15 + i}T10:00:00Z",
+                    },
                 ],
             )
         settings = Settings(db_path=tmp_path / "test.db")
@@ -145,12 +170,27 @@ class TestBuildReportData:
         """Report after scan should contain populated data."""
         sessions_root = tmp_path / "sessions"
         messages = [
-            {"type": "user", "message": {"role": "user", "content": "fix the failing test in the auth module"},
-             "timestamp": "2026-01-15T10:00:00Z"},
-            {"type": "user", "message": {"role": "user", "content": "add comprehensive unit tests for the user service"},
-             "timestamp": "2026-01-15T10:05:00Z"},
-            {"type": "user", "message": {"role": "user", "content": "refactor the database layer to use connection pooling"},
-             "timestamp": "2026-01-15T10:10:00Z"},
+            {
+                "type": "user",
+                "message": {"role": "user", "content": "fix the failing test in the auth module"},
+                "timestamp": "2026-01-15T10:00:00Z",
+            },
+            {
+                "type": "user",
+                "message": {
+                    "role": "user",
+                    "content": "add comprehensive unit tests for the user service",
+                },
+                "timestamp": "2026-01-15T10:05:00Z",
+            },
+            {
+                "type": "user",
+                "message": {
+                    "role": "user",
+                    "content": "refactor the database layer to use connection pooling",
+                },
+                "timestamp": "2026-01-15T10:10:00Z",
+            },
         ]
         _create_claude_session(sessions_root, "-Users-test-projects-app", "session-001", messages)
         settings = Settings(db_path=tmp_path / "test.db")
@@ -171,8 +211,14 @@ class TestBuildReportData:
             "-Users-test-projects-webapp",
             "session-001",
             [
-                {"type": "user", "message": {"role": "user", "content": "implement user authentication with JWT tokens"},
-                 "timestamp": "2026-01-15T10:00:00Z"},
+                {
+                    "type": "user",
+                    "message": {
+                        "role": "user",
+                        "content": "implement user authentication with JWT tokens",
+                    },
+                    "timestamp": "2026-01-15T10:00:00Z",
+                },
             ],
         )
         settings = Settings(db_path=tmp_path / "test.db")

@@ -1,8 +1,9 @@
 """Tests for terminal and JSON output formatters."""
+
 import json
 
-from reprompt.output.terminal import render_report
 from reprompt.output.json_out import format_json_report
+from reprompt.output.terminal import render_report
 
 
 def _sample_report_data():

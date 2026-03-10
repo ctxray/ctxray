@@ -1,4 +1,5 @@
 """Tests for SQLite storage layer."""
+
 import sqlite3
 
 import pytest
@@ -14,9 +15,9 @@ def db(tmp_path):
 def test_schema_creates_tables(db):
     """All 4 tables exist after init."""
     conn = sqlite3.connect(str(db.path))
-    tables = [r[0] for r in conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table'"
-    ).fetchall()]
+    tables = [
+        r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    ]
     assert "prompts" in tables
     assert "processed_sessions" in tables
     assert "prompt_patterns" in tables
@@ -24,16 +25,31 @@ def test_schema_creates_tables(db):
 
 
 def test_insert_new_prompt(db):
-    ok = db.insert_prompt("hello world", source="claude-code", project="test",
-                          session_id="s1", timestamp="2026-01-01T00:00:00Z")
+    ok = db.insert_prompt(
+        "hello world",
+        source="claude-code",
+        project="test",
+        session_id="s1",
+        timestamp="2026-01-01T00:00:00Z",
+    )
     assert ok is True
 
 
 def test_insert_exact_dupe(db):
-    db.insert_prompt("hello world", source="claude-code", project="test",
-                     session_id="s1", timestamp="2026-01-01T00:00:00Z")
-    ok = db.insert_prompt("hello world", source="claude-code", project="test",
-                          session_id="s2", timestamp="2026-01-02T00:00:00Z")
+    db.insert_prompt(
+        "hello world",
+        source="claude-code",
+        project="test",
+        session_id="s1",
+        timestamp="2026-01-01T00:00:00Z",
+    )
+    ok = db.insert_prompt(
+        "hello world",
+        source="claude-code",
+        project="test",
+        session_id="s2",
+        timestamp="2026-01-02T00:00:00Z",
+    )
     assert ok is False  # exact dupe by hash
 
 

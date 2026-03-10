@@ -1,7 +1,6 @@
 """Tests for Claude Code adapter."""
-from __future__ import annotations
 
-from pathlib import Path
+from __future__ import annotations
 
 from reprompt.adapters.claude_code import ClaudeCodeAdapter
 

@@ -1,4 +1,5 @@
 """Markdown export for prompt library."""
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -20,9 +21,7 @@ def export_library_markdown(patterns: list[dict]) -> str:
     lines.append("| # | Pattern | Uses | Category |")
     lines.append("|---|---------|------|----------|")
     for i, p in enumerate(patterns, 1):
-        lines.append(
-            f"| {i} | {p['pattern_text'][:50]} | {p['frequency']} | {p['category']} |"
-        )
+        lines.append(f"| {i} | {p['pattern_text'][:50]} | {p['frequency']} | {p['category']} |")
     lines.append("")
 
     # Group by category
