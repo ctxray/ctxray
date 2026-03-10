@@ -120,7 +120,12 @@ def purge(
     from reprompt.config import Settings
     from reprompt.storage.db import PromptDB
 
-    days = int(older_than.rstrip("d"))
+    import re
+
+    m = re.fullmatch(r"(\d+)d?", older_than.strip(), re.IGNORECASE)
+    if not m:
+        raise typer.BadParameter("Use format like '90d' or '30'")
+    days = int(m.group(1))
     settings = Settings()
     db = PromptDB(settings.db_path)
     deleted = db.purge_old_prompts(days)
