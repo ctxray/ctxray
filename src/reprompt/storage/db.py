@@ -26,45 +26,47 @@ class PromptDB:
     def _init_schema(self) -> None:
         """Create tables if they don't exist."""
         conn = self._conn()
-        conn.executescript("""
-            CREATE TABLE IF NOT EXISTS prompts (
-                id INTEGER PRIMARY KEY,
-                hash TEXT UNIQUE,
-                text TEXT NOT NULL,
-                source TEXT NOT NULL,
-                project TEXT,
-                session_id TEXT,
-                timestamp TEXT,
-                char_count INTEGER,
-                embedding BLOB,
-                cluster_id INTEGER,
-                duplicate_of INTEGER REFERENCES prompts(id)
-            );
-            CREATE TABLE IF NOT EXISTS processed_sessions (
-                file_path TEXT PRIMARY KEY,
-                processed_at TEXT,
-                source TEXT
-            );
-            CREATE TABLE IF NOT EXISTS prompt_patterns (
-                id INTEGER PRIMARY KEY,
-                pattern_text TEXT,
-                frequency INTEGER,
-                avg_length REAL,
-                projects TEXT,
-                category TEXT,
-                first_seen TEXT,
-                last_seen TEXT,
-                examples TEXT
-            );
-            CREATE TABLE IF NOT EXISTS term_stats (
-                term TEXT PRIMARY KEY,
-                count INTEGER,
-                df INTEGER,
-                tfidf_avg REAL
-            );
-        """)
-        conn.commit()
-        conn.close()
+        try:
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS prompts (
+                    id INTEGER PRIMARY KEY,
+                    hash TEXT UNIQUE,
+                    text TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    project TEXT,
+                    session_id TEXT,
+                    timestamp TEXT,
+                    char_count INTEGER,
+                    embedding BLOB,
+                    cluster_id INTEGER,
+                    duplicate_of INTEGER REFERENCES prompts(id)
+                );
+                CREATE TABLE IF NOT EXISTS processed_sessions (
+                    file_path TEXT PRIMARY KEY,
+                    processed_at TEXT,
+                    source TEXT
+                );
+                CREATE TABLE IF NOT EXISTS prompt_patterns (
+                    id INTEGER PRIMARY KEY,
+                    pattern_text TEXT,
+                    frequency INTEGER,
+                    avg_length REAL,
+                    projects TEXT,
+                    category TEXT,
+                    first_seen TEXT,
+                    last_seen TEXT,
+                    examples TEXT
+                );
+                CREATE TABLE IF NOT EXISTS term_stats (
+                    term TEXT PRIMARY KEY,
+                    count INTEGER,
+                    df INTEGER,
+                    tfidf_avg REAL
+                );
+            """)
+            conn.commit()
+        finally:
+            conn.close()
 
     @staticmethod
     def _hash(text: str) -> str:
