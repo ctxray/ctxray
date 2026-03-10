@@ -125,3 +125,31 @@ def purge(
     db = PromptDB(settings.db_path)
     deleted = db.purge_old_prompts(days)
     console.print(f"Purged {deleted} prompts older than {days} days")
+
+
+@app.command("install-hook")
+def install_hook(
+    source: str = typer.Option("claude-code", help="AI tool to install hook for"),
+) -> None:
+    """Install post-session hook for automatic scanning."""
+    home = Path.home()
+
+    if source == "claude-code":
+        hooks_dir = home / ".claude" / "hooks"
+        hook_path = hooks_dir / "reprompt-scan.sh"
+
+        if hook_path.exists():
+            console.print(f"Hook already exists at {hook_path}")
+            return
+
+        if not (home / ".claude").exists():
+            console.print("[yellow]Claude Code not detected (~/.claude/ not found)[/yellow]")
+            return
+
+        hooks_dir.mkdir(parents=True, exist_ok=True)
+        hook_path.write_text("#!/bin/sh\nreprompt scan --source claude-code\n")
+        hook_path.chmod(0o755)
+        console.print(f"[green]Hook installed at {hook_path}[/green]")
+        console.print("reprompt will automatically scan after Claude Code sessions.")
+    else:
+        console.print(f"[yellow]Hook installation for '{source}' not yet supported[/yellow]")
