@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 
 from reprompt.adapters.base import BaseAdapter
+from reprompt.adapters.filters import should_keep_prompt  # noqa: F401 — re-exported
 from reprompt.core.models import Prompt
 from reprompt.core.session_meta import SessionMeta
 
@@ -17,94 +18,6 @@ IDE_PREFIX_RE = re.compile(
     r"^(?:<ide_opened_file>.*?</ide_opened_file>\s*"
     r"|<ide_selection>[\s\S]*?</ide_selection>\s*)+",
 )
-
-SKIP_EXACT = {
-    "\u597d\u7684",
-    "OK",
-    "ok",
-    "Ok",
-    "\u662f\u7684",
-    "\u53ef\u4ee5",
-    "sure",
-    "Sure",
-    "yes",
-    "Yes",
-    "Done",
-    "done",
-    "Sent",
-    "sent",
-    "\u597d",
-    "\u5bf9",
-    "\u884c",
-    "\u55ef",
-    "Tool loaded.",
-    "1",
-    "2",
-    "3",
-    "A",
-    "B",
-    "C",
-    "D",
-}
-
-SKIP_PREFIXES = (
-    "<",
-    "/",  # slash commands (/help, /commit, /review, etc.)
-    "Tool loaded",
-    "Base directory for this skill",
-    "This session is being continued from a previous conversation",
-    "Summary:",
-    "Continue the conversation from where it left off",
-    "You are implementing Task",
-    "You are reviewing whether",
-    "Implement Task ",
-    "Implement the following plan",
-    "You are building ",
-    "You are auditing ",
-    "## Task:",
-    "INFO:",
-    "Find examples of ",
-    "Review the code quality",
-    "Review the entropy",
-    "Migrate the ",
-    "[Image: source:",
-)
-
-# CLI tool commands that are not real prompts
-SKIP_CLI_RE = re.compile(
-    r"^(claude|cursor|aider|copilot|git|npm|pip|uv|reprompt|make|cargo)\b",
-    re.IGNORECASE,
-)
-
-# Substrings that indicate system/compact noise rather than real user prompts
-SKIP_CONTAINS = (
-    "ran out of context",
-    "<system-reminder>",
-    "<command-name>",
-    "Previous conversation summary",
-    "\u23fa Bash(",
-    "\n  \u23bf ",
-    "PreToolUse:",
-    "PostToolUse:",
-)
-
-
-def should_keep_prompt(text: str) -> bool:
-    """Filter out noise prompts -- short messages, exact matches, prefixes."""
-    text = text.strip()
-    if len(text) < 10:
-        return False
-    if text in SKIP_EXACT:
-        return False
-    if any(text.startswith(p) for p in SKIP_PREFIXES):
-        return False
-    if any(s in text for s in SKIP_CONTAINS):
-        return False
-    if not re.search(r"[a-zA-Z\u4e00-\u9fff]", text):
-        return False
-    if SKIP_CLI_RE.match(text):
-        return False
-    return True
 
 
 def _extract_text(message: dict[str, object]) -> str:

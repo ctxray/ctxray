@@ -79,7 +79,7 @@ def test_prompts_have_session_id(fixtures_path):
 
 def test_skip_exact_messages():
     """Verify that exact-match noise words are filtered."""
-    from reprompt.adapters.claude_code import should_keep_prompt
+    from reprompt.adapters.filters import should_keep_prompt
 
     assert not should_keep_prompt("ok")
     assert not should_keep_prompt("OK")
@@ -90,7 +90,7 @@ def test_skip_exact_messages():
 
 def test_skip_prefix_messages():
     """Verify that prefix-match noise is filtered."""
-    from reprompt.adapters.claude_code import should_keep_prompt
+    from reprompt.adapters.filters import should_keep_prompt
 
     assert not should_keep_prompt("<local-command>run test</local-command>")
     assert not should_keep_prompt("Tool loaded. Ready to use.")
@@ -98,7 +98,7 @@ def test_skip_prefix_messages():
 
 def test_skip_system_injections():
     """System-injected XML tags should be filtered."""
-    from reprompt.adapters.claude_code import should_keep_prompt
+    from reprompt.adapters.filters import should_keep_prompt
 
     assert not should_keep_prompt("<system-reminder>\nPreToolUse:Edit hook context")
     assert not should_keep_prompt("<task-notification>\n<task-id>abc123</task-id>")
@@ -110,7 +110,7 @@ def test_skip_system_injections():
 
 def test_skip_short_messages():
     """Messages under 10 chars should be filtered."""
-    from reprompt.adapters.claude_code import should_keep_prompt
+    from reprompt.adapters.filters import should_keep_prompt
 
     assert not should_keep_prompt("hi")
     assert not should_keep_prompt("123")
@@ -118,7 +118,7 @@ def test_skip_short_messages():
 
 def test_keep_valid_messages():
     """Valid prompts should pass the filter."""
-    from reprompt.adapters.claude_code import should_keep_prompt
+    from reprompt.adapters.filters import should_keep_prompt
 
     assert should_keep_prompt("fix the failing test in auth.py")
     assert should_keep_prompt("refactor the database connection pool")
@@ -126,7 +126,7 @@ def test_keep_valid_messages():
 
 def test_skip_compact_continuation_messages():
     """Session compaction/continuation messages should be filtered."""
-    from reprompt.adapters.claude_code import should_keep_prompt
+    from reprompt.adapters.filters import should_keep_prompt
 
     assert not should_keep_prompt(
         "This session is being continued from a previous conversation that ran out of context."
@@ -138,7 +138,7 @@ def test_skip_compact_continuation_messages():
 
 def test_skip_messages_with_system_noise():
     """Messages containing system noise substrings should be filtered."""
-    from reprompt.adapters.claude_code import should_keep_prompt
+    from reprompt.adapters.filters import should_keep_prompt
 
     assert not should_keep_prompt("The conversation ran out of context so we need to restart.")
     assert not should_keep_prompt(
@@ -149,7 +149,7 @@ def test_skip_messages_with_system_noise():
 
 def test_skip_continuation_instructions():
     """Instructions to continue conversations should be filtered."""
-    from reprompt.adapters.claude_code import should_keep_prompt
+    from reprompt.adapters.filters import should_keep_prompt
 
     assert not should_keep_prompt(
         "Continue the conversation from where it left off without asking questions."
@@ -158,7 +158,7 @@ def test_skip_continuation_instructions():
 
 def test_skip_tool_call_noise():
     """Tool call syntax injected as user messages should be filtered."""
-    from reprompt.adapters.claude_code import should_keep_prompt
+    from reprompt.adapters.filters import should_keep_prompt
 
     assert not should_keep_prompt("PreToolUse:Edit hook blocking error from command")
     assert not should_keep_prompt("PostToolUse:Edit hook additional context: [Edit context]")
@@ -205,7 +205,7 @@ def test_ide_only_message_kept_as_is():
 
 def test_skip_cli_commands():
     """CLI tool commands should be filtered — they're not real prompts."""
-    from reprompt.adapters.claude_code import should_keep_prompt
+    from reprompt.adapters.filters import should_keep_prompt
 
     assert not should_keep_prompt("claude --continue")
     assert not should_keep_prompt("cursor open file.py")
@@ -219,7 +219,7 @@ def test_skip_cli_commands():
 
 def test_skip_slash_commands():
     """Slash commands should be filtered."""
-    from reprompt.adapters.claude_code import should_keep_prompt
+    from reprompt.adapters.filters import should_keep_prompt
 
     assert not should_keep_prompt("/help")
     assert not should_keep_prompt("/commit fix auth bug")
@@ -228,8 +228,41 @@ def test_skip_slash_commands():
 
 def test_keep_prompts_containing_tool_names():
     """Prompts that mention tools but are real questions should pass."""
-    from reprompt.adapters.claude_code import should_keep_prompt
+    from reprompt.adapters.filters import should_keep_prompt
 
     assert should_keep_prompt("how do I configure cursor to use a custom model?")
     assert should_keep_prompt("explain the git rebase workflow for this branch")
     assert should_keep_prompt("why is npm install failing with this error?")
+
+
+def test_skip_system_error_messages():
+    """System error/status messages should be filtered."""
+    from reprompt.adapters.filters import should_keep_prompt
+
+    assert not should_keep_prompt("Unknown skill: workflow")
+    assert not should_keep_prompt("Unknown command: foobar something")
+    assert not should_keep_prompt("Error: connection refused to localhost:8080")
+    assert not should_keep_prompt("Warning: deprecated API usage detected")
+    assert not should_keep_prompt("Permission denied: /etc/shadow")
+    assert not should_keep_prompt("Command not found: some-tool")
+
+
+def test_skip_extended_cli_commands():
+    """Extended CLI commands from various tools should be filtered."""
+    from reprompt.adapters.filters import should_keep_prompt
+
+    assert not should_keep_prompt("docker compose up -d")
+    assert not should_keep_prompt("brew install python3")
+    assert not should_keep_prompt("ssh user@host ls -la")
+    assert not should_keep_prompt("cd ~/projects/myapp")
+    assert not should_keep_prompt("sudo apt install build-essential")
+    assert not should_keep_prompt("cline open task 12345")
+    assert not should_keep_prompt("windsurf start project")
+
+
+def test_skip_hook_noise():
+    """Hook-related system messages should be filtered."""
+    from reprompt.adapters.filters import should_keep_prompt
+
+    assert not should_keep_prompt("hook blocking error from some command")
+    assert not should_keep_prompt("SessionStart:compact hook success: Success")

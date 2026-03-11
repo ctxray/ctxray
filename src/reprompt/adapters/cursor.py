@@ -16,10 +16,8 @@ import sqlite3
 from pathlib import Path
 
 from reprompt.adapters.base import BaseAdapter
+from reprompt.adapters.filters import should_keep_prompt
 from reprompt.core.models import Prompt
-
-# Minimum prompt length to keep (same heuristic as claude_code adapter)
-MIN_PROMPT_LEN = 10
 
 
 def _default_cursor_path() -> str:
@@ -89,7 +87,7 @@ def _parse_cursor_disk_kv(conn: sqlite3.Connection, session_id: str) -> list[Pro
                 continue
 
             text = bubble.get("text", "").strip()
-            if len(text) < MIN_PROMPT_LEN:
+            if not should_keep_prompt(text):
                 continue
 
             timestamp = bubble.get("createdAt", "")
@@ -140,7 +138,7 @@ def _parse_item_table(conn: sqlite3.Connection, session_id: str) -> list[Prompt]
                 if role not in ("user", 1):
                     continue
                 text = str(msg.get("content") or msg.get("text") or "").strip()
-                if len(text) < MIN_PROMPT_LEN:
+                if not should_keep_prompt(text):
                     continue
 
                 prompts.append(

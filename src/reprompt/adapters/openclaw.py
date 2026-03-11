@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 from reprompt.adapters.base import BaseAdapter
-from reprompt.adapters.claude_code import should_keep_prompt
+from reprompt.adapters.filters import should_keep_prompt
 from reprompt.core.models import Prompt
 
 # New path (post-rebrand): ~/.openclaw/agents/<agentId>/sessions/
