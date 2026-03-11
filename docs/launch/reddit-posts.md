@@ -2,7 +2,7 @@
 
 ## r/ClaudeAI
 
-**Title:** I built an open-source tool that analyzes your Claude Code session history — found 32% of my prompts were duplicates
+**Title:** I analyzed 1,000+ prompts from my Claude Code sessions and found 32% were near-duplicates — here's what I learned about my AI coding habits
 
 **Body:**
 
@@ -36,7 +36,7 @@ GitHub: https://github.com/reprompt-dev/reprompt
 
 ## r/programming
 
-**Title:** reprompt — CLI tool that extracts and deduplicates prompts from AI coding sessions using TF-IDF + SHA-256
+**Title:** I analyzed 1,000+ AI coding prompts with TF-IDF cosine similarity — 32% were semantic duplicates I never noticed
 
 **Body:**
 
@@ -73,7 +73,7 @@ https://github.com/reprompt-dev/reprompt
 
 ## r/LocalLLaMA
 
-**Title:** reprompt — analyze your AI coding prompts with TF-IDF dedup, supports Ollama embeddings for local-only semantic search
+**Title:** I built a local-first prompt analyzer with Ollama embeddings — found 32% of my AI coding prompts were duplicates I kept rewriting
 
 **Body:**
 
