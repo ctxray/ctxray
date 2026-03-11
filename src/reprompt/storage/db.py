@@ -7,6 +7,7 @@ import json
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
 
 
 class PromptDB:
@@ -99,139 +100,166 @@ class PromptDB:
         finally:
             conn.close()
 
-    def get_all_prompts(self) -> list[dict]:
+    def get_all_prompts(self) -> list[dict[str, Any]]:
         """Return all prompts as dicts."""
         conn = self._conn()
-        rows = conn.execute("SELECT * FROM prompts ORDER BY id").fetchall()
-        conn.close()
-        return [dict(r) for r in rows]
+        try:
+            rows = conn.execute("SELECT * FROM prompts ORDER BY id").fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
 
-    def get_prompts_without_embedding(self) -> list[dict]:
+    def get_prompts_without_embedding(self) -> list[dict[str, Any]]:
         """Return prompts that have no embedding yet."""
         conn = self._conn()
-        rows = conn.execute(
-            "SELECT * FROM prompts WHERE embedding IS NULL AND duplicate_of IS NULL ORDER BY id"
-        ).fetchall()
-        conn.close()
-        return [dict(r) for r in rows]
+        try:
+            rows = conn.execute(
+                "SELECT * FROM prompts WHERE embedding IS NULL AND duplicate_of IS NULL ORDER BY id"
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
 
     def update_embedding(self, prompt_id: int, embedding: bytes) -> None:
         """Store an embedding blob for a prompt."""
         conn = self._conn()
-        conn.execute("UPDATE prompts SET embedding = ? WHERE id = ?", (embedding, prompt_id))
-        conn.commit()
-        conn.close()
+        try:
+            conn.execute("UPDATE prompts SET embedding = ? WHERE id = ?", (embedding, prompt_id))
+            conn.commit()
+        finally:
+            conn.close()
 
     def mark_duplicate(self, prompt_id: int, duplicate_of: int) -> None:
         """Mark a prompt as a duplicate of another."""
         conn = self._conn()
-        conn.execute("UPDATE prompts SET duplicate_of = ? WHERE id = ?", (duplicate_of, prompt_id))
-        conn.commit()
-        conn.close()
+        try:
+            conn.execute(
+                "UPDATE prompts SET duplicate_of = ? WHERE id = ?", (duplicate_of, prompt_id)
+            )
+            conn.commit()
+        finally:
+            conn.close()
 
     def mark_session_processed(self, file_path: str, source: str = "") -> None:
         """Record that a session file has been processed."""
         conn = self._conn()
-        conn.execute(
-            "INSERT OR REPLACE INTO processed_sessions (file_path, processed_at, source) "
-            "VALUES (?, ?, ?)",
-            (file_path, datetime.now(timezone.utc).isoformat(), source),
-        )
-        conn.commit()
-        conn.close()
+        try:
+            conn.execute(
+                "INSERT OR REPLACE INTO processed_sessions (file_path, processed_at, source) "
+                "VALUES (?, ?, ?)",
+                (file_path, datetime.now(timezone.utc).isoformat(), source),
+            )
+            conn.commit()
+        finally:
+            conn.close()
 
     def is_session_processed(self, file_path: str) -> bool:
         """Check if a session file has already been processed."""
         conn = self._conn()
-        row = conn.execute(
-            "SELECT 1 FROM processed_sessions WHERE file_path = ?", (file_path,)
-        ).fetchone()
-        conn.close()
-        return row is not None
+        try:
+            row = conn.execute(
+                "SELECT 1 FROM processed_sessions WHERE file_path = ?", (file_path,)
+            ).fetchone()
+            return row is not None
+        finally:
+            conn.close()
 
     def insert_pattern(
         self,
         pattern_text: str,
         frequency: int,
         avg_length: float,
-        projects: list,
+        projects: list[str],
         category: str,
         first_seen: str,
         last_seen: str,
-        examples: list,
+        examples: list[str],
     ) -> int:
         """Insert a prompt pattern. Returns the new pattern ID."""
         conn = self._conn()
-        cursor = conn.execute(
-            """INSERT INTO prompt_patterns
-               (pattern_text, frequency, avg_length, projects, category,
-                first_seen, last_seen, examples)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                pattern_text,
-                frequency,
-                avg_length,
-                json.dumps(projects),
-                category,
-                first_seen,
-                last_seen,
-                json.dumps(examples),
-            ),
-        )
-        conn.commit()
-        pattern_id = cursor.lastrowid
-        conn.close()
-        return pattern_id  # type: ignore[return-value]
+        try:
+            cursor = conn.execute(
+                """INSERT INTO prompt_patterns
+                   (pattern_text, frequency, avg_length, projects, category,
+                    first_seen, last_seen, examples)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    pattern_text,
+                    frequency,
+                    avg_length,
+                    json.dumps(projects),
+                    category,
+                    first_seen,
+                    last_seen,
+                    json.dumps(examples),
+                ),
+            )
+            conn.commit()
+            pattern_id = cursor.lastrowid
+            assert pattern_id is not None
+            return pattern_id
+        finally:
+            conn.close()
 
-    def get_patterns(self, category: str | None = None) -> list[dict]:
+    def get_patterns(self, category: str | None = None) -> list[dict[str, Any]]:
         """Return all patterns, optionally filtered by category."""
         conn = self._conn()
-        if category:
-            rows = conn.execute(
-                "SELECT * FROM prompt_patterns WHERE category = ? ORDER BY frequency DESC",
-                (category,),
-            ).fetchall()
-        else:
-            rows = conn.execute("SELECT * FROM prompt_patterns ORDER BY frequency DESC").fetchall()
-        conn.close()
-        result = []
-        for r in rows:
-            d = dict(r)
-            d["projects"] = json.loads(d["projects"]) if d["projects"] else []
-            d["examples"] = json.loads(d["examples"]) if d["examples"] else []
-            result.append(d)
-        return result
+        try:
+            if category:
+                rows = conn.execute(
+                    "SELECT * FROM prompt_patterns WHERE category = ? ORDER BY frequency DESC",
+                    (category,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM prompt_patterns ORDER BY frequency DESC"
+                ).fetchall()
+            result = []
+            for r in rows:
+                d = dict(r)
+                d["projects"] = json.loads(d["projects"]) if d["projects"] else []
+                d["examples"] = json.loads(d["examples"]) if d["examples"] else []
+                result.append(d)
+            return result
+        finally:
+            conn.close()
 
     def clear_patterns(self) -> None:
         """Delete all stored patterns (called before re-computing)."""
         conn = self._conn()
-        conn.execute("DELETE FROM prompt_patterns")
-        conn.commit()
-        conn.close()
+        try:
+            conn.execute("DELETE FROM prompt_patterns")
+            conn.commit()
+        finally:
+            conn.close()
 
     def upsert_term_stats(self, term: str, count: int, df: int, tfidf_avg: float) -> None:
         """Insert or update term statistics."""
         conn = self._conn()
-        conn.execute(
-            """INSERT INTO term_stats (term, count, df, tfidf_avg)
-               VALUES (?, ?, ?, ?)
-               ON CONFLICT(term) DO UPDATE SET
-                 count = excluded.count,
-                 df = excluded.df,
-                 tfidf_avg = excluded.tfidf_avg""",
-            (term, count, df, tfidf_avg),
-        )
-        conn.commit()
-        conn.close()
+        try:
+            conn.execute(
+                """INSERT INTO term_stats (term, count, df, tfidf_avg)
+                   VALUES (?, ?, ?, ?)
+                   ON CONFLICT(term) DO UPDATE SET
+                     count = excluded.count,
+                     df = excluded.df,
+                     tfidf_avg = excluded.tfidf_avg""",
+                (term, count, df, tfidf_avg),
+            )
+            conn.commit()
+        finally:
+            conn.close()
 
-    def get_term_stats(self, limit: int = 50) -> list[dict]:
+    def get_term_stats(self, limit: int = 50) -> list[dict[str, Any]]:
         """Return top terms by count."""
         conn = self._conn()
-        rows = conn.execute(
-            "SELECT * FROM term_stats ORDER BY count DESC LIMIT ?", (limit,)
-        ).fetchall()
-        conn.close()
-        return [dict(r) for r in rows]
+        try:
+            rows = conn.execute(
+                "SELECT * FROM term_stats ORDER BY count DESC LIMIT ?", (limit,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
 
     def purge_old_prompts(self, retention_days: int = 90) -> int:
         """Delete prompts older than retention_days. Returns count deleted.
@@ -241,42 +269,46 @@ class PromptDB:
         """
         cutoff = (datetime.now(timezone.utc) - timedelta(days=retention_days)).isoformat()
         conn = self._conn()
-        # Pass 1: clear duplicate_of references to soon-deleted prompts
-        conn.execute(
-            """UPDATE prompts SET duplicate_of = NULL
-               WHERE duplicate_of IN (
-                   SELECT id FROM prompts WHERE timestamp < ? AND timestamp != ''
-               )""",
-            (cutoff,),
-        )
-        # Pass 2: delete old prompts
-        cursor = conn.execute(
-            "DELETE FROM prompts WHERE timestamp < ? AND timestamp != ''",
-            (cutoff,),
-        )
-        deleted = cursor.rowcount
-        conn.commit()
-        conn.close()
-        return deleted
+        try:
+            # Pass 1: clear duplicate_of references to soon-deleted prompts
+            conn.execute(
+                """UPDATE prompts SET duplicate_of = NULL
+                   WHERE duplicate_of IN (
+                       SELECT id FROM prompts WHERE timestamp < ? AND timestamp != ''
+                   )""",
+                (cutoff,),
+            )
+            # Pass 2: delete old prompts
+            cursor = conn.execute(
+                "DELETE FROM prompts WHERE timestamp < ? AND timestamp != ''",
+                (cutoff,),
+            )
+            deleted = cursor.rowcount
+            conn.commit()
+            return deleted
+        finally:
+            conn.close()
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         """Return summary statistics."""
         conn = self._conn()
-        total = conn.execute("SELECT COUNT(*) FROM prompts").fetchone()[0]
-        unique = conn.execute("SELECT COUNT(*) FROM prompts WHERE duplicate_of IS NULL").fetchone()[
-            0
-        ]
-        sessions = conn.execute("SELECT COUNT(*) FROM processed_sessions").fetchone()[0]
-        patterns = conn.execute("SELECT COUNT(*) FROM prompt_patterns").fetchone()[0]
-        date_range = conn.execute(
-            "SELECT MIN(timestamp), MAX(timestamp) FROM prompts WHERE timestamp != ''"
-        ).fetchone()
-        conn.close()
-        return {
-            "total_prompts": total,
-            "unique_prompts": unique,
-            "sessions_processed": sessions,
-            "patterns": patterns,
-            "earliest": date_range[0] if date_range else None,
-            "latest": date_range[1] if date_range else None,
-        }
+        try:
+            total = conn.execute("SELECT COUNT(*) FROM prompts").fetchone()[0]
+            unique = conn.execute(
+                "SELECT COUNT(*) FROM prompts WHERE duplicate_of IS NULL"
+            ).fetchone()[0]
+            sessions = conn.execute("SELECT COUNT(*) FROM processed_sessions").fetchone()[0]
+            patterns = conn.execute("SELECT COUNT(*) FROM prompt_patterns").fetchone()[0]
+            date_range = conn.execute(
+                "SELECT MIN(timestamp), MAX(timestamp) FROM prompts WHERE timestamp != ''"
+            ).fetchone()
+            return {
+                "total_prompts": total,
+                "unique_prompts": unique,
+                "sessions_processed": sessions,
+                "patterns": patterns,
+                "earliest": date_range[0] if date_range else None,
+                "latest": date_range[1] if date_range else None,
+            }
+        finally:
+            conn.close()

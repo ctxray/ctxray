@@ -17,6 +17,13 @@ def test_help():
     assert "reprompt" in result.output.lower()
 
 
+def test_version():
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert "reprompt" in result.output
+    assert "0.1" in result.output
+
+
 def test_status_empty(tmp_path, monkeypatch):
     monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["status"])

@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2026-03-10
+
+### Fixed
+- Prevent connection leak in all database methods (try/finally)
+- Fix session marking for incremental scan accuracy
+- Fix purge validation for date format parsing
+- Fix pattern dedup to avoid duplicate entries
+- Improve Ollama error messages when server is unreachable
+
+### Added
+- `--version` / `-V` flag to CLI
+- mypy strict mode compliance
+
 ## [0.1.0] - 2026-03-10
 
 ### Added

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from reprompt.adapters.claude_code import ClaudeCodeAdapter
 from reprompt.adapters.openclaw import OpenClawAdapter
@@ -25,7 +26,7 @@ class ScanResult:
     sources: list[str] = field(default_factory=list)
 
 
-def get_adapters() -> list:
+def get_adapters() -> list[ClaudeCodeAdapter | OpenClawAdapter]:
     """Return all available adapters."""
     return [ClaudeCodeAdapter(), OpenClawAdapter()]
 
@@ -100,7 +101,7 @@ def run_scan(
     return result
 
 
-def build_report_data(settings: Settings | None = None) -> dict:
+def build_report_data(settings: Settings | None = None) -> dict[str, Any]:
     """Build report data from stored prompts."""
     if settings is None:
         settings = Settings()

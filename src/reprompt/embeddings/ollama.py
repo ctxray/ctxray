@@ -28,11 +28,17 @@ class OllamaEmbedder(BaseEmbedder):
 
         import requests
 
-        resp = requests.post(
-            f"{self.url}/api/embed",
-            json={"model": self.model, "input": texts},
-            timeout=30,
-        )
+        try:
+            resp = requests.post(
+                f"{self.url}/api/embed",
+                json={"model": self.model, "input": texts},
+                timeout=30,
+            )
+        except (requests.ConnectionError, requests.Timeout) as e:
+            raise RuntimeError(
+                f"Cannot connect to Ollama at {self.url}. "
+                f"Is Ollama running? Check with: curl {self.url}/api/tags"
+            ) from e
         resp.raise_for_status()
         data = resp.json()
         return np.array(data["embeddings"])
@@ -43,6 +49,6 @@ class OllamaEmbedder(BaseEmbedder):
             import requests
 
             resp = requests.get(f"{self.url}/api/tags", timeout=5)
-            return resp.status_code == 200
+            return bool(resp.status_code == 200)
         except Exception:
             return False

@@ -7,12 +7,29 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
+from reprompt import __version__
+
 app = typer.Typer(
     name="reprompt",
     help="Discover, analyze, and evolve your best prompts from AI coding sessions.",
     no_args_is_help=True,
 )
 console = Console()
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(f"reprompt {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: bool = typer.Option(
+        False, "--version", "-V", callback=_version_callback, is_eager=True
+    ),
+) -> None:
+    """reprompt -- Discover, analyze, and evolve your best prompts from AI coding sessions."""
 
 
 @app.command()
@@ -117,10 +134,10 @@ def purge(
     older_than: str = typer.Option("90d", help="Delete prompts older than (e.g. 90d)"),
 ) -> None:
     """Clean up old data."""
+    import re
+
     from reprompt.config import Settings
     from reprompt.storage.db import PromptDB
-
-    import re
 
     m = re.fullmatch(r"(\d+)d?", older_than.strip(), re.IGNORECASE)
     if not m:

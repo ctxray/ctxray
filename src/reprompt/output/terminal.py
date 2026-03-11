@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from io import StringIO
+from typing import Any
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
 
-def render_report(data: dict) -> str:
+def render_report(data: dict[str, Any]) -> str:
     """Render a full report to a string using Rich."""
     buf = StringIO()
     console = Console(file=buf, force_terminal=True, width=80)

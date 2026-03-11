@@ -18,4 +18,5 @@ class TfidfEmbedder(BaseEmbedder):
         """Fit and transform texts into TF-IDF vectors."""
         if not texts:
             return np.array([])
-        return self._vectorizer.fit_transform(texts).toarray()
+        result: np.ndarray = self._vectorizer.fit_transform(texts).toarray()
+        return result
