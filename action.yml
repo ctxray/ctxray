@@ -1,0 +1,100 @@
+name: "reprompt lint"
+description: "Check AI prompt quality in your codebase"
+branding:
+  icon: "zap"
+  color: "blue"
+
+inputs:
+  version:
+    description: "reprompt-cli version to install"
+    required: false
+    default: "latest"
+  source:
+    description: "Adapter to scan (claude-code, aider, gemini, cline, cursor, openclaw)"
+    required: false
+    default: ""
+  path:
+    description: "Path to scan for session files"
+    required: false
+    default: ""
+  strict:
+    description: "Fail on warnings too (not just errors)"
+    required: false
+    default: "false"
+  json:
+    description: "Output results as JSON"
+    required: false
+    default: "false"
+
+outputs:
+  errors:
+    description: "Number of lint errors found"
+    value: ${{ steps.lint.outputs.errors }}
+  warnings:
+    description: "Number of lint warnings found"
+    value: ${{ steps.lint.outputs.warnings }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v7
+
+    - name: Install reprompt
+      shell: bash
+      run: |
+        if [ "${{ inputs.version }}" = "latest" ]; then
+          uv tool install reprompt-cli
+        else
+          uv tool install "reprompt-cli==${{ inputs.version }}"
+        fi
+
+    - name: Scan sessions
+      shell: bash
+      run: |
+        SCAN_ARGS=""
+        if [ -n "${{ inputs.source }}" ]; then
+          SCAN_ARGS="$SCAN_ARGS --source ${{ inputs.source }}"
+        fi
+        if [ -n "${{ inputs.path }}" ]; then
+          SCAN_ARGS="$SCAN_ARGS --path ${{ inputs.path }}"
+        fi
+        reprompt scan $SCAN_ARGS || true
+
+    - name: Run lint
+      id: lint
+      shell: bash
+      run: |
+        LINT_ARGS=""
+        if [ -n "${{ inputs.source }}" ]; then
+          LINT_ARGS="$LINT_ARGS --source ${{ inputs.source }}"
+        fi
+        if [ -n "${{ inputs.path }}" ]; then
+          LINT_ARGS="$LINT_ARGS --path ${{ inputs.path }}"
+        fi
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          LINT_ARGS="$LINT_ARGS --strict"
+        fi
+
+        # Always get JSON for outputs
+        JSON_RESULT=$(reprompt lint --json $LINT_ARGS 2>/dev/null || echo '{"errors":0,"warnings":0}')
+        echo "errors=$(echo $JSON_RESULT | python3 -c 'import sys,json; print(json.load(sys.stdin).get("errors",0))')" >> $GITHUB_OUTPUT
+        echo "warnings=$(echo $JSON_RESULT | python3 -c 'import sys,json; print(json.load(sys.stdin).get("warnings",0))')" >> $GITHUB_OUTPUT
+
+        # Run lint for display output
+        if [ "${{ inputs.json }}" = "true" ]; then
+          reprompt lint --json $LINT_ARGS
+        else
+          reprompt lint $LINT_ARGS
+        fi
+
+    - name: Add summary
+      if: always()
+      shell: bash
+      run: |
+        echo "## reprompt lint results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- Errors: ${{ steps.lint.outputs.errors }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Warnings: ${{ steps.lint.outputs.warnings }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Run \`reprompt lint\` locally for full details." >> $GITHUB_STEP_SUMMARY

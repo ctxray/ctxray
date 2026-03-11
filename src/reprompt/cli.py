@@ -466,6 +466,89 @@ def templates(
 
 
 @app.command()
+def lint(
+    source: str = typer.Option(None, help="Adapter to scan (claude-code, aider, gemini, etc.)"),
+    path: str = typer.Option(None, help="Path to scan for session files"),
+    json_output: bool = typer.Option(False, "--json", help="Output results as JSON"),
+    fail_on_warning: bool = typer.Option(False, "--strict", help="Exit 1 on warnings too"),
+) -> None:
+    """Check prompt quality against lint rules.
+
+    Scans session history and checks each prompt for quality issues:
+    - min-length: prompts under 20 chars
+    - short-prompt: prompts under 40 chars (warning)
+    - vague-prompt: overly vague prompts like "fix it"
+    - debug-needs-reference: debug prompts without file/function references
+    """
+    import json as json_mod
+
+    from reprompt.config import Settings
+    from reprompt.core.lint import format_lint_results, lint_prompts
+    from reprompt.core.pipeline import get_adapters
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+
+    # Collect prompts from DB (already scanned)
+    rows = db.get_all_prompts()
+    texts = [r["text"] for r in rows]
+
+    if not texts:
+        # If DB is empty, try scanning directly
+        adapters = get_adapters()
+        if source:
+            adapters = [a for a in adapters if a.name == source]
+
+        from pathlib import Path as P
+
+        for adapter in adapters:
+            if path:
+                scan_root = P(path)
+            else:
+                scan_root = P(adapter.default_session_path).expanduser()
+            if not scan_root.exists():
+                continue
+            if hasattr(adapter, "discover_sessions"):
+                for sf in adapter.discover_sessions():
+                    texts.extend(p.text for p in adapter.parse_session(sf))
+            else:
+                ext = "*.vscdb" if adapter.name == "cursor" else "*.jsonl"
+                for sf in sorted(scan_root.rglob(ext)):
+                    texts.extend(p.text for p in adapter.parse_session(sf))
+
+    if not texts:
+        console.print("No prompts found. Run [bold]reprompt scan[/bold] first.")
+        raise typer.Exit(0)
+
+    violations = lint_prompts(texts)
+
+    if json_output:
+        data = {
+            "total_prompts": len(texts),
+            "violations": [
+                {
+                    "rule": v.rule,
+                    "severity": v.severity,
+                    "message": v.message,
+                    "prompt": v.prompt_text[:100],
+                }
+                for v in violations
+            ],
+            "errors": sum(1 for v in violations if v.severity == "error"),
+            "warnings": sum(1 for v in violations if v.severity == "warning"),
+        }
+        print(json_mod.dumps(data, indent=2))
+    else:
+        print(format_lint_results(violations, len(texts)))
+
+    errors = [v for v in violations if v.severity == "error"]
+    warnings = [v for v in violations if v.severity == "warning"]
+    if errors or (fail_on_warning and warnings):
+        raise typer.Exit(1)
+
+
+@app.command()
 def demo() -> None:
     """Run reprompt on demo data to see what it looks like."""
     import shutil
