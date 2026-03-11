@@ -81,9 +81,7 @@ def _hook_registered() -> bool:
     try:
         data = json.loads(settings_path.read_text())
         hooks = data.get("hooks", {}).get("Stop", [])
-        return any(
-            isinstance(h, dict) and "reprompt" in h.get("command", "") for h in hooks
-        )
+        return any(isinstance(h, dict) and "reprompt" in h.get("command", "") for h in hooks)
     except (json.JSONDecodeError, KeyError):
         return False
 

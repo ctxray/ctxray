@@ -113,16 +113,17 @@ def _parse_item_table(conn: sqlite3.Connection, session_id: str) -> list[Prompt]
 
     try:
         rows = conn.execute(
-            "SELECT key, value FROM ItemTable WHERE key LIKE '%chatdata%' "
-            "OR key LIKE '%prompts%'"
+            "SELECT key, value FROM ItemTable WHERE key LIKE '%chatdata%' OR key LIKE '%prompts%'"
         ).fetchall()
     except sqlite3.OperationalError:
         return prompts
 
     for key, value in rows:
         try:
-            data = json.loads(value) if isinstance(value, str) else json.loads(
-                value.decode("utf-8", errors="replace")
+            data = (
+                json.loads(value)
+                if isinstance(value, str)
+                else json.loads(value.decode("utf-8", errors="replace"))
             )
         except (json.JSONDecodeError, UnicodeDecodeError, AttributeError):
             continue
@@ -161,9 +162,7 @@ class CursorAdapter(BaseAdapter):
     default_session_path = _default_cursor_path()
 
     def __init__(self, session_path: Path | None = None) -> None:
-        self._session_path = session_path or Path(
-            self.default_session_path
-        ).expanduser()
+        self._session_path = session_path or Path(self.default_session_path).expanduser()
 
     def detect_installed(self) -> bool:
         """Check if Cursor data directory exists."""

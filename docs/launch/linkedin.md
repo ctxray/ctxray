@@ -1,26 +1,30 @@
 # LinkedIn Post
 
-I've been using AI coding tools (Claude Code, Copilot, etc.) daily for months and realized something: I keep asking the same things over and over.
+I've been using AI coding tools (Claude Code, Cursor, etc.) daily for months. One question kept nagging me: which of my prompts actually work well, and which ones waste time?
 
-So I built reprompt — an open-source CLI that analyzes your AI coding session history.
+So I built reprompt — an open-source CLI that analyzes your AI coding prompt history.
 
-What it found:
-- 32% of my prompts were near-duplicates
-- My debug prompts are 3x shorter than my implement prompts (and less effective)
-- After a week of tracking, I naturally started writing more specific prompts
+What I learned from my own data:
+→ My debug prompts are 3x shorter than implement prompts — and significantly less effective
+→ "Fix the bug" performs measurably worse than naming the file, function, and expected behavior
+→ After a week of tracking, I naturally started writing better prompts
 
-Technical approach: SHA-256 exact dedup + TF-IDF cosine similarity for semantic matching. Python, scikit-learn, SQLite. Everything runs locally.
+The tool extracts prompts from session files, deduplicates them (SHA-256 + TF-IDF cosine similarity), and builds a personal prompt library organized by task type.
 
-If you use Claude Code or similar AI coding tools, give it a try:
+New in v0.3: `reprompt recommend` analyzes which prompt patterns correlate with productive sessions. `reprompt demo` lets you try it with built-in sample data — no setup needed.
 
+Supports Claude Code, OpenClaw, and Cursor IDE. Everything runs locally. Python, scikit-learn, SQLite.
+
+Try it:
 ```
 pipx install reprompt-cli
-reprompt scan
-reprompt report
+reprompt demo
 ```
 
-MIT licensed. Feedback welcome.
+MIT licensed. 284 tests, strict mypy.
 
 GitHub: https://github.com/reprompt-dev/reprompt
 
-#OpenSource #AI #DeveloperTools #Python #PromptEngineering
+What would you want to know about your AI coding habits?
+
+#OpenSource #AI #DeveloperTools #Python #PromptEngineering #MachineLearning

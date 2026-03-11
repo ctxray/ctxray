@@ -173,9 +173,7 @@ def render_recommendations(data: dict[str, Any]) -> str:
         for i, p in enumerate(best[:5], 1):
             text = p["text"]
             display = text[:50] + "..." if len(text) > 50 else text
-            table.add_row(
-                str(i), display, f"{p['effectiveness']:.2f}", p.get("project", "")
-            )
+            table.add_row(str(i), display, f"{p['effectiveness']:.2f}", p.get("project", ""))
         console.print(table)
 
     # Effectiveness by category
@@ -194,14 +192,14 @@ def render_recommendations(data: dict[str, Any]) -> str:
     if alerts:
         console.print("\n[bold]Prompts to Improve[/bold] (short + low effectiveness)")
         for a in alerts:
-            console.print(f"  [red]x[/red] \"{a['text']}\" ({a['char_count']} chars)")
+            console.print(f'  [red]x[/red] "{a["text"]}" ({a["char_count"]} chars)')
 
     # Specificity upgrade tips
     tips = data.get("specificity_tips", [])
     if tips:
         console.print("\n[bold]How to Write Better Prompts[/bold]")
         for t in tips:
-            console.print(f"  [dim]Instead of:[/dim] \"{t['original']}\"")
+            console.print(f'  [dim]Instead of:[/dim] "{t["original"]}"')
             console.print(f"  [green]Tip:[/green] {t['tip']}")
             console.print()
 

@@ -38,7 +38,8 @@ class TestCursorDiskKV:
                 ]
             }
             db_path = _make_vscdb(
-                Path(tmp), "cursorDiskKV",
+                Path(tmp),
+                "cursorDiskKV",
                 [("composerData:abc-123", json.dumps(data).encode())],
             )
             prompts = _extract_prompts_from_vscdb(db_path, "test-session")
@@ -51,7 +52,8 @@ class TestCursorDiskKV:
         with tempfile.TemporaryDirectory() as tmp:
             data = {"conversation": [{"type": 1, "text": "ok"}]}
             db_path = _make_vscdb(
-                Path(tmp), "cursorDiskKV",
+                Path(tmp),
+                "cursorDiskKV",
                 [("composerData:x", json.dumps(data).encode())],
             )
             prompts = _extract_prompts_from_vscdb(db_path, "test")
@@ -61,7 +63,8 @@ class TestCursorDiskKV:
         with tempfile.TemporaryDirectory() as tmp:
             data = {"conversation": [{"type": 2, "text": "I'll help with that."}]}
             db_path = _make_vscdb(
-                Path(tmp), "cursorDiskKV",
+                Path(tmp),
+                "cursorDiskKV",
                 [("composerData:x", json.dumps(data).encode())],
             )
             prompts = _extract_prompts_from_vscdb(db_path, "test")
@@ -76,7 +79,8 @@ class TestCursorDiskKV:
     def test_handles_invalid_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             db_path = _make_vscdb(
-                Path(tmp), "cursorDiskKV",
+                Path(tmp),
+                "cursorDiskKV",
                 [("composerData:x", b"not json")],
             )
             prompts = _extract_prompts_from_vscdb(db_path, "test")
@@ -95,7 +99,8 @@ class TestItemTable:
                 }
             ]
             db_path = _make_vscdb(
-                Path(tmp), "ItemTable",
+                Path(tmp),
+                "ItemTable",
                 [("workbench.panel.aichat.view.aichat.chatdata", json.dumps(data))],
             )
             prompts = _extract_prompts_from_vscdb(db_path, "legacy-session")
@@ -106,7 +111,8 @@ class TestItemTable:
         with tempfile.TemporaryDirectory() as tmp:
             data = [{"messages": [{"role": "assistant", "content": "Hello!"}]}]
             db_path = _make_vscdb(
-                Path(tmp), "ItemTable",
+                Path(tmp),
+                "ItemTable",
                 [("workbench.panel.aichat.view.aichat.chatdata", json.dumps(data))],
             )
             prompts = _extract_prompts_from_vscdb(db_path, "test")
@@ -138,7 +144,8 @@ class TestCursorAdapter:
             workspace_dir = Path(tmp) / "workspace-hash"
             workspace_dir.mkdir()
             db_path = _make_vscdb(
-                workspace_dir, "cursorDiskKV",
+                workspace_dir,
+                "cursorDiskKV",
                 [("composerData:c1", json.dumps(data).encode())],
             )
             adapter = CursorAdapter(session_path=Path(tmp))

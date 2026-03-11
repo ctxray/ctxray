@@ -12,27 +12,27 @@ SPECIFICITY_UPGRADES: dict[str, str] = {
     "fix": (
         "Be specific: name the file, function, and error. "
         'e.g. "Fix the TypeError in auth/login.py:validate_token '
-        "when token is expired\""
+        'when token is expired"'
     ),
     "debug": (
         "Include the error message and where it occurs. "
         'e.g. "Debug the ConnectionRefusedError in db.py:get_connection '
-        "— happens after 5 min idle\""
+        '— happens after 5 min idle"'
     ),
     "test": (
         "Specify what behavior to test and edge cases. "
         'e.g. "Add tests for UserService.create_user — cover duplicate email, '
-        "missing fields, and valid creation\""
+        'missing fields, and valid creation"'
     ),
     "refactor": (
         "Name the target pattern and why. "
         'e.g. "Refactor PaymentService to use strategy pattern '
-        "— currently has 6 if/elif branches for payment types\""
+        '— currently has 6 if/elif branches for payment types"'
     ),
     "implement": (
         "Describe the interface, inputs, outputs, and constraints. "
         'e.g. "Add POST /api/users endpoint — accepts {name, email}, '
-        "returns 201 with user object, 409 if email exists\""
+        'returns 201 with user object, 409 if email exists"'
     ),
 }
 
@@ -148,9 +148,7 @@ def compute_recommendations(db: PromptDB) -> dict[str, Any]:
             cat = categorize_prompt(r["text"])
             cat_eff.setdefault(cat, []).append(r["effectiveness_score"])
         category_effectiveness = {
-            cat: round(sum(scores) / len(scores), 2)
-            for cat, scores in cat_eff.items()
-            if scores
+            cat: round(sum(scores) / len(scores), 2) for cat, scores in cat_eff.items() if scores
         }
 
         # 7. Overall tips
