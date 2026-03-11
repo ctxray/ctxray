@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Filter noise phrases (username/path tokens) from Hot Phrases results
 
 ### Added
+- `reprompt demo` command — run a full report with built-in sample data, no session history needed
 - Demo data generator script (`scripts/generate_demo_data.py`) using CodeAlpaca-20K
 - VHS recording script for terminal demo GIF
 - Launch materials (Show HN, Reddit, Twitter, Dev.to, Chinese communities)
