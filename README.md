@@ -20,6 +20,9 @@ pipx install reprompt-cli
 reprompt scan
 reprompt report
 reprompt library
+
+# Try it without any session history
+reprompt demo
 ```
 
 ## Terminal Report
@@ -53,6 +56,7 @@ reprompt -- AI Session Analytics
 - **Pluggable adapters** -- add support for any AI coding tool
 - **Prompt search** -- find past prompts by keyword across all sessions
 - **Zero config** -- works out of the box, customize via env vars or TOML
+- **Demo mode** -- `reprompt demo` shows a full report with built-in sample data
 
 ## How reprompt Compares
 

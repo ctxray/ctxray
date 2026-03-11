@@ -18,8 +18,9 @@ uv run python -m build                     # build wheel
 
 ```
 src/reprompt/
-├── cli.py              # Typer CLI (scan, report, search, library, status, purge, install-hook)
+├── cli.py              # Typer CLI (scan, report, search, library, demo, status, purge, install-hook)
 ├── config.py           # pydantic-settings, env vars (REPROMPT_ prefix) + TOML config
+├── demo.py             # Built-in demo data generator (no network required)
 ├── core/
 │   ├── models.py       # Prompt dataclass (auto SHA-256 hash)
 │   ├── dedup.py        # Two-layer dedup: exact hash + TF-IDF cosine
@@ -64,4 +65,4 @@ Session files → Adapter.parse() → list[Prompt]
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 176 tests, 95% coverage target
+- Tests: pytest, 261 tests, 95% coverage target

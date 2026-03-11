@@ -298,6 +298,41 @@ def purge(
     console.print(f"Purged {deleted} prompts older than {days} days")
 
 
+@app.command()
+def demo() -> None:
+    """Run reprompt on demo data to see what it looks like."""
+    import shutil
+    import tempfile
+
+    from reprompt.config import Settings
+    from reprompt.core.pipeline import build_report_data, run_scan
+    from reprompt.demo import generate_demo_sessions
+    from reprompt.output.terminal import render_report
+
+    tmp = Path(tempfile.mkdtemp(prefix="reprompt-demo-"))
+    sessions_dir = tmp / "sessions"
+    db_path = tmp / "demo.db"
+
+    try:
+        console.print("[bold]Generating demo data...[/bold]")
+        n = generate_demo_sessions(sessions_dir)
+        console.print(f"  Generated {n} prompts across 6 weeks\n")
+
+        settings = Settings(db_path=db_path)
+        result = run_scan(source="claude-code", path=str(sessions_dir), settings=settings)
+
+        console.print("[bold]Scan complete[/bold]")
+        console.print(f"  Sessions: {result.sessions_scanned}")
+        console.print(f"  Prompts:  {result.total_parsed}")
+        console.print(f"  Unique:   {result.unique_after_dedup}")
+        console.print(f"  Dupes:    {result.duplicates}\n")
+
+        data = build_report_data(settings=settings)
+        print(render_report(data), end="")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 @app.command("install-hook")
 def install_hook(
     source: str = typer.Option("claude-code", help="AI tool to install hook for"),
