@@ -32,7 +32,8 @@ src/reprompt/
 │   ├── base.py         # BaseAdapter ABC
 │   ├── claude_code.py  # Claude Code JSONL parser
 │   ├── openclaw.py     # OpenClaw JSON parser (supports ~/.openclaw/ + legacy ~/.opencode/)
-│   └── cursor.py      # Cursor IDE .vscdb parser (cursorDiskKV + legacy ItemTable)
+│   ├── cursor.py       # Cursor IDE .vscdb parser (cursorDiskKV + legacy ItemTable)
+│   └── aider.py        # Aider markdown chat history parser (.aider.chat.history.md)
 ├── embeddings/
 │   ├── base.py         # BaseEmbedder ABC
 │   ├── tfidf.py        # Default (sklearn, zero config)
@@ -67,4 +68,4 @@ Session files → Adapter.parse() → list[Prompt]
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 284 tests, 95% coverage target
+- Tests: pytest, 331 tests, 95% coverage target
