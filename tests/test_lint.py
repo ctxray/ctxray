@@ -70,7 +70,7 @@ class TestFormatResults:
 
     def test_truncates_long_prompts(self):
         long_prompt = "x" * 100
-        violations = lint_prompt(long_prompt)
+        lint_prompt(long_prompt)
         # Force a violation for formatting test
         from reprompt.core.lint import LintViolation
 

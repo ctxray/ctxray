@@ -21,7 +21,6 @@ def test_lint_clean_prompts(tmp_path, monkeypatch):
     """Good prompts should produce no errors."""
     monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
 
-    from reprompt.config import Settings
     from reprompt.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
