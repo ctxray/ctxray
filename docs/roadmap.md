@@ -94,13 +94,15 @@ Combined into 0-1 effectiveness score. Already partially implemented in `recomme
 
 ### 1.4 Adapter Expansion
 
-Add adapters for:
-- **GitHub Copilot Chat** — VS Code chat history
-- **Windsurf** — if session format is documented
-- **Aider** — markdown chat logs
-- **Continue.dev** — session history
+Add adapters for more AI tools. Each adapter is ~50 lines implementing `BaseAdapter.parse_session()`. Low effort, high reach.
 
-Each adapter is ~50 lines implementing `BaseAdapter.parse_session()`. Low effort, high reach.
+Priority order (by user base size and session format accessibility):
+1. **Aider** (30K stars) — markdown chat logs, well-documented format
+2. **Gemini CLI** (Google, open source) — session history format
+3. **GitHub Copilot Chat** — VS Code chat history
+4. **Cline** (VS Code agent) — growing fast, local session files
+5. **Continue.dev** — session history
+6. **Windsurf** — if session format is documented
 
 ---
 
@@ -275,6 +277,36 @@ v0.4 (2-3 weeks)          v0.5 (4-6 weeks)           v0.6+ (ongoing)
 3. Adapter Expansion        7. Smart Recommendations   10. Prompt CI
 4. Session Scoring                                     11. IDE Extension
 ```
+
+---
+
+## Competitive Landscape (2026-03)
+
+**No direct competitor exists.** reprompt is the only open-source tool that does CLI-first algorithmic analysis of AI coding prompts (dedup, clustering, effectiveness).
+
+| Tool | Stars | What It Does | How reprompt Differs |
+|------|-------|-------------|---------------------|
+| **promptfoo** | 10.8K | LLM output testing & evaluation | Tests LLM responses, not developer prompts. CI/CD focused. |
+| **DSPy** | 20K+ | Prompt programming framework | Optimizes LLM application prompts, not coding session prompts |
+| **Langfuse** | — | LLM observability platform | Server-side tracing, not local CLI analytics |
+| **Vibe-Log** | — | Claude Code session summaries | Uses LLM to summarize (expensive, non-reproducible). Claude-only. |
+| **claude-conversation-extractor** | — | Raw session extraction | Extracts but zero analytics — no dedup, no patterns |
+| **claude-history** | — | Fuzzy search Claude chats | Search tool, not analytics |
+| **Aider** | 30K | CLI pair programming | Competing tool (potential adapter target), not analytics |
+
+### Growth Lessons from Top Tools
+
+1. **Zero-config first experience** — promptfoo, Aider, all exploded because `npx promptfoo` / `pip install aider` just works
+2. **CI/CD story** — promptfoo's GitHub Action was its biggest growth lever
+3. **Broad adapter support** — tools that support many LLMs/tools grow faster
+4. **Shareable reports** — Vibe-Log proved HTML reports resonate for team adoption
+
+### Strategic Implications
+
+- **Own the niche** — "prompt analytics for coding sessions" is uncontested
+- **Adapter expansion is growth** — each new adapter (Copilot, Gemini CLI, Aider, Cline) unlocks a new audience
+- **GitHub Action** — add `reprompt ci` for prompt quality checks in PRs (Phase 3.3)
+- **`recommend` is the sharpest differentiator** — no tool generates personalized prompt suggestions from usage history
 
 ---
 
