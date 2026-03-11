@@ -33,7 +33,9 @@ src/reprompt/
 │   ├── claude_code.py  # Claude Code JSONL parser
 │   ├── openclaw.py     # OpenClaw JSON parser (supports ~/.openclaw/ + legacy ~/.opencode/)
 │   ├── cursor.py       # Cursor IDE .vscdb parser (cursorDiskKV + legacy ItemTable)
-│   └── aider.py        # Aider markdown chat history parser (.aider.chat.history.md)
+│   ├── aider.py        # Aider markdown chat history parser (.aider.chat.history.md)
+│   ├── gemini.py       # Gemini CLI JSON session parser (~/.gemini/tmp/)
+│   └── cline.py        # Cline VS Code agent task parser (globalStorage/saoudrizwan.claude-dev/)
 ├── embeddings/
 │   ├── base.py         # BaseEmbedder ABC
 │   ├── tfidf.py        # Default (sklearn, zero config)
@@ -68,4 +70,4 @@ Session files → Adapter.parse() → list[Prompt]
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 331 tests, 95% coverage target
+- Tests: pytest, 371 tests, 95% coverage target
