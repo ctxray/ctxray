@@ -264,6 +264,20 @@ def status() -> None:
     console.print(f"  DB path:          {settings.db_path}")
 
 
+@app.command("mcp-serve")
+def mcp_serve() -> None:
+    """Start MCP server (stdio transport) for Claude Code / Continue.dev / Zed."""
+    try:
+        from reprompt.mcp import run_server
+    except ImportError:
+        console.print(
+            "[red]MCP support requires fastmcp.[/red]\n"
+            "Install with: [bold]pip install reprompt-cli\\[mcp][/bold]"
+        )
+        raise typer.Exit(1)
+    run_server()
+
+
 @app.command()
 def purge(
     older_than: str = typer.Option("90d", help="Delete prompts older than (e.g. 90d)"),

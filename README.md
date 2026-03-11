@@ -121,6 +121,34 @@ reprompt install-hook
 reprompt purge --older-than 90d
 ```
 
+## MCP Server (Claude Code / Continue.dev / Zed)
+
+reprompt includes an MCP server that exposes your prompt analytics as tools for AI coding assistants.
+
+```bash
+pip install reprompt-cli[mcp]
+
+# Start the server
+reprompt mcp-serve
+```
+
+**Register in Claude Code** — add to `.mcp.json` at project root:
+```json
+{
+  "mcpServers": {
+    "reprompt": {
+      "type": "stdio",
+      "command": "reprompt",
+      "args": ["mcp-serve"]
+    }
+  }
+}
+```
+
+**Available tools:** `search_prompts`, `get_prompt_library`, `get_best_prompts`, `get_trends`, `get_status`, `scan_sessions`
+
+**Available resources:** `reprompt://status`, `reprompt://library`
+
 ## Configuration
 
 Zero config by default. Customize with environment variables or TOML:

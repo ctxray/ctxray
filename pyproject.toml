@@ -30,6 +30,7 @@ dependencies = [
 ollama = ["requests>=2.31"]
 local = ["sentence-transformers>=2.0"]
 openai = ["openai>=1.0"]
+mcp = ["fastmcp>=2.0"]
 dev = ["pytest>=8.0", "ruff>=0.4", "mypy>=1.0", "pytest-cov>=5.0"]
 
 [project.scripts]
