@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2026-03-11
+
+### Added
+- MCP server (`reprompt mcp-serve`) for Claude Code, Continue.dev, and Zed integration
+- 6 MCP tools: search_prompts, get_prompt_library, get_best_prompts, get_trends, get_status, scan_sessions
+- 2 MCP resources: reprompt://status, reprompt://library
+- `fastmcp` optional dependency (`pip install reprompt-cli[mcp]`)
+- MCP setup guide in README
+
+### Changed
+- Tests: 246 → 256
+- Updated supported tools table (Codex CLI, Aider, Gemini CLI, Continue.dev, Zed)
+
 ## [0.3.0] - 2026-03-11
 
 ### Added
