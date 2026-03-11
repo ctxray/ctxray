@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -12,39 +13,37 @@ runner = CliRunner()
 
 
 def test_install_hook_claude_code(tmp_path, monkeypatch):
-    """install-hook should create a shell script in .claude/hooks/."""
+    """install-hook should register in settings.json."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    # Create the .claude dir to simulate Claude Code installed
     (tmp_path / ".claude").mkdir()
     result = runner.invoke(app, ["install-hook"])
     assert result.exit_code == 0
-    assert "installed" in result.output.lower()
+    assert "registered" in result.output.lower()
 
-    # Verify hook file was created
-    hook_path = tmp_path / ".claude" / "hooks" / "reprompt-scan.sh"
-    assert hook_path.exists()
-    content = hook_path.read_text()
-    assert "reprompt scan" in content
+    settings = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+    assert "hooks" in settings
+    assert "Stop" in settings["hooks"]
+    assert any(
+        h.get("command") == "reprompt scan --source claude-code" for h in settings["hooks"]["Stop"]
+    )
 
 
 def test_install_hook_already_exists(tmp_path, monkeypatch):
-    """install-hook should report if hook already exists."""
+    """install-hook should report if hook already registered."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    claude_dir = tmp_path / ".claude"
-    claude_dir.mkdir()
-    hooks_dir = claude_dir / "hooks"
-    hooks_dir.mkdir()
-    (hooks_dir / "reprompt-scan.sh").write_text("#!/bin/sh\nreprompt scan\n")
+    (tmp_path / ".claude").mkdir()
 
+    # First install
+    runner.invoke(app, ["install-hook"])
+    # Second install
     result = runner.invoke(app, ["install-hook"])
     assert result.exit_code == 0
-    assert "already" in result.output.lower() or "exists" in result.output.lower()
+    assert "already" in result.output.lower()
 
 
 def test_install_hook_no_claude_code(tmp_path, monkeypatch):
     """install-hook should warn if Claude Code is not detected."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    # No .claude dir exists
     result = runner.invoke(app, ["install-hook"])
     assert result.exit_code == 0
     assert "not detected" in result.output.lower() or "not found" in result.output.lower()
@@ -58,16 +57,16 @@ def test_install_hook_unsupported_source(tmp_path, monkeypatch):
     assert "not yet supported" in result.output.lower() or "not supported" in result.output.lower()
 
 
-def test_install_hook_creates_executable(tmp_path, monkeypatch):
-    """Hook script should be executable."""
+def test_install_hook_preserves_existing(tmp_path, monkeypatch):
+    """install-hook should not clobber existing settings."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     (tmp_path / ".claude").mkdir()
+    existing = {"permissions": {"allow": ["Bash"]}, "model": "opus"}
+    (tmp_path / ".claude" / "settings.json").write_text(json.dumps(existing))
+
     runner.invoke(app, ["install-hook"])
 
-    hook_path = tmp_path / ".claude" / "hooks" / "reprompt-scan.sh"
-    assert hook_path.exists()
-    # Check executable bit
-    import stat
-
-    mode = hook_path.stat().st_mode
-    assert mode & stat.S_IXUSR  # owner execute bit set
+    settings = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+    assert settings["permissions"]["allow"] == ["Bash"]
+    assert settings["model"] == "opus"
+    assert "hooks" in settings

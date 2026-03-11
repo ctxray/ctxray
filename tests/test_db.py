@@ -190,3 +190,48 @@ def test_upsert_pattern_frequency_updates(db):
     assert p["avg_length"] == 21.0
     assert p["last_seen"] == "2026-03-11"
     assert "new example 1" in p["examples"]
+
+
+def test_search_prompts_by_keyword(db):
+    """search_prompts should find prompts matching keyword."""
+    db.insert_prompt("fix the authentication bug", source="claude-code")
+    db.insert_prompt("add unit tests for payment", source="claude-code")
+    db.insert_prompt("refactor authentication middleware", source="claude-code")
+
+    results = db.search_prompts("authentication")
+    assert len(results) == 2
+    assert all("authentication" in r["text"].lower() for r in results)
+
+
+def test_search_prompts_case_insensitive(db):
+    """search_prompts should be case-insensitive."""
+    db.insert_prompt("Fix the BROKEN deployment pipeline", source="claude-code")
+
+    results = db.search_prompts("broken")
+    assert len(results) == 1
+
+
+def test_search_prompts_respects_limit(db):
+    """search_prompts should respect the limit parameter."""
+    for i in range(10):
+        db.insert_prompt(f"debug error number {i}", source="claude-code")
+
+    results = db.search_prompts("debug", limit=3)
+    assert len(results) == 3
+
+
+def test_search_prompts_excludes_duplicates(db):
+    """search_prompts should not return prompts marked as duplicates."""
+    db.insert_prompt("fix authentication issue", source="claude-code")
+    db.insert_prompt("fix authentication problem", source="claude-code")
+    db.mark_duplicate(2, 1)
+
+    results = db.search_prompts("authentication")
+    assert len(results) == 1
+
+
+def test_search_prompts_no_match(db):
+    """search_prompts should return empty list when nothing matches."""
+    db.insert_prompt("add caching layer", source="claude-code")
+    results = db.search_prompts("nonexistent-term-xyz")
+    assert results == []

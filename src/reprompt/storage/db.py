@@ -343,6 +343,33 @@ class PromptDB:
         finally:
             conn.close()
 
+    def search_prompts(
+        self,
+        query: str,
+        *,
+        category: str | None = None,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        """Search prompts by keyword (case-insensitive LIKE match on text).
+
+        Returns matching prompts ordered by timestamp descending.
+        """
+        conn = self._conn()
+        try:
+            sql = "SELECT * FROM prompts WHERE duplicate_of IS NULL AND text LIKE ? COLLATE NOCASE"
+            params: list[Any] = [f"%{query}%"]
+
+            if category:
+                sql += " AND id IN (SELECT p.id FROM prompts p WHERE p.text LIKE ? COLLATE NOCASE)"
+
+            sql += " ORDER BY timestamp DESC LIMIT ?"
+            params.append(limit)
+
+            rows = conn.execute(sql, params).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
     def get_stats(self) -> dict[str, Any]:
         """Return summary statistics."""
         conn = self._conn()

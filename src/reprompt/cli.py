@@ -116,6 +116,38 @@ def library(
 
 
 @app.command()
+def search(
+    query: str = typer.Argument(..., help="Search term (case-insensitive)"),
+    limit: int = typer.Option(20, help="Maximum results to show"),
+) -> None:
+    """Search your prompt history by keyword."""
+    from reprompt.config import Settings
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    results = db.search_prompts(query, limit=limit)
+
+    if not results:
+        console.print(f"No prompts matching [bold]{query}[/bold]")
+        return
+
+    from rich.table import Table
+
+    table = Table(title=f"Search: '{query}' ({len(results)} results)")
+    table.add_column("#", style="dim", width=4)
+    table.add_column("Prompt", max_width=60)
+    table.add_column("Source")
+    table.add_column("Date", width=10)
+    for i, p in enumerate(results, 1):
+        text = p.get("text", "")
+        display = text[:60] + "..." if len(text) > 60 else text
+        ts = p.get("timestamp", "")[:10]
+        table.add_row(str(i), display, p.get("source", ""), ts)
+    console.print(table)
+
+
+@app.command()
 def status() -> None:
     """Show database statistics."""
     from reprompt.config import Settings
@@ -161,21 +193,39 @@ def install_hook(
     home = Path.home()
 
     if source == "claude-code":
-        hooks_dir = home / ".claude" / "hooks"
-        hook_path = hooks_dir / "reprompt-scan.sh"
-
-        if hook_path.exists():
-            console.print(f"Hook already exists at {hook_path}")
-            return
-
-        if not (home / ".claude").exists():
+        claude_dir = home / ".claude"
+        if not claude_dir.exists():
             console.print("[yellow]Claude Code not detected (~/.claude/ not found)[/yellow]")
             return
 
-        hooks_dir.mkdir(parents=True, exist_ok=True)
-        hook_path.write_text("#!/bin/sh\nreprompt scan --source claude-code\n")
-        hook_path.chmod(0o755)
-        console.print(f"[green]Hook installed at {hook_path}[/green]")
-        console.print("reprompt will automatically scan after Claude Code sessions.")
+        settings_path = claude_dir / "settings.json"
+        hook_command = "reprompt scan --source claude-code"
+        hook_entry = {"type": "command", "command": hook_command}
+
+        # Load existing settings or start fresh
+        if settings_path.exists():
+            import json
+
+            settings_data = json.loads(settings_path.read_text())
+        else:
+            settings_data = {}
+
+        # Ensure hooks.Stop exists
+        hooks = settings_data.setdefault("hooks", {})
+        stop_hooks = hooks.setdefault("Stop", [])
+
+        # Check if already registered
+        for h in stop_hooks:
+            if isinstance(h, dict) and h.get("command") == hook_command:
+                console.print("Hook already registered in Claude Code settings.")
+                return
+
+        stop_hooks.append(hook_entry)
+
+        import json
+
+        settings_path.write_text(json.dumps(settings_data, indent=2) + "\n")
+        console.print("[green]Hook registered in ~/.claude/settings.json[/green]")
+        console.print("reprompt will automatically scan when Claude Code sessions end.")
     else:
         console.print(f"[yellow]Hook installation for '{source}' not yet supported[/yellow]")
