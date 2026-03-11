@@ -36,7 +36,7 @@ class TestScanResult:
 class TestGetAdapters:
     def test_returns_list(self):
         adapters = get_adapters()
-        assert len(adapters) == 4
+        assert len(adapters) == 6
 
     def test_adapter_names(self):
         adapters = get_adapters()
@@ -44,6 +44,8 @@ class TestGetAdapters:
         assert "claude-code" in names
         assert "openclaw" in names
         assert "aider" in names
+        assert "gemini" in names
+        assert "cline" in names
 
 
 class TestRunScan:

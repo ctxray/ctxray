@@ -1,0 +1,61 @@
+{
+  "sessionId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "projectHash": "abc123def456",
+  "startTime": "2026-03-10T14:23:00.000Z",
+  "lastUpdated": "2026-03-10T14:45:00.000Z",
+  "messages": [
+    {
+      "id": "msg-001",
+      "type": "user",
+      "content": "fix the authentication bug in login.py",
+      "timestamp": "2026-03-10T14:23:01.000Z"
+    },
+    {
+      "id": "msg-002",
+      "type": "gemini",
+      "content": "I'll fix the authentication bug by updating the token validation logic.",
+      "model": "gemini-2.5-pro",
+      "timestamp": "2026-03-10T14:23:05.000Z"
+    },
+    {
+      "id": "msg-003",
+      "type": "info",
+      "content": "Applied edit to login.py",
+      "timestamp": "2026-03-10T14:23:10.000Z"
+    },
+    {
+      "id": "msg-004",
+      "type": "user",
+      "content": "add unit tests for the user service with edge cases for empty email",
+      "timestamp": "2026-03-10T14:30:00.000Z"
+    },
+    {
+      "id": "msg-005",
+      "type": "gemini",
+      "content": "I'll create comprehensive unit tests for the user service.",
+      "model": "gemini-2.5-pro",
+      "timestamp": "2026-03-10T14:30:05.000Z"
+    },
+    {
+      "id": "msg-006",
+      "type": "user",
+      "content": "ok",
+      "timestamp": "2026-03-10T14:35:00.000Z"
+    },
+    {
+      "id": "msg-007",
+      "type": "user",
+      "content": [
+        {"text": "refactor the database connection pool to use async context managers"}
+      ],
+      "timestamp": "2026-03-10T14:40:00.000Z"
+    },
+    {
+      "id": "msg-008",
+      "type": "error",
+      "content": "Failed to apply edit",
+      "timestamp": "2026-03-10T14:41:00.000Z"
+    }
+  ],
+  "kind": "main"
+}
