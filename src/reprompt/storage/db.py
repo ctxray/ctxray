@@ -99,6 +99,14 @@ class PromptDB:
                     effectiveness_score REAL,
                     scanned_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS prompt_templates (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT UNIQUE NOT NULL,
+                    text TEXT NOT NULL,
+                    category TEXT DEFAULT 'other',
+                    usage_count INTEGER DEFAULT 0,
+                    created_at TEXT NOT NULL
+                );
             """)
             conn.commit()
         finally:
@@ -582,5 +590,55 @@ class PromptDB:
                 "earliest": date_range[0] if date_range else None,
                 "latest": date_range[1] if date_range else None,
             }
+        finally:
+            conn.close()
+
+    def save_template(self, name: str, text: str, category: str = "other") -> int:
+        """Save a prompt template. Returns the template ID."""
+        conn = self._conn()
+        try:
+            cur = conn.execute(
+                "INSERT INTO prompt_templates (name, text, category, created_at)"
+                " VALUES (?, ?, ?, ?)",
+                (name, text, category, datetime.now(timezone.utc).isoformat()),
+            )
+            conn.commit()
+            return cur.lastrowid or 0
+        finally:
+            conn.close()
+
+    def list_templates(self, category: str | None = None) -> list[dict[str, Any]]:
+        """List all prompt templates, optionally filtered by category."""
+        conn = self._conn()
+        try:
+            if category:
+                rows = conn.execute(
+                    "SELECT * FROM prompt_templates WHERE category = ?"
+                    " ORDER BY usage_count DESC, id",
+                    (category,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM prompt_templates ORDER BY usage_count DESC, id"
+                ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def get_template(self, name: str) -> dict[str, Any] | None:
+        """Get a template by name."""
+        conn = self._conn()
+        try:
+            row = conn.execute("SELECT * FROM prompt_templates WHERE name = ?", (name,)).fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def template_name_exists(self, name: str) -> bool:
+        """Check if a template name already exists."""
+        conn = self._conn()
+        try:
+            row = conn.execute("SELECT 1 FROM prompt_templates WHERE name = ?", (name,)).fetchone()
+            return row is not None
         finally:
             conn.close()

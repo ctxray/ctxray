@@ -420,6 +420,52 @@ def merge_view(
 
 
 @app.command()
+def save(
+    text: str = typer.Argument(..., help="Prompt text to save as template"),
+    name: str = typer.Option("", "--name", "-n", help="Template name (auto-generated if omitted)"),
+    category: str = typer.Option(
+        "", "--category", "-c", help="Category (auto-detected if omitted)"
+    ),
+) -> None:
+    """Save a prompt as a reusable template."""
+    from reprompt.config import Settings
+    from reprompt.core.templates import save_template
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    result = save_template(
+        db,
+        text=text,
+        name=name or None,
+        category=category or None,
+    )
+    typer.echo(f"Saved template '{result['name']}' (category: {result['category']})")
+
+
+@app.command()
+def templates(
+    category: str = typer.Option("", "--category", "-c", help="Filter by category"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+) -> None:
+    """List your saved prompt templates."""
+    import json as json_mod
+
+    from reprompt.config import Settings
+    from reprompt.output.terminal import render_templates
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    items = db.list_templates(category=category or None)
+
+    if json_output:
+        print(json_mod.dumps(items, indent=2, default=str))
+    else:
+        print(render_templates(items, category_filter=category or None), end="")
+
+
+@app.command()
 def demo() -> None:
     """Run reprompt on demo data to see what it looks like."""
     import shutil

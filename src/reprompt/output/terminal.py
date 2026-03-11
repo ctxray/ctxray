@@ -214,6 +214,46 @@ def render_recommendations(data: dict[str, Any]) -> str:
     return buf.getvalue()
 
 
+def render_templates(templates: list[dict[str, Any]], category_filter: str | None = None) -> str:
+    """Render prompt templates list to a string using Rich."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    title = "reprompt templates"
+    if category_filter:
+        title += f" — {category_filter}"
+    console.print(f"\n[bold]{title}[/bold]")
+    console.print("=" * 40)
+
+    if not templates:
+        console.print("No templates saved yet.")
+        console.print('Run [bold]reprompt save "your prompt"[/bold] to save one.')
+        return buf.getvalue()
+
+    console.print(f"Your Prompt Templates ({len(templates)} saved)\n")
+
+    table = Table()
+    table.add_column("#", style="dim", width=4)
+    table.add_column("Name", max_width=20)
+    table.add_column("Category", width=10)
+    table.add_column("Text", max_width=35)
+    table.add_column("Used", justify="right", width=5)
+
+    for i, t in enumerate(templates, 1):
+        text = t["text"]
+        display = text[:35] + "..." if len(text) > 35 else text
+        table.add_row(
+            str(i),
+            t["name"],
+            t.get("category", "other"),
+            display,
+            str(t.get("usage_count", 0)),
+        )
+
+    console.print(table)
+    return buf.getvalue()
+
+
 def render_merge_view(data: dict[str, Any]) -> str:
     """Render merge-view clusters to a string using Rich."""
     buf = StringIO()
