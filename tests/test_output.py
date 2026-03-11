@@ -91,7 +91,7 @@ def test_render_report_shows_hot_terms():
         {"term": "fix", "tfidf_avg": 0.381, "df": 8},
     ]
     output = render_report(data)
-    assert "Hot Terms" in output or "TF-IDF" in output
+    assert "Hot Phrases" in output or "TF-IDF" in output
     assert "test" in output
     assert "0.452" in output
     assert "12" in output

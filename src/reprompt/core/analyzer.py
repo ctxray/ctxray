@@ -10,16 +10,36 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 def compute_tfidf_stats(texts: list[str], top_n: int = 20) -> list[dict[str, Any]]:
-    """Compute TF-IDF stats, return top N terms with scores.
+    """Compute TF-IDF stats on meaningful multi-word phrases.
+
+    Uses bigrams and trigrams (2-3 word phrases) with English stop words removed,
+    so results like "unit tests" or "fix authentication bug" appear instead of
+    single words like "the" or "fix".
 
     Returns list of dicts: [{"term": str, "count": int, "df": int, "tfidf_avg": float}]
     """
     if not texts:
         return []
 
-    vectorizer = TfidfVectorizer(max_features=5000)
-    tfidf_matrix = vectorizer.fit_transform(texts)
-    feature_names = vectorizer.get_feature_names_out()
+    # Try n-grams first (meaningful phrases), fall back to unigrams for small datasets
+    min_df = 2 if len(texts) >= 10 else 1
+    try:
+        vectorizer = TfidfVectorizer(
+            max_features=5000,
+            ngram_range=(2, 3),
+            stop_words="english",
+            min_df=min_df,
+        )
+        tfidf_matrix = vectorizer.fit_transform(texts)
+        feature_names = vectorizer.get_feature_names_out()
+    except ValueError:
+        feature_names = np.array([])
+
+    if len(feature_names) == 0:
+        # Fallback to unigrams if not enough data for n-grams
+        vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
+        tfidf_matrix = vectorizer.fit_transform(texts)
+        feature_names = vectorizer.get_feature_names_out()
 
     # Average TF-IDF score per term across all documents
     avg_scores = np.asarray(tfidf_matrix.mean(axis=0)).flatten()

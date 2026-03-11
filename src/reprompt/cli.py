@@ -148,6 +148,105 @@ def search(
 
 
 @app.command()
+def trends(
+    period: str = typer.Option("7d", help="Time bucket size: 7d, 14d, 30d, 1m"),
+    windows: int = typer.Option(4, help="Number of periods to compare"),
+    format: str = typer.Option("terminal", help="Output format: terminal, json"),
+) -> None:
+    """Show how your prompting evolves over time."""
+    import json as json_mod
+
+    from reprompt.config import Settings
+    from reprompt.core.trends import compute_trends
+    from reprompt.output.terminal import render_trends
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    data = compute_trends(db, period=period, n_windows=windows)
+
+    if format == "json":
+        print(json_mod.dumps(data, indent=2, default=str))
+    else:
+        console.print(render_trends(data))
+
+
+@app.command()
+def effectiveness(
+    top: int = typer.Option(10, help="Show top N patterns by effectiveness"),
+    worst: int = typer.Option(3, help="Show bottom N patterns"),
+    format: str = typer.Option("terminal", help="Output format: terminal, json"),
+) -> None:
+    """Show prompt pattern effectiveness scores."""
+    import json as json_mod
+
+    from reprompt.config import Settings
+    from reprompt.core.effectiveness import effectiveness_stars
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    summary = db.get_effectiveness_summary()
+    sessions = db.get_session_meta(limit=100)
+
+    if format == "json":
+        print(json_mod.dumps({"summary": summary, "sessions": sessions}, indent=2, default=str))
+        return
+
+    if not sessions:
+        console.print("No effectiveness data yet. Run [bold]reprompt scan[/bold] first.")
+        return
+
+    from rich.table import Table
+
+    console.print("\n[bold]reprompt effectiveness — Session Quality[/bold]")
+    console.print("=" * 40)
+
+    avg = summary.get("avg_score", 0) or 0
+    console.print(
+        f"  Sessions analyzed: {summary.get('total', 0)}  |  "
+        f"Avg score: {avg:.2f} {effectiveness_stars(avg)}"
+    )
+
+    table = Table(title=f"Top {top} Sessions by Effectiveness")
+    table.add_column("#", style="dim", width=4)
+    table.add_column("Session", max_width=30)
+    table.add_column("Project", max_width=15)
+    table.add_column("Score", justify="right")
+    table.add_column("Rating")
+    table.add_column("Status")
+
+    for i, s in enumerate(sessions[:top], 1):
+        score = s.get("effectiveness_score", 0) or 0
+        table.add_row(
+            str(i),
+            str(s.get("session_id", ""))[:30],
+            str(s.get("project", ""))[:15],
+            f"{score:.2f}",
+            effectiveness_stars(score),
+            str(s.get("final_status", "")),
+        )
+    console.print(table)
+
+    if worst > 0 and len(sessions) > top:
+        worst_sessions = sorted(sessions, key=lambda x: x.get("effectiveness_score", 0) or 0)
+        table2 = Table(title=f"Bottom {worst} (Patterns to Improve)")
+        table2.add_column("#", style="dim", width=4)
+        table2.add_column("Session", max_width=30)
+        table2.add_column("Score", justify="right")
+        table2.add_column("Status")
+        for i, s in enumerate(worst_sessions[:worst], 1):
+            score = s.get("effectiveness_score", 0) or 0
+            table2.add_row(
+                str(i),
+                str(s.get("session_id", ""))[:30],
+                f"{score:.2f}",
+                str(s.get("final_status", "")),
+            )
+        console.print(table2)
+
+
+@app.command()
 def status() -> None:
     """Show database statistics."""
     from reprompt.config import Settings

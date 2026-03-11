@@ -122,3 +122,82 @@ def test_keep_valid_messages():
 
     assert should_keep_prompt("fix the failing test in auth.py")
     assert should_keep_prompt("refactor the database connection pool")
+
+
+def test_skip_compact_continuation_messages():
+    """Session compaction/continuation messages should be filtered."""
+    from reprompt.adapters.claude_code import should_keep_prompt
+
+    assert not should_keep_prompt(
+        "This session is being continued from a previous conversation that ran out of context."
+    )
+    assert not should_keep_prompt(
+        "This session is being continued from a previous conversation. Here is a summary."
+    )
+
+
+def test_skip_messages_with_system_noise():
+    """Messages containing system noise substrings should be filtered."""
+    from reprompt.adapters.claude_code import should_keep_prompt
+
+    assert not should_keep_prompt("The conversation ran out of context so we need to restart.")
+    assert not should_keep_prompt(
+        "Please process this <system-reminder>some reminder</system-reminder> data."
+    )
+    assert not should_keep_prompt("Summary: This is a compact session summary with details.")
+
+
+def test_skip_continuation_instructions():
+    """Instructions to continue conversations should be filtered."""
+    from reprompt.adapters.claude_code import should_keep_prompt
+
+    assert not should_keep_prompt(
+        "Continue the conversation from where it left off without asking questions."
+    )
+
+
+def test_skip_tool_call_noise():
+    """Tool call syntax injected as user messages should be filtered."""
+    from reprompt.adapters.claude_code import should_keep_prompt
+
+    assert not should_keep_prompt("PreToolUse:Edit hook blocking error from command")
+    assert not should_keep_prompt("PostToolUse:Edit hook additional context: [Edit context]")
+
+
+def test_ide_prefix_stripped():
+    """IDE-injected prefixes should be stripped, keeping the real prompt."""
+    from reprompt.adapters.claude_code import _extract_text
+
+    msg = {
+        "content": (
+            "<ide_opened_file>/path/to/file.py</ide_opened_file> "
+            "How do I fix the auth bug in this file?"
+        )
+    }
+    text = _extract_text(msg)
+    assert text == "How do I fix the auth bug in this file?"
+    assert "<ide_opened_file>" not in text
+
+
+def test_ide_selection_prefix_stripped():
+    """IDE selection blocks should be stripped, keeping the real prompt."""
+    from reprompt.adapters.claude_code import _extract_text
+
+    msg = {
+        "content": (
+            "<ide_selection>some selected code\nmore code</ide_selection>\n"
+            "refactor this to use async/await"
+        )
+    }
+    text = _extract_text(msg)
+    assert text == "refactor this to use async/await"
+
+
+def test_ide_only_message_kept_as_is():
+    """If IDE prefix is the entire message, keep the raw text."""
+    from reprompt.adapters.claude_code import _extract_text
+
+    msg = {"content": "<ide_opened_file>/path/to/file.py</ide_opened_file>"}
+    text = _extract_text(msg)
+    # Raw text returned since stripping leaves nothing
+    assert "ide_opened_file" in text

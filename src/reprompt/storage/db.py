@@ -66,6 +66,39 @@ class PromptDB:
                     df INTEGER,
                     tfidf_avg REAL
                 );
+                CREATE TABLE IF NOT EXISTS prompt_snapshots (
+                    id INTEGER PRIMARY KEY,
+                    window_start TEXT NOT NULL,
+                    window_end TEXT NOT NULL,
+                    window_label TEXT,
+                    period TEXT NOT NULL,
+                    prompt_count INTEGER NOT NULL,
+                    unique_count INTEGER NOT NULL,
+                    avg_length REAL,
+                    median_length REAL,
+                    vocab_size INTEGER,
+                    specificity_score REAL,
+                    category_distribution TEXT,
+                    top_terms TEXT,
+                    computed_at TEXT NOT NULL
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_snapshots_window
+                    ON prompt_snapshots (window_start, period);
+                CREATE TABLE IF NOT EXISTS session_meta (
+                    session_id TEXT PRIMARY KEY,
+                    source TEXT NOT NULL,
+                    project TEXT,
+                    start_time TEXT,
+                    end_time TEXT,
+                    duration_seconds INTEGER,
+                    prompt_count INTEGER,
+                    tool_call_count INTEGER,
+                    error_count INTEGER,
+                    final_status TEXT,
+                    avg_prompt_length REAL,
+                    effectiveness_score REAL,
+                    scanned_at TEXT NOT NULL
+                );
             """)
             conn.commit()
         finally:
@@ -367,6 +400,164 @@ class PromptDB:
 
             rows = conn.execute(sql, params).fetchall()
             return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def get_prompts_in_range(
+        self, start: str, end: str, *, unique_only: bool = True
+    ) -> list[dict[str, Any]]:
+        """Return prompts with timestamp >= start AND < end (ISO-8601 strings).
+
+        If unique_only is True (default), excludes duplicates.
+        """
+        conn = self._conn()
+        try:
+            where = "timestamp >= ? AND timestamp < ? AND timestamp != ''"
+            if unique_only:
+                where += " AND duplicate_of IS NULL"
+            rows = conn.execute(
+                f"SELECT * FROM prompts WHERE {where} ORDER BY timestamp",
+                (start, end),
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def upsert_snapshot(self, snapshot: dict[str, Any]) -> None:
+        """Insert or update a prompt_snapshot row keyed on (window_start, period)."""
+        conn = self._conn()
+        try:
+            conn.execute(
+                """INSERT INTO prompt_snapshots
+                   (window_start, window_end, window_label, period,
+                    prompt_count, unique_count, avg_length, median_length,
+                    vocab_size, specificity_score, category_distribution,
+                    top_terms, computed_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(window_start, period) DO UPDATE SET
+                     window_end = excluded.window_end,
+                     window_label = excluded.window_label,
+                     prompt_count = excluded.prompt_count,
+                     unique_count = excluded.unique_count,
+                     avg_length = excluded.avg_length,
+                     median_length = excluded.median_length,
+                     vocab_size = excluded.vocab_size,
+                     specificity_score = excluded.specificity_score,
+                     category_distribution = excluded.category_distribution,
+                     top_terms = excluded.top_terms,
+                     computed_at = excluded.computed_at""",
+                (
+                    snapshot["window_start"],
+                    snapshot["window_end"],
+                    snapshot.get("window_label", ""),
+                    snapshot["period"],
+                    snapshot["prompt_count"],
+                    snapshot["unique_count"],
+                    snapshot.get("avg_length"),
+                    snapshot.get("median_length"),
+                    snapshot.get("vocab_size"),
+                    snapshot.get("specificity_score"),
+                    json.dumps(snapshot.get("category_distribution", {})),
+                    json.dumps(snapshot.get("top_terms", [])),
+                    snapshot["computed_at"],
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_snapshots(self, period: str, limit: int = 10) -> list[dict[str, Any]]:
+        """Return recent snapshots for a given period, newest first."""
+        conn = self._conn()
+        try:
+            rows = conn.execute(
+                """SELECT * FROM prompt_snapshots
+                   WHERE period = ?
+                   ORDER BY window_start DESC LIMIT ?""",
+                (period, limit),
+            ).fetchall()
+            result = []
+            for r in rows:
+                d = dict(r)
+                d["category_distribution"] = json.loads(d["category_distribution"] or "{}")
+                d["top_terms"] = json.loads(d["top_terms"] or "[]")
+                result.append(d)
+            return list(reversed(result))  # chronological order
+        finally:
+            conn.close()
+
+    def upsert_session_meta(
+        self,
+        session_id: str,
+        source: str,
+        project: str,
+        start_time: str,
+        end_time: str,
+        duration_seconds: int,
+        prompt_count: int,
+        tool_call_count: int,
+        error_count: int,
+        final_status: str,
+        avg_prompt_length: float,
+        effectiveness_score: float,
+    ) -> None:
+        """Insert or update session metadata."""
+        conn = self._conn()
+        try:
+            conn.execute(
+                """INSERT INTO session_meta
+                   (session_id, source, project, start_time, end_time,
+                    duration_seconds, prompt_count, tool_call_count, error_count,
+                    final_status, avg_prompt_length, effectiveness_score, scanned_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(session_id) DO UPDATE SET
+                     effectiveness_score = excluded.effectiveness_score,
+                     scanned_at = excluded.scanned_at""",
+                (
+                    session_id,
+                    source,
+                    project,
+                    start_time,
+                    end_time,
+                    duration_seconds,
+                    prompt_count,
+                    tool_call_count,
+                    error_count,
+                    final_status,
+                    avg_prompt_length,
+                    effectiveness_score,
+                    datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_session_meta(self, limit: int = 50) -> list[dict[str, Any]]:
+        """Return recent session metadata ordered by effectiveness."""
+        conn = self._conn()
+        try:
+            rows = conn.execute(
+                """SELECT * FROM session_meta
+                   ORDER BY effectiveness_score DESC LIMIT ?""",
+                (limit,),
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def get_effectiveness_summary(self) -> dict[str, Any]:
+        """Return aggregate effectiveness stats."""
+        conn = self._conn()
+        try:
+            row = conn.execute(
+                """SELECT COUNT(*) as total,
+                          AVG(effectiveness_score) as avg_score,
+                          MIN(effectiveness_score) as min_score,
+                          MAX(effectiveness_score) as max_score
+                   FROM session_meta"""
+            ).fetchone()
+            return dict(row) if row else {}
         finally:
             conn.close()
 

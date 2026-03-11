@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-03-11
+
+### Added
+- `reprompt trends` — prompt evolution tracking with specificity scoring, delta arrows, insights
+- `reprompt effectiveness` — session quality scoring (clean exit, error ratio, duration heuristics)
+- Session metadata extraction during scan (tool calls, errors, duration, final status)
+- Hot Phrases: TF-IDF now extracts bigram/trigram phrases instead of single words
+- Prompt snapshots table for time-series trend data
+- IDE prefix stripping (`<ide_opened_file>`, `<ide_selection>`) — preserves real user questions
+- Compact/continuation message filtering (blocks session compaction noise)
+- Troubleshooting FAQ in README (Anaconda NumPy conflict)
+
+### Changed
+- "Hot Terms" → "Hot Phrases" in terminal report (n-gram based, stopwords filtered)
+- Tests: 176 → 246
+
 ## [0.2.0] - 2026-03-11
 
 ### Added

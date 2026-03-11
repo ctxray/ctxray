@@ -73,10 +73,12 @@ reprompt -- AI Session Analytics
 |------|--------|-------------|
 | Claude Code | Supported | `~/.claude/projects/` |
 | OpenClaw / OpenCode | Supported | `~/.openclaw/` + `~/.opencode/sessions/` |
+| Codex CLI | Planned (v0.4) | `~/.codex/` |
+| Aider | Planned | `~/.aider/` |
+| Gemini CLI | Planned | `~/.gemini/` |
+| Continue.dev | Via MCP | MCP protocol |
+| Zed | Via MCP | MCP protocol |
 | Cursor | Planned | -- |
-| Aider | Planned | -- |
-| Codex CLI | Planned | -- |
-| Gemini CLI | Planned | -- |
 
 ## Usage
 
@@ -171,6 +173,27 @@ class MyToolAdapter(BaseAdapter):
     def detect_installed(self):
         return Path(self.default_session_path).expanduser().exists()
 ```
+
+## Troubleshooting
+
+### NumPy conflict in Anaconda environments
+
+If you see an error like:
+```
+A module that was compiled using NumPy 1.x cannot be run in NumPy 2.x
+```
+
+This happens when Anaconda's base environment has packages compiled against NumPy 1.x but a newer NumPy 2.x is installed. **This is not a reprompt bug** — it's an environment conflict.
+
+**Fix:** Install reprompt in an isolated environment using pipx:
+
+```bash
+pip3 install --user pipx
+pipx install reprompt-cli
+reprompt scan
+```
+
+pipx creates a dedicated virtualenv for reprompt, avoiding conflicts with your system Python or Anaconda.
 
 ## Contributing
 

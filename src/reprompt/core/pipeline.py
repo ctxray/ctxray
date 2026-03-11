@@ -98,6 +98,35 @@ def run_scan(
         ):
             result.new_stored += 1
 
+    # Extract session metadata and compute effectiveness scores
+    for file_path, adapter_name in scanned_files:
+        adapter = next((a for a in adapters if a.name == adapter_name), None)
+        if adapter and hasattr(adapter, "parse_session_meta"):
+            try:
+                meta = adapter.parse_session_meta(Path(file_path))
+                if meta:
+                    from reprompt.core.effectiveness import compute_effectiveness
+                    from reprompt.core.trends import _norm
+
+                    specificity = _norm(meta.avg_prompt_length, 50, 500)
+                    score = compute_effectiveness(meta, prompt_specificity=specificity)
+                    db.upsert_session_meta(
+                        session_id=meta.session_id,
+                        source=meta.source,
+                        project=meta.project,
+                        start_time=meta.start_time,
+                        end_time=meta.end_time,
+                        duration_seconds=meta.duration_seconds,
+                        prompt_count=meta.prompt_count,
+                        tool_call_count=meta.tool_call_count,
+                        error_count=meta.error_count,
+                        final_status=meta.final_status,
+                        avg_prompt_length=meta.avg_prompt_length,
+                        effectiveness_score=score,
+                    )
+            except Exception:
+                pass  # non-critical — don't break scan if meta fails
+
     # Mark sessions processed only after successful dedup+store
     for file_path, adapter_name in scanned_files:
         db.mark_session_processed(file_path, source=adapter_name)
