@@ -49,6 +49,7 @@ SKIP_EXACT = {
 
 SKIP_PREFIXES = (
     "<",
+    "/",  # slash commands (/help, /commit, /review, etc.)
     "Tool loaded",
     "Base directory for this skill",
     "This session is being continued from a previous conversation",
@@ -67,6 +68,12 @@ SKIP_PREFIXES = (
     "Review the entropy",
     "Migrate the ",
     "[Image: source:",
+)
+
+# CLI tool commands that are not real prompts
+SKIP_CLI_RE = re.compile(
+    r"^(claude|cursor|aider|copilot|git|npm|pip|uv|reprompt|make|cargo)\b",
+    re.IGNORECASE,
 )
 
 # Substrings that indicate system/compact noise rather than real user prompts
@@ -94,6 +101,8 @@ def should_keep_prompt(text: str) -> bool:
     if any(s in text for s in SKIP_CONTAINS):
         return False
     if not re.search(r"[a-zA-Z\u4e00-\u9fff]", text):
+        return False
+    if SKIP_CLI_RE.match(text):
         return False
     return True
 

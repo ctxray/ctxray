@@ -201,3 +201,35 @@ def test_ide_only_message_kept_as_is():
     text = _extract_text(msg)
     # Raw text returned since stripping leaves nothing
     assert "ide_opened_file" in text
+
+
+def test_skip_cli_commands():
+    """CLI tool commands should be filtered — they're not real prompts."""
+    from reprompt.adapters.claude_code import should_keep_prompt
+
+    assert not should_keep_prompt("claude --continue")
+    assert not should_keep_prompt("cursor open file.py")
+    assert not should_keep_prompt("git status and check changes")
+    assert not should_keep_prompt("npm install express")
+    assert not should_keep_prompt("uv run pytest tests/ -v")
+    assert not should_keep_prompt("reprompt scan --source claude-code")
+    assert not should_keep_prompt("make test")
+    assert not should_keep_prompt("cargo build --release")
+
+
+def test_skip_slash_commands():
+    """Slash commands should be filtered."""
+    from reprompt.adapters.claude_code import should_keep_prompt
+
+    assert not should_keep_prompt("/help")
+    assert not should_keep_prompt("/commit fix auth bug")
+    assert not should_keep_prompt("/review-pr 123")
+
+
+def test_keep_prompts_containing_tool_names():
+    """Prompts that mention tools but are real questions should pass."""
+    from reprompt.adapters.claude_code import should_keep_prompt
+
+    assert should_keep_prompt("how do I configure cursor to use a custom model?")
+    assert should_keep_prompt("explain the git rebase workflow for this branch")
+    assert should_keep_prompt("why is npm install failing with this error?")
