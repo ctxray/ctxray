@@ -299,6 +299,28 @@ def purge(
 
 
 @app.command()
+def recommend(
+    format: str = typer.Option("terminal", help="Output format: terminal, json"),
+) -> None:
+    """Suggest better prompts based on your history and effectiveness."""
+    from reprompt.config import Settings
+    from reprompt.core.recommend import compute_recommendations
+    from reprompt.output.terminal import render_recommendations
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    data = compute_recommendations(db)
+
+    if format == "json":
+        import json as json_mod
+
+        print(json_mod.dumps(data, indent=2, default=str))
+    else:
+        print(render_recommendations(data), end="")
+
+
+@app.command()
 def demo() -> None:
     """Run reprompt on demo data to see what it looks like."""
     import shutil

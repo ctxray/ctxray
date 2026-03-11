@@ -147,3 +147,70 @@ def render_trends(data: dict[str, Any]) -> str:
                 console.print(f"  {cat:<12} {bar} {pct}%")
 
     return buf.getvalue()
+
+
+def render_recommendations(data: dict[str, Any]) -> str:
+    """Render prompt recommendations to a string using Rich."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    console.print("\n[bold]reprompt recommend — Prompt Improvement Tips[/bold]")
+    console.print("=" * 40)
+
+    total = data.get("total_prompts", 0)
+    if total == 0:
+        console.print("No prompts found. Run [bold]reprompt scan[/bold] first.")
+        return buf.getvalue()
+
+    # Best prompts to reuse
+    best = data.get("best_prompts", [])
+    if best:
+        table = Table(title="Your Best Prompts (reuse these)")
+        table.add_column("#", style="dim", width=4)
+        table.add_column("Prompt", max_width=50)
+        table.add_column("Score", justify="right", width=6)
+        table.add_column("Project", width=12)
+        for i, p in enumerate(best[:5], 1):
+            text = p["text"]
+            display = text[:50] + "..." if len(text) > 50 else text
+            table.add_row(
+                str(i), display, f"{p['effectiveness']:.2f}", p.get("project", "")
+            )
+        console.print(table)
+
+    # Effectiveness by category
+    cat_eff = data.get("category_effectiveness", {})
+    if cat_eff:
+        console.print("\n[bold]Effectiveness by Category[/bold]")
+        sorted_cats = sorted(cat_eff.items(), key=lambda x: -x[1])
+        for cat, score in sorted_cats:
+            bar_len = int(score * 20)
+            bar = "\u2588" * bar_len
+            color = "green" if score >= 0.5 else "yellow" if score >= 0.3 else "red"
+            console.print(f"  {cat:<12} {bar} [{color}]{score:.2f}[/{color}]")
+
+    # Short prompt alerts
+    alerts = data.get("short_prompt_alerts", [])
+    if alerts:
+        console.print("\n[bold]Prompts to Improve[/bold] (short + low effectiveness)")
+        for a in alerts:
+            console.print(f"  [red]x[/red] \"{a['text']}\" ({a['char_count']} chars)")
+
+    # Specificity upgrade tips
+    tips = data.get("specificity_tips", [])
+    if tips:
+        console.print("\n[bold]How to Write Better Prompts[/bold]")
+        for t in tips:
+            console.print(f"  [dim]Instead of:[/dim] \"{t['original']}\"")
+            console.print(f"  [green]Tip:[/green] {t['tip']}")
+            console.print()
+
+    # Category tips
+    for tip in data.get("category_tips", []):
+        console.print(f"  [yellow]![/yellow] {tip}")
+
+    # Overall tips
+    for tip in data.get("overall_tips", []):
+        console.print(f"  [cyan]*[/cyan] {tip}")
+
+    return buf.getvalue()

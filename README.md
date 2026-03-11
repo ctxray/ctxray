@@ -57,6 +57,7 @@ reprompt -- AI Session Analytics
 - **Prompt search** -- find past prompts by keyword across all sessions
 - **Zero config** -- works out of the box, customize via env vars or TOML
 - **Demo mode** -- `reprompt demo` shows a full report with built-in sample data
+- **Prompt recommendations** -- `reprompt recommend` suggests better prompts based on your history and effectiveness
 
 ## How reprompt Compares
 
@@ -116,6 +117,9 @@ reprompt library --category debug
 
 # Export prompt library as Markdown
 reprompt library prompts.md
+
+# Get prompt improvement suggestions
+reprompt recommend
 
 # Database stats
 reprompt status
@@ -234,7 +238,6 @@ pipx creates a dedicated virtualenv for reprompt, avoiding conflicts with your s
 - **Prompt version control** — track how your prompts evolve across iterations, with semantic diffing and per-version effectiveness scoring
 - **More adapters** — Codex CLI, Aider, Gemini CLI, Cursor
 - **Team analytics** — aggregate insights across team members (opt-in, anonymized)
-- **Prompt recommendations** — suggest better prompts based on your history and outcomes
 
 ## Contributing
 
