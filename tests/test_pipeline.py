@@ -36,13 +36,14 @@ class TestScanResult:
 class TestGetAdapters:
     def test_returns_list(self):
         adapters = get_adapters()
-        assert len(adapters) == 3
+        assert len(adapters) == 4
 
     def test_adapter_names(self):
         adapters = get_adapters()
         names = {a.name for a in adapters}
         assert "claude-code" in names
         assert "openclaw" in names
+        assert "aider" in names
 
 
 class TestRunScan:

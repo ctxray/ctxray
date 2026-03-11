@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from reprompt.adapters.aider import AiderAdapter
 from reprompt.adapters.claude_code import ClaudeCodeAdapter
 from reprompt.adapters.cursor import CursorAdapter
 from reprompt.adapters.openclaw import OpenClawAdapter
@@ -27,9 +28,9 @@ class ScanResult:
     sources: list[str] = field(default_factory=list)
 
 
-def get_adapters() -> list[ClaudeCodeAdapter | OpenClawAdapter | CursorAdapter]:
+def get_adapters() -> list[ClaudeCodeAdapter | OpenClawAdapter | CursorAdapter | AiderAdapter]:
     """Return all available adapters."""
-    return [ClaudeCodeAdapter(), OpenClawAdapter(), CursorAdapter()]
+    return [ClaudeCodeAdapter(), OpenClawAdapter(), CursorAdapter(), AiderAdapter()]
 
 
 def run_scan(
@@ -64,9 +65,14 @@ def run_scan(
 
         result.sources.append(adapter.name)
 
-        # Find session files (.jsonl for Claude/OpenClaw, .vscdb for Cursor)
-        ext = "*.vscdb" if adapter.name == "cursor" else "*.jsonl"
-        for session_file in sorted(scan_root.rglob(ext)):
+        # Find session files — use adapter's discover method if available,
+        # otherwise fall back to extension-based glob.
+        if hasattr(adapter, "discover_sessions"):
+            session_files = adapter.discover_sessions()
+        else:
+            ext = "*.vscdb" if adapter.name == "cursor" else "*.jsonl"
+            session_files = sorted(scan_root.rglob(ext))
+        for session_file in session_files:
             if db.is_session_processed(str(session_file)):
                 continue
             prompts = adapter.parse_session(session_file)
