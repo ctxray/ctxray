@@ -17,39 +17,36 @@ Set Padding 24
 Set TypingSpeed 55ms
 Set Shell "zsh"
 
-# --- Setup: silently set env var (not shown, just runs) ---
-Sleep 300ms
-Hide
+# --- Setup: set env var fast, then clear ---
+Set TypingSpeed 0ms
 Type "export REPROMPT_DB_PATH=/tmp/reprompt-demo.db"
 Enter
-Sleep 500ms
-Show
+Set TypingSpeed 55ms
 
 # --- Scene 1: Scan sessions ---
-Sleep 300ms
 Type "reprompt scan --path /tmp/reprompt-demo"
 Enter
-Sleep 9s
+Sleep 7s
 
 # --- Scene 2: Rich report ---
 Type "reprompt report"
 Enter
-Sleep 10s
+Sleep 8s
 
 # --- Scene 3: Prompt library ---
 Type "reprompt library"
 Enter
-Sleep 7s
+Sleep 5s
 
 # --- Scene 4: Search ---
 Type 'reprompt search "unit test"'
 Enter
-Sleep 6s
+Sleep 5s
 
 # --- Scene 5: Trends ---
 Type "reprompt trends"
 Enter
-Sleep 8s
+Sleep 6s
 
 # Hold final frame
-Sleep 4s
+Sleep 3s

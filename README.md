@@ -11,6 +11,8 @@
 
 Every developer's AI session history contains reusable prompt patterns -- scattered across hundreds of session files. **reprompt** extracts them, deduplicates, analyzes frequency, and builds a personal prompt library that evolves over time.
 
+![reprompt demo](docs/launch/demo.gif)
+
 ## Quick Start
 
 ```bash
@@ -222,6 +224,13 @@ reprompt scan
 ```
 
 pipx creates a dedicated virtualenv for reprompt, avoiding conflicts with your system Python or Anaconda.
+
+## Roadmap
+
+- **Prompt version control** — track how your prompts evolve across iterations, with semantic diffing and per-version effectiveness scoring
+- **More adapters** — Codex CLI, Aider, Gemini CLI, Cursor
+- **Team analytics** — aggregate insights across team members (opt-in, anonymized)
+- **Prompt recommendations** — suggest better prompts based on your history and outcomes
 
 ## Contributing
 
