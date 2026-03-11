@@ -89,20 +89,43 @@ def _hook_registered() -> bool:
 @app.command()
 def report(
     format: str = typer.Option("terminal", help="Output format: terminal, json"),
+    html: bool = typer.Option(False, "--html", help="Generate interactive HTML dashboard"),
+    output: str = typer.Option("", "--output", "-o", help="Output file path (for --html)"),
     top: int = typer.Option(20, help="Number of top terms to show"),
 ) -> None:
     """Generate analytics report."""
     from reprompt.config import Settings
     from reprompt.core.pipeline import build_report_data
-    from reprompt.output.json_out import format_json_report
-    from reprompt.output.terminal import render_report
 
     settings = Settings()
     data = build_report_data(settings=settings)
 
-    if format == "json":
+    if html:
+        import webbrowser
+        from pathlib import Path
+
+        from reprompt.core.recommend import compute_recommendations
+        from reprompt.core.trends import compute_trends
+        from reprompt.output.html_report import render_html_dashboard
+        from reprompt.storage.db import PromptDB
+
+        db = PromptDB(settings.db_path)
+        trends_data = compute_trends(db, period="7d", n_windows=6)
+        recommend_data = compute_recommendations(db)
+
+        html_content = render_html_dashboard(data, trends_data, recommend_data)
+        out_path = Path(output) if output else Path("reprompt-report.html")
+        out_path.write_text(html_content, encoding="utf-8")
+
+        typer.echo(f"Dashboard saved to {out_path.resolve()}")
+        webbrowser.open(f"file://{out_path.resolve()}")
+    elif format == "json":
+        from reprompt.output.json_out import format_json_report
+
         print(format_json_report(data))
     else:
+        from reprompt.output.terminal import render_report
+
         print(render_report(data), end="")
 
 
