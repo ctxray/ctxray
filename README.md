@@ -1,8 +1,8 @@
 # reprompt
 
 [![CI](https://github.com/reprompt-dev/reprompt/actions/workflows/ci.yml/badge.svg)](https://github.com/reprompt-dev/reprompt/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/re-prompt)](https://pypi.org/project/re-prompt/)
-[![Python](https://img.shields.io/pypi/pyversions/re-prompt)](https://pypi.org/project/re-prompt/)
+[![PyPI version](https://img.shields.io/pypi/v/reprompt-cli)](https://pypi.org/project/reprompt-cli/)
+[![Python](https://img.shields.io/pypi/pyversions/reprompt-cli)](https://pypi.org/project/reprompt-cli/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > Discover, analyze, and evolve your best prompts from AI coding sessions.
@@ -12,7 +12,7 @@ Every developer's AI session history contains reusable prompt patterns -- scatte
 ## Quick Start
 
 ```bash
-pipx install re-prompt
+pipx install reprompt-cli
 reprompt scan
 reprompt report
 reprompt library
@@ -124,9 +124,9 @@ min_frequency = 3
 ## Optional Backends
 
 ```bash
-pip install re-prompt[ollama]   # Ollama API embeddings
-pip install re-prompt[local]    # sentence-transformers (CPU)
-pip install re-prompt[openai]   # OpenAI API embeddings
+pip install reprompt-cli[ollama]   # Ollama API embeddings
+pip install reprompt-cli[local]    # sentence-transformers (CPU)
+pip install reprompt-cli[openai]   # OpenAI API embeddings
 ```
 
 ## Adding an Adapter
