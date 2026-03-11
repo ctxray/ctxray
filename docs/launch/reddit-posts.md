@@ -10,16 +10,18 @@
 
 I've been using Claude Code daily for months and at some point I got curious — am I actually getting better at prompting, or just repeating myself?
 
-So I built a tool to find out. It scans your Claude Code session files and figures out which prompts you keep rewriting in slightly different ways. Turns out... a lot of them.
+So I built a tool to find out. It scans your AI coding session files and figures out which prompts you keep rewriting in slightly different ways. Turns out... a lot of them.
 
 The thing that surprised me most: my debug prompts ("fix the bug", "why is this failing") are way shorter than my implementation prompts — and they lead to longer, messier sessions. Once I saw that pattern, I started being more specific and it actually helped.
+
+Since the first post it's grown quite a bit. Now supports 6 tools (Claude Code, OpenClaw, Cursor, Aider, Gemini CLI, Cline), has a `reprompt lint` command for CI prompt quality checks, a GitHub Action, session effectiveness scoring, and trend tracking over time.
 
 You can try it without your own data — \`reprompt demo\` generates sample sessions so you can see the analysis:
 
     pipx install reprompt-cli
     reprompt demo
 
-Works with Claude Code, OpenClaw, and Cursor. Everything stays local.
+Everything stays local. 371 tests.
 
 GitHub: https://github.com/reprompt-dev/reprompt
 
@@ -33,7 +35,7 @@ Author here. The weirdest finding was that I kept rewriting the same prompts in 
 
 After tracking for a week I started keeping a note of prompts that worked well and just reusing them. Sounds obvious in hindsight but you don't notice the pattern until you see the data.
 
-If you try it: \`reprompt demo\` works without any real sessions, or \`reprompt scan\` if you want to analyze your actual Claude Code history.
+If you try it: \`reprompt demo\` works without any real sessions, or \`reprompt scan\` if you want to analyze your actual history (Claude Code, Cursor, Aider, Gemini CLI, Cline, OpenClaw — all auto-detected).
 
 > **注意：** Reddit 代码块用 4 个空格缩进（不是三个反引号）。上面 pipx 那两行已用正确格式。复制时 backtick 会正常显示。
 
@@ -57,12 +59,14 @@ What actually worked: TF-IDF with bigram/trigram extraction and cosine similarit
 
 The counterintuitive part: TF-IDF's weakness (no semantic understanding) is actually fine here because coding prompts share a constrained vocabulary. "Refactor the database connection pool" and "refactor the db connection pooling" have enough n-gram overlap that you don't need embeddings to match them.
 
-I packaged this into a CLI called reprompt. The dedup is one piece — it also does K-means clustering to group prompts into themes, and tracks how prompt specificity evolves over time (composite of length, vocabulary breadth, category entropy across sliding windows).
+I packaged this into a CLI called reprompt. The dedup is one piece — it also does K-means clustering to group prompts into themes, tracks how prompt specificity evolves over time, scores session effectiveness, and has a `reprompt lint` command with a GitHub Action for CI-level prompt quality checks.
+
+Supports 6 AI coding tools out of the box: Claude Code, Cursor IDE, Aider, Gemini CLI, Cline, and OpenClaw. Each adapter is ~50 lines implementing a common interface — community adapters for more tools are easy to add.
 
     pipx install reprompt-cli
     reprompt demo
 
-The \`demo\` command generates sample data so you can see the analysis without your own sessions. Or point it at your Claude Code / Cursor / OpenClaw sessions with \`reprompt scan\`.
+The \`demo\` command generates sample data so you can see the analysis without your own sessions. Or \`reprompt scan\` to analyze your real sessions (auto-detects installed tools).
 
 Curious if anyone's benchmarked other similarity metrics for short text dedup. Jaccard on token sets was my third attempt — faster than TF-IDF but worse precision on prompts with shared stop-heavy phrases.
 
@@ -78,6 +82,8 @@ My debug prompts ("fix the bug", "why is this failing") average 8 tokens. My imp
 
 The \`recommend\` command surfaces this. It's basically: "hey, your debug prompts are 3x shorter than your implement prompts and your debug sessions are less effective. Try including the filename, function, and expected behavior."
 
+Since v0.4 I also added \`reprompt lint\` — it checks prompts against quality rules (too short, too vague, debug prompts without file references) and exits non-zero on errors. There's a GitHub Action so you can run it in CI. Not that many people will lint their prompts in CI, but it's there for teams that want to enforce standards.
+
 ---
 
 ## r/LocalLLaMA (Day 3-5)
@@ -88,7 +94,7 @@ The \`recommend\` command surfaces this. It's basically: "hey, your debug prompt
 
 ### Body（复制粘贴到 Reddit）
 
-Quick context: I use AI coding tools daily (Claude Code, Cursor). After a few months I had hundreds of session files with thousands of prompts scattered across them. I wanted to understand my patterns — which prompts I keep repeating, which ones actually work well — but every analytics tool I found wanted to upload data somewhere.
+Quick context: I use AI coding tools daily (Claude Code, Cursor, Aider, Gemini CLI). After a few months I had hundreds of session files with thousands of prompts scattered across them. I wanted to understand my patterns — which prompts I keep repeating, which ones actually work well — but every analytics tool I found wanted to upload data somewhere.
 
 So I built reprompt. It's a CLI that runs entirely on your machine. No cloud, no telemetry, no account needed.
 
@@ -112,6 +118,10 @@ What it actually does once your prompts are indexed:
 - Builds a personal prompt library sorted by task type (debug/implement/test/refactor)
 - Tracks if your prompts are getting more specific over time
 - \`reprompt recommend\` tells you which patterns correlate with good sessions
+- \`reprompt effectiveness\` scores your sessions (composite of tool usage, errors, specificity)
+- \`reprompt lint\` checks prompt quality (CI-ready, with a GitHub Action)
+
+Supports 6 tools out of the box: Claude Code, Cursor IDE, Aider, Gemini CLI, Cline, OpenClaw. Auto-detects what you have installed.
 
     pipx install reprompt-cli
     reprompt demo       # built-in sample data, see the analysis immediately
@@ -119,7 +129,7 @@ What it actually does once your prompts are indexed:
 
 Tested on M2 Mac. TF-IDF backend processes ~1200 prompts in under 2 seconds. Ollama backend depends on your setup but adds maybe 10 seconds for the embedding step.
 
-MIT licensed, personal project, no company behind it, no paid tier, no plans for one. 284 tests.
+MIT licensed, personal project, no company behind it, no paid tier, no plans for one. 371 tests.
 
 https://github.com/reprompt-dev/reprompt
 
@@ -134,5 +144,7 @@ Author here. Built this on an M2 MacBook. Honest results:
 The TF-IDF backend catches most duplicates for coding prompts because the vocabulary is constrained. "Fix the auth bug" and "fix the authentication issue" have enough token overlap that you don't need semantic embeddings. For longer, more nuanced prompts, Ollama with nomic-embed-text does noticeably better at clustering.
 
 The feature I use most is \`reprompt library\` — after a few weeks of scanning it builds a personal collection of prompts organized by what you were doing (debugging, implementing, testing). It's like a prompt cookbook built from what you actually typed, not from someone's blog post. I keep reusing prompts from it instead of writing new ones from scratch.
+
+New in v0.5: \`reprompt trends\` tracks how your prompting evolves over time — specificity score, vocabulary breadth, category distribution across sliding windows. Interesting to see yourself actually improve (or not).
 
 Storage is plain SQLite. You can query it directly if you want. No lock-in.

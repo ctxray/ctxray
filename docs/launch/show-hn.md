@@ -27,7 +27,7 @@
 
 ## Title
 
-Show HN: Reprompt – TF-IDF dedup and pattern analysis for AI coding prompts
+Show HN: Reprompt – Prompt analytics for AI coding sessions (6 tools, zero config)
 
 ## URL
 
@@ -41,18 +41,20 @@ The core problem: I kept rewriting the same prompts in slightly different words.
 
 reprompt does two-layer dedup: SHA-256 for exact matches, then TF-IDF cosine similarity (threshold 0.85) for near-dupes. I chose TF-IDF over sentence-transformers because coding prompts average ~15 tokens — at that length, n-gram overlap is enough and you skip the model download. The threshold of 0.85 was empirical: below 0.8 you get false positives ("add auth" matching "add tests"), above 0.9 you miss obvious dupes.
 
-Beyond dedup, it extracts bigram/trigram hot phrases (TF-IDF with stopword filtering), clusters similar prompts with K-means, and auto-categorizes patterns into debug/implement/test/review/refactor. The \`recommend\` command analyzes which patterns correlate with effective sessions and suggests specificity upgrades.
+Beyond dedup, it extracts bigram/trigram hot phrases (TF-IDF with stopword filtering), clusters similar prompts with K-means, and auto-categorizes patterns into debug/implement/test/review/refactor. The \`recommend\` command analyzes which patterns correlate with effective sessions and suggests specificity upgrades. The \`effectiveness\` command scores sessions on a composite metric (tool usage, errors, specificity). And \`trends\` tracks how your prompting evolves over time across sliding windows.
 
 What surprised me: my debug prompts average 8 tokens, my implementation prompts average 25. The short ones correlate with longer, less productive sessions. Makes sense — vague input, vague output. After a week of tracking I started being more specific and it actually helped.
+
+There's also \`reprompt lint\` — checks prompts against quality rules (too short, too vague, debug prompts without file references) and exits non-zero on errors. Ships with a GitHub Action for teams that want prompt quality in CI.
 
 You can try it without your own data:
 
     pipx install reprompt-cli
     reprompt demo
 
-The demo generates 6 weeks of realistic sessions with built-in duplication patterns. Or point it at your real sessions with \`reprompt scan\` (supports Claude Code, OpenClaw, Cursor IDE).
+The demo generates 6 weeks of realistic sessions with built-in duplication patterns. Or point it at your real sessions with \`reprompt scan\` — auto-detects 6 tools: Claude Code, Cursor IDE, Aider, Gemini CLI, Cline, OpenClaw.
 
-Python 3.10+, scikit-learn, SQLite. 284 tests, strict mypy. Embedding backend is pluggable — TF-IDF (default, zero config), Ollama, sentence-transformers. Everything runs locally. MIT.
+Python 3.10+, scikit-learn, SQLite. 371 tests, strict mypy. Embedding backend is pluggable — TF-IDF (default, zero config), Ollama, sentence-transformers. Everything runs locally. MIT.
 
 What would you want to know about your AI coding habits?
 
@@ -74,11 +76,11 @@ That said, if you're already running Ollama locally, you can switch to embedding
 
 ### 如果有人问 performance / scale
 
-On an M2 Mac, ~1200 prompts process in under 2 seconds with the TF-IDF backend. The bottleneck is reading session files from disk, not the NLP. SQLite handles the storage, with incremental scanning so subsequent runs only process new sessions.
+On an M2 Mac, ~1200 prompts process in under 2 seconds with the TF-IDF backend. The bottleneck is reading session files from disk, not the NLP. SQLite handles the storage, with incremental scanning so subsequent runs only process new sessions. 371 tests, ~4,700 lines of code.
 
 ### 如果有人问 "this is just for Claude Code?"
 
-Started with Claude Code (JSONL format) because that's what I use. Added OpenClaw (JSON) and Cursor IDE (.vscdb SQLite) adapters. The adapter system is pluggable — each adapter just implements \`parse_session(path) -> list[Prompt]\`. PRs for other tools welcome.
+Started with Claude Code but now supports 6 tools: Claude Code (JSONL), OpenClaw (JSON), Cursor IDE (.vscdb SQLite), Aider (Markdown chat history), Gemini CLI (JSON), and Cline (Anthropic MessageParam JSON). Each adapter is ~50 lines implementing \`parse_session(path) -> list[Prompt]\`. GitHub Copilot Chat, Continue.dev, and Windsurf are on the roadmap. PRs for other tools welcome — the adapter pattern is intentionally simple.
 
 ---
 
