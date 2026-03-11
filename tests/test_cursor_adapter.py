@@ -28,11 +28,13 @@ def _make_vscdb(tmp: Path, table: str, rows: list[tuple[str, str | bytes]]) -> P
 class TestCursorDiskKV:
     def test_parses_composer_bubbles(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
+            ts1 = "2026-01-10T10:00:00Z"
+            ts2 = "2026-01-10T10:05:00Z"
             data = {
                 "conversation": [
-                    {"type": 1, "text": "Add pagination to the search results", "createdAt": "2026-01-10T10:00:00Z"},
+                    {"type": 1, "text": "Add pagination to the search results", "createdAt": ts1},
                     {"type": 2, "text": "I'll add pagination using offset/limit..."},
-                    {"type": 1, "text": "Now add sorting by date", "createdAt": "2026-01-10T10:05:00Z"},
+                    {"type": 1, "text": "Now add sorting by date", "createdAt": ts2},
                 ]
             }
             db_path = _make_vscdb(
@@ -127,9 +129,10 @@ class TestCursorAdapter:
 
     def test_parse_session_with_vscdb(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
+            ts = "2026-01-10T10:00:00Z"
             data = {
                 "conversation": [
-                    {"type": 1, "text": "Refactor the database connection pool", "createdAt": "2026-01-10T10:00:00Z"},
+                    {"type": 1, "text": "Refactor the database connection pool", "createdAt": ts},
                 ]
             }
             workspace_dir = Path(tmp) / "workspace-hash"
