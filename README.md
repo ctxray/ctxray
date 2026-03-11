@@ -85,7 +85,7 @@ reprompt -- AI Session Analytics
 | Gemini CLI | Planned | `~/.gemini/` |
 | Continue.dev | Via MCP | MCP protocol |
 | Zed | Via MCP | MCP protocol |
-| Cursor | Planned | -- |
+| Cursor | Supported | `~/Library/Application Support/Cursor/User/` (macOS) |
 
 ## Usage
 
@@ -236,7 +236,7 @@ pipx creates a dedicated virtualenv for reprompt, avoiding conflicts with your s
 ## Roadmap
 
 - **Prompt version control** — track how your prompts evolve across iterations, with semantic diffing and per-version effectiveness scoring
-- **More adapters** — Codex CLI, Aider, Gemini CLI, Cursor
+- **More adapters** — Codex CLI, Aider, Gemini CLI
 - **Team analytics** — aggregate insights across team members (opt-in, anonymized)
 
 ## Contributing

@@ -36,10 +36,13 @@ def main(
 def scan(
     source: str | None = typer.Option(None, help="Source adapter (claude-code, openclaw)"),
     path: str | None = typer.Option(None, help="Custom session path"),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Skip auto-report after scan"),
 ) -> None:
     """Scan AI tool sessions for prompts."""
     from reprompt.config import Settings
-    from reprompt.core.pipeline import run_scan
+    from reprompt.core.pipeline import build_report_data, run_scan
+    from reprompt.output.terminal import render_report
+    from reprompt.storage.db import PromptDB
 
     settings = Settings()
     result = run_scan(source=source, path=path, settings=settings)
@@ -50,6 +53,39 @@ def scan(
     console.print(f"  Unique:           {result.unique_after_dedup}")
     console.print(f"  Duplicates:       {result.duplicates}")
     console.print(f"  New stored:       {result.new_stored}")
+
+    # Auto-show report after scan (skip with --quiet)
+    if not quiet and result.unique_after_dedup > 0:
+        data = build_report_data(settings=settings)
+        print(render_report(data), end="")
+
+    # Suggest install-hook if not already set up
+    db = PromptDB(settings.db_path)
+    stats = db.get_stats()
+    if stats.get("total_prompts", 0) > 0:
+        hook_installed = (Path.home() / ".claude" / "settings.json").exists() and _hook_registered()
+        if not hook_installed:
+            console.print(
+                "\n[dim]Tip: Run [bold]reprompt install-hook[/bold] to auto-scan "
+                "after every Claude Code session.[/dim]"
+            )
+
+
+def _hook_registered() -> bool:
+    """Check if reprompt hook is registered in Claude Code settings."""
+    import json
+
+    settings_path = Path.home() / ".claude" / "settings.json"
+    if not settings_path.exists():
+        return False
+    try:
+        data = json.loads(settings_path.read_text())
+        hooks = data.get("hooks", {}).get("Stop", [])
+        return any(
+            isinstance(h, dict) and "reprompt" in h.get("command", "") for h in hooks
+        )
+    except (json.JSONDecodeError, KeyError):
+        return False
 
 
 @app.command()

@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 ### Added
 - `reprompt recommend` command — suggests better prompts based on effectiveness, category balance, and specificity
 - `reprompt demo` command — run a full report with built-in sample data, no session history needed
+- Cursor IDE adapter — parses `.vscdb` files from both Composer (cursorDiskKV) and legacy (ItemTable) schemas
+- `reprompt scan` now auto-shows report after scanning (skip with `--quiet`)
+- `reprompt scan` suggests `install-hook` if not yet configured
 - Demo data generator script (`scripts/generate_demo_data.py`) using CodeAlpaca-20K
 - VHS recording script for terminal demo GIF
 - Launch materials (Show HN, Reddit, Twitter, Dev.to, Chinese communities)

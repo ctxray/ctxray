@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from reprompt.adapters.claude_code import ClaudeCodeAdapter
+from reprompt.adapters.cursor import CursorAdapter
 from reprompt.adapters.openclaw import OpenClawAdapter
 from reprompt.config import Settings
 from reprompt.core.analyzer import cluster_prompts, compute_tfidf_stats
@@ -26,9 +27,9 @@ class ScanResult:
     sources: list[str] = field(default_factory=list)
 
 
-def get_adapters() -> list[ClaudeCodeAdapter | OpenClawAdapter]:
+def get_adapters() -> list[ClaudeCodeAdapter | OpenClawAdapter | CursorAdapter]:
     """Return all available adapters."""
-    return [ClaudeCodeAdapter(), OpenClawAdapter()]
+    return [ClaudeCodeAdapter(), OpenClawAdapter(), CursorAdapter()]
 
 
 def run_scan(
@@ -63,14 +64,15 @@ def run_scan(
 
         result.sources.append(adapter.name)
 
-        # Find all .jsonl files
-        for jsonl_file in sorted(scan_root.rglob("*.jsonl")):
-            if db.is_session_processed(str(jsonl_file)):
+        # Find session files (.jsonl for Claude/OpenClaw, .vscdb for Cursor)
+        ext = "*.vscdb" if adapter.name == "cursor" else "*.jsonl"
+        for session_file in sorted(scan_root.rglob(ext)):
+            if db.is_session_processed(str(session_file)):
                 continue
-            prompts = adapter.parse_session(jsonl_file)
+            prompts = adapter.parse_session(session_file)
             all_prompts.extend(prompts)
             result.sessions_scanned += 1
-            scanned_files.append((str(jsonl_file), adapter.name))
+            scanned_files.append((str(session_file), adapter.name))
 
     result.total_parsed = len(all_prompts)
 
@@ -100,10 +102,10 @@ def run_scan(
 
     # Extract session metadata and compute effectiveness scores
     for file_path, adapter_name in scanned_files:
-        adapter = next((a for a in adapters if a.name == adapter_name), None)
-        if adapter and hasattr(adapter, "parse_session_meta"):
+        matched = next((a for a in adapters if a.name == adapter_name), None)
+        if matched and hasattr(matched, "parse_session_meta"):
             try:
-                meta = adapter.parse_session_meta(Path(file_path))
+                meta = matched.parse_session_meta(Path(file_path))
                 if meta:
                     from reprompt.core.effectiveness import compute_effectiveness
                     from reprompt.core.trends import _norm
