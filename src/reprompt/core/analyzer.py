@@ -9,6 +9,16 @@ from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 
+def _is_noise_phrase(term: str) -> bool:
+    """Filter out path fragments, usernames, and other noise from TF-IDF results."""
+    noise_tokens = {"users", "chris", "projects", "home", "usr", "var", "tmp", "src", "py"}
+    words = set(term.lower().split())
+    # Skip if majority of words are path/noise tokens
+    if len(words & noise_tokens) >= len(words) * 0.5:
+        return True
+    return False
+
+
 def compute_tfidf_stats(texts: list[str], top_n: int = 20) -> list[dict[str, Any]]:
     """Compute TF-IDF stats on meaningful multi-word phrases.
 
@@ -21,8 +31,14 @@ def compute_tfidf_stats(texts: list[str], top_n: int = 20) -> list[dict[str, Any
     if not texts:
         return []
 
+    # Pre-process: strip file paths from texts to avoid path fragment n-grams
+    import re
+
+    path_re = re.compile(r"[~/][\w./-]{10,}")
+    cleaned = [path_re.sub("", t) for t in texts]
+
     # Try n-grams first (meaningful phrases), fall back to unigrams for small datasets
-    min_df = 2 if len(texts) >= 10 else 1
+    min_df = 2 if len(cleaned) >= 10 else 1
     try:
         vectorizer = TfidfVectorizer(
             max_features=5000,
@@ -30,7 +46,7 @@ def compute_tfidf_stats(texts: list[str], top_n: int = 20) -> list[dict[str, Any
             stop_words="english",
             min_df=min_df,
         )
-        tfidf_matrix = vectorizer.fit_transform(texts)
+        tfidf_matrix = vectorizer.fit_transform(cleaned)
         feature_names = vectorizer.get_feature_names_out()
     except ValueError:
         feature_names = np.array([])
@@ -38,7 +54,7 @@ def compute_tfidf_stats(texts: list[str], top_n: int = 20) -> list[dict[str, Any
     if len(feature_names) == 0:
         # Fallback to unigrams if not enough data for n-grams
         vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
-        tfidf_matrix = vectorizer.fit_transform(texts)
+        tfidf_matrix = vectorizer.fit_transform(cleaned)
         feature_names = vectorizer.get_feature_names_out()
 
     # Average TF-IDF score per term across all documents
@@ -52,6 +68,8 @@ def compute_tfidf_stats(texts: list[str], top_n: int = 20) -> list[dict[str, Any
 
     results = []
     for i, term in enumerate(feature_names):
+        if _is_noise_phrase(term):
+            continue
         results.append(
             {
                 "term": term,

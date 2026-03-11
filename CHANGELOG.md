@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.2] - 2026-03-11
+
+### Fixed
+- Fix ANSI escape code leak in terminal report (double-render through Rich console)
+- Filter subagent/automation prompts ("You are implementing Task...", "## Task:", etc.)
+- Strip file paths from TF-IDF input to prevent path fragment n-grams
+- Filter noise phrases (username/path tokens) from Hot Phrases results
+
+### Added
+- Demo data generator script (`scripts/generate_demo_data.py`) using CodeAlpaca-20K
+- VHS recording script for terminal demo GIF
+- Launch materials (Show HN, Reddit, Twitter, Dev.to, Chinese communities)
+
 ## [0.3.1] - 2026-03-11
 
 ### Added

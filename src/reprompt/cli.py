@@ -69,7 +69,7 @@ def report(
     if format == "json":
         print(format_json_report(data))
     else:
-        console.print(render_report(data))
+        print(render_report(data), end="")
 
 
 @app.command()
@@ -168,7 +168,7 @@ def trends(
     if format == "json":
         print(json_mod.dumps(data, indent=2, default=str))
     else:
-        console.print(render_trends(data))
+        print(render_trends(data), end="")
 
 
 @app.command()

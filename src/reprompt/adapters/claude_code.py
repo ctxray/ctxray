@@ -54,6 +54,19 @@ SKIP_PREFIXES = (
     "This session is being continued from a previous conversation",
     "Summary:",
     "Continue the conversation from where it left off",
+    "You are implementing Task",
+    "You are reviewing whether",
+    "Implement Task ",
+    "Implement the following plan",
+    "You are building ",
+    "You are auditing ",
+    "## Task:",
+    "INFO:",
+    "Find examples of ",
+    "Review the code quality",
+    "Review the entropy",
+    "Migrate the ",
+    "[Image: source:",
 )
 
 # Substrings that indicate system/compact noise rather than real user prompts
