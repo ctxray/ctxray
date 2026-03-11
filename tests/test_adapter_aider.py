@@ -81,10 +81,7 @@ def test_timestamps_from_session_header(fixtures_path):
 
 def test_project_from_path():
     adapter = AiderAdapter()
-    prompts = adapter.parse_session_with_project(
-        "/Users/chris/projects/myapp/.aider.chat.history.md"
-    )
-    # Can't parse without actual file, but test the project extraction helper
+    # Test the project extraction helper
     project = adapter._project_from_path("/Users/chris/projects/myapp/.aider.chat.history.md")
     assert project == "myapp"
 
