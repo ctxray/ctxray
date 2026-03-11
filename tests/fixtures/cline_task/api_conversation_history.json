@@ -1,0 +1,11 @@
+[
+  {"role": "user", "content": "Fix the authentication bug in auth.py — login returns 401 for valid credentials"},
+  {"role": "assistant", "content": [{"type": "text", "text": "I'll fix the authentication bug."}, {"type": "tool_use", "id": "tool1", "name": "read_file", "input": {"path": "auth.py"}}]},
+  {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "tool1", "content": "def login(): ..."}]},
+  {"role": "assistant", "content": [{"type": "text", "text": "I see the issue."}, {"type": "tool_use", "id": "tool2", "name": "write_to_file", "input": {"path": "auth.py", "content": "fixed"}}]},
+  {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "tool2", "content": "File written"}]},
+  {"role": "user", "content": "Now add unit tests for the user service with pytest fixtures"},
+  {"role": "assistant", "content": "I'll create the tests."},
+  {"role": "user", "content": "ok"},
+  {"role": "user", "content": [{"type": "text", "text": "refactor database pool to use async context managers"}, {"type": "image", "source": {"type": "base64", "data": "..."}}]}
+]

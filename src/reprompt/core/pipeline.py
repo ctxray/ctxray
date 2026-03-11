@@ -8,7 +8,9 @@ from typing import Any
 
 from reprompt.adapters.aider import AiderAdapter
 from reprompt.adapters.claude_code import ClaudeCodeAdapter
+from reprompt.adapters.cline import ClineAdapter
 from reprompt.adapters.cursor import CursorAdapter
+from reprompt.adapters.gemini import GeminiAdapter
 from reprompt.adapters.openclaw import OpenClawAdapter
 from reprompt.config import Settings
 from reprompt.core.analyzer import cluster_prompts, compute_tfidf_stats
@@ -28,9 +30,23 @@ class ScanResult:
     sources: list[str] = field(default_factory=list)
 
 
-def get_adapters() -> list[ClaudeCodeAdapter | OpenClawAdapter | CursorAdapter | AiderAdapter]:
+def get_adapters() -> list[
+    ClaudeCodeAdapter
+    | OpenClawAdapter
+    | CursorAdapter
+    | AiderAdapter
+    | GeminiAdapter
+    | ClineAdapter
+]:
     """Return all available adapters."""
-    return [ClaudeCodeAdapter(), OpenClawAdapter(), CursorAdapter(), AiderAdapter()]
+    return [
+        ClaudeCodeAdapter(),
+        OpenClawAdapter(),
+        CursorAdapter(),
+        AiderAdapter(),
+        GeminiAdapter(),
+        ClineAdapter(),
+    ]
 
 
 def run_scan(
