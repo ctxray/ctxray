@@ -49,6 +49,7 @@ reprompt -- AI Session Analytics
 - **Rich reports** -- beautiful terminal output with tables and bar charts
 - **Multiple formats** -- terminal, JSON (for pipelines), Markdown (for docs)
 - **Pluggable adapters** -- add support for any AI coding tool
+- **Prompt search** -- find past prompts by keyword across all sessions
 - **Zero config** -- works out of the box, customize via env vars or TOML
 
 ## How reprompt Compares
@@ -71,7 +72,7 @@ reprompt -- AI Session Analytics
 | Tool | Status | Session Path |
 |------|--------|-------------|
 | Claude Code | Supported | `~/.claude/projects/` |
-| OpenClaw / OpenCode | Supported | `~/.opencode/sessions/` |
+| OpenClaw / OpenCode | Supported | `~/.openclaw/` + `~/.opencode/sessions/` |
 | Cursor | Planned | -- |
 | Aider | Planned | -- |
 | Codex CLI | Planned | -- |
@@ -94,6 +95,10 @@ reprompt report
 
 # JSON output (for CI/pipelines)
 reprompt report --format json
+
+# Search your prompt history
+reprompt search "authentication"
+reprompt search "debug" --limit 5
 
 # View your prompt library
 reprompt library

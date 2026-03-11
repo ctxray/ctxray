@@ -18,26 +18,28 @@ uv run python -m build                     # build wheel
 
 ```
 src/reprompt/
-├── cli.py              # Typer CLI (scan, report, library, status, purge, install-hook)
-├── config.py           # pydantic-settings, env vars (REPROMPT_ prefix)
+├── cli.py              # Typer CLI (scan, report, search, library, status, purge, install-hook)
+├── config.py           # pydantic-settings, env vars (REPROMPT_ prefix) + TOML config
 ├── core/
 │   ├── models.py       # Prompt dataclass (auto SHA-256 hash)
 │   ├── dedup.py        # Two-layer dedup: exact hash + TF-IDF cosine
 │   ├── analyzer.py     # TF-IDF hot terms + K-means clustering
 │   ├── library.py      # Pattern extraction + keyword categorization
-│   └── pipeline.py     # Orchestrator: scan → dedup → store → analyze
+│   └── pipeline.py     # Orchestrator: scan → dedup → store → analyze → cluster
 ├── adapters/
 │   ├── base.py         # BaseAdapter ABC
 │   ├── claude_code.py  # Claude Code JSONL parser
-│   └── openclaw.py     # OpenClaw JSON parser
+│   └── openclaw.py     # OpenClaw JSON parser (supports ~/.openclaw/ + legacy ~/.opencode/)
 ├── embeddings/
 │   ├── base.py         # BaseEmbedder ABC
 │   ├── tfidf.py        # Default (sklearn, zero config)
-│   └── ollama.py       # Optional (requests)
+│   ├── ollama.py       # Optional: pip install reprompt-cli[ollama]
+│   ├── local_embed.py  # Optional: pip install reprompt-cli[local] (sentence-transformers)
+│   └── openai_embed.py # Optional: pip install reprompt-cli[openai]
 ├── storage/
 │   └── db.py           # SQLite: prompts, processed_sessions, prompt_patterns, term_stats
 └── output/
-    ├── terminal.py     # Rich tables + bar charts
+    ├── terminal.py     # Rich tables + bar charts + hot terms + clusters
     ├── json_out.py     # JSON for pipelines
     └── markdown.py     # Markdown export
 ```
@@ -59,5 +61,7 @@ Session files → Adapter.parse() → list[Prompt]
 - Python >=3.10, type hints required, mypy strict
 - ruff for lint + format (line-length=100)
 - All db methods use try/finally for conn.close()
+- Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
-- Tests: pytest, 118 tests, 95% coverage target
+- Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
+- Tests: pytest, 176 tests, 95% coverage target
