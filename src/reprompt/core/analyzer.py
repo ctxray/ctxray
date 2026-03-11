@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 
-def compute_tfidf_stats(texts: list[str], top_n: int = 20) -> list[dict]:
+def compute_tfidf_stats(texts: list[str], top_n: int = 20) -> list[dict[str, Any]]:
     """Compute TF-IDF stats, return top N terms with scores.
 
     Returns list of dicts: [{"term": str, "count": int, "df": int, "tfidf_avg": float}]

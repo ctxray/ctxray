@@ -25,13 +25,22 @@ uv run ruff check src/ tests/
 uv run ruff format src/ tests/
 ```
 
+## Type Checking
+
+We use [mypy](https://mypy-lang.org/) in strict mode:
+
+```bash
+uv run mypy src/reprompt/
+```
+
 ## Pull Requests
 
 1. Fork the repo and create a feature branch
 2. Write tests for new functionality
 3. Ensure all tests pass and coverage doesn't decrease
 4. Run `ruff check` and `ruff format`
-5. Submit a PR with a clear description
+5. Run `mypy src/reprompt/` — must pass clean
+6. Submit a PR with a clear description
 
 ## Adding Adapters
 

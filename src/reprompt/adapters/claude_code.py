@@ -61,7 +61,7 @@ def should_keep_prompt(text: str) -> bool:
     return True
 
 
-def _extract_text(message: dict) -> str:
+def _extract_text(message: dict[str, object]) -> str:
     """Extract text from a message, handling both string and list content."""
     content = message.get("content", "")
     if isinstance(content, list):

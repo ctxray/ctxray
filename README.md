@@ -1,5 +1,10 @@
 # reprompt
 
+[![CI](https://github.com/reprompt-dev/reprompt/actions/workflows/ci.yml/badge.svg)](https://github.com/reprompt-dev/reprompt/actions/workflows/ci.yml)
+[![PyPI version](https://img.shields.io/pypi/v/re-prompt)](https://pypi.org/project/re-prompt/)
+[![Python](https://img.shields.io/pypi/pyversions/re-prompt)](https://pypi.org/project/re-prompt/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 > Discover, analyze, and evolve your best prompts from AI coding sessions.
 
 Every developer's AI session history contains reusable prompt patterns -- scattered across hundreds of session files. **reprompt** extracts them, deduplicates, analyzes frequency, and builds a personal prompt library that evolves over time.

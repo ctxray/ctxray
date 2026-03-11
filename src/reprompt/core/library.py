@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -31,7 +33,7 @@ def extract_patterns(
     prompts: list[str],
     min_frequency: int = 3,
     similarity_threshold: float = 0.5,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Extract high-frequency prompt patterns from a list of prompt texts.
 
     Groups similar prompts using TF-IDF cosine similarity, picks representative text,
@@ -69,7 +71,7 @@ def extract_patterns(
         groups.append(group)
 
     # Filter by min_frequency and build pattern dicts
-    patterns = []
+    patterns: list[dict[str, Any]] = []
     for group in groups:
         if len(group) < min_frequency:
             continue
@@ -85,5 +87,5 @@ def extract_patterns(
             }
         )
 
-    patterns.sort(key=lambda x: x["frequency"], reverse=True)
+    patterns.sort(key=lambda x: x.get("frequency", 0), reverse=True)
     return patterns
