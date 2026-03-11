@@ -225,3 +225,64 @@ class TestBuildReportData:
         run_scan(source="claude-code", path=str(sessions_root), settings=settings)
         data = build_report_data(settings=settings)
         assert len(data["projects"]) > 0
+
+    def test_report_includes_clusters_with_enough_data(self, tmp_path):
+        """build_report_data should include 'clusters' key when >= 5 unique texts."""
+        sessions_root = tmp_path / "sessions"
+        # Use very distinct prompts to survive semantic dedup
+        distinct_texts = [
+            "Debug the authentication middleware failing with 403 errors",
+            "Write unit tests for the payment processing module using pytest",
+            "Refactor the database connection pooling to use async context managers",
+            "Explain how the Kubernetes ingress controller routes traffic",
+            "Add a new REST API endpoint for user profile photo uploads",
+            "Review the CI pipeline configuration for security vulnerabilities",
+            "Configure nginx reverse proxy with SSL termination and caching",
+        ]
+        messages = [
+            {
+                "type": "user",
+                "message": {"role": "user", "content": text},
+                "timestamp": f"2026-01-{15 + i}T10:00:00Z",
+            }
+            for i, text in enumerate(distinct_texts)
+        ]
+        _create_claude_session(sessions_root, "-Users-test-projects-app", "session-001", messages)
+        settings = Settings(db_path=tmp_path / "test.db")
+        run_scan(source="claude-code", path=str(sessions_root), settings=settings)
+        data = build_report_data(settings=settings)
+
+        assert "clusters" in data
+        assert len(data["clusters"]) > 0
+        # Each cluster entry should have cluster_id, size, and sample
+        for c in data["clusters"]:
+            assert "cluster_id" in c
+            assert "size" in c
+            assert "sample" in c
+
+    def test_report_no_clusters_with_few_texts(self, tmp_path):
+        """build_report_data should return empty clusters when < 5 texts."""
+        sessions_root = tmp_path / "sessions"
+        _create_claude_session(
+            sessions_root,
+            "-Users-test-projects-app",
+            "session-001",
+            [
+                {
+                    "type": "user",
+                    "message": {"role": "user", "content": "fix the auth bug"},
+                    "timestamp": "2026-01-15T10:00:00Z",
+                },
+                {
+                    "type": "user",
+                    "message": {"role": "user", "content": "add a test"},
+                    "timestamp": "2026-01-15T10:05:00Z",
+                },
+            ],
+        )
+        settings = Settings(db_path=tmp_path / "test.db")
+        run_scan(source="claude-code", path=str(sessions_root), settings=settings)
+        data = build_report_data(settings=settings)
+
+        assert "clusters" in data
+        assert data["clusters"] == []

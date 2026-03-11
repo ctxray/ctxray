@@ -7,6 +7,8 @@
 
 > Discover, analyze, and evolve your best prompts from AI coding sessions.
 
+*repomix packs your code for AI. reprompt extracts insights from AI.*
+
 Every developer's AI session history contains reusable prompt patterns -- scattered across hundreds of session files. **reprompt** extracts them, deduplicates, analyzes frequency, and builds a personal prompt library that evolves over time.
 
 ## Quick Start
@@ -16,6 +18,25 @@ pipx install reprompt-cli
 reprompt scan
 reprompt report
 reprompt library
+```
+
+## Terminal Report
+
+```
+reprompt -- AI Session Analytics
+========================================
+
+ Overview
+ Total prompts:        1,247
+ Unique (deduped):       832
+ Sessions scanned:       156
+ Sources: claude-code, openclaw
+
+ Top Prompt Patterns
+ #  | Pattern                  | Count | Category
+ 1  | fix the failing test...  |    42 | debug
+ 2  | add unit tests for...    |    38 | test
+ 3  | refactor X to use...     |    27 | refactor
 ```
 
 ## Features
@@ -30,6 +51,21 @@ reprompt library
 - **Pluggable adapters** -- add support for any AI coding tool
 - **Zero config** -- works out of the box, customize via env vars or TOML
 
+## How reprompt Compares
+
+| Feature | reprompt | prompt-manager | agent-sessions | cclog |
+|---------|----------|---------------|----------------|-------|
+| Multi-tool support | ✅ Claude, OpenClaw, + adapters | ✅ Multiple | ✅ Multiple | ❌ Claude only |
+| Exact dedup (SHA-256) | ✅ | ❌ | ❌ | ❌ |
+| Semantic dedup (TF-IDF) | ✅ | ❌ | ❌ | ❌ |
+| Hot terms analysis | ✅ TF-IDF | ❌ | ❌ | ❌ |
+| K-means clustering | ✅ | ❌ | ❌ | ❌ |
+| Pattern library | ✅ Auto-categorized | ❌ | ❌ | ❌ |
+| CLI interface | ✅ | ✅ TUI | ❌ macOS app | ✅ |
+| JSON/Markdown export | ✅ | ❌ | ❌ | ❌ |
+| Pluggable adapters | ✅ | ✅ | ❌ | ❌ |
+| Zero config | ✅ | ✅ | ✅ | ✅ |
+
 ## Supported AI Tools
 
 | Tool | Status | Session Path |
@@ -37,6 +73,7 @@ reprompt library
 | Claude Code | Supported | `~/.claude/projects/` |
 | OpenClaw / OpenCode | Supported | `~/.opencode/sessions/` |
 | Cursor | Planned | -- |
+| Aider | Planned | -- |
 | Codex CLI | Planned | -- |
 | Gemini CLI | Planned | -- |
 
@@ -75,25 +112,6 @@ reprompt install-hook
 
 # Cleanup old data
 reprompt purge --older-than 90d
-```
-
-## Terminal Report
-
-```
-reprompt -- AI Session Analytics
-========================================
-
- Overview
- Total prompts:        1,247
- Unique (deduped):       832
- Sessions scanned:       156
- Sources: claude-code, openclaw
-
- Top Prompt Patterns
- #  | Pattern                  | Count | Category
- 1  | fix the failing test...  |    42 | debug
- 2  | add unit tests for...    |    38 | test
- 3  | refactor X to use...     |    27 | refactor
 ```
 
 ## Configuration

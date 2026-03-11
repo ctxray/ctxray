@@ -9,7 +9,7 @@ from typing import Any
 from reprompt.adapters.claude_code import ClaudeCodeAdapter
 from reprompt.adapters.openclaw import OpenClawAdapter
 from reprompt.config import Settings
-from reprompt.core.analyzer import compute_tfidf_stats
+from reprompt.core.analyzer import cluster_prompts, compute_tfidf_stats
 from reprompt.core.dedup import DedupEngine
 from reprompt.core.library import categorize_prompt, extract_patterns
 from reprompt.core.models import Prompt
@@ -78,7 +78,11 @@ def run_scan(
         return result
 
     # Dedup
-    engine = DedupEngine(backend=settings.embedding_backend, threshold=settings.dedup_threshold)
+    engine = DedupEngine(
+        backend=settings.embedding_backend,
+        threshold=settings.dedup_threshold,
+        ollama_url=settings.ollama_url,
+    )
     unique, dupes = engine.deduplicate(all_prompts)
     result.unique_after_dedup = len(unique)
     result.duplicates = len(dupes)
@@ -122,12 +126,9 @@ def build_report_data(settings: Settings | None = None) -> dict[str, Any]:
     # Extract patterns
     patterns = extract_patterns(texts, min_frequency=settings.library_min_frequency)
 
-    # Clear old patterns before storing fresh ones
-    db.clear_patterns()
-
-    # Store patterns
+    # Upsert patterns — keeps IDs stable across repeated report runs
     for p in patterns:
-        db.insert_pattern(
+        db.upsert_pattern(
             pattern_text=p["pattern_text"],
             frequency=p["frequency"],
             avg_length=p["avg_length"],
@@ -137,6 +138,19 @@ def build_report_data(settings: Settings | None = None) -> dict[str, Any]:
             last_seen="",
             examples=p.get("examples", []),
         )
+
+    # K-means clustering (only if enough texts)
+    clusters_summary: list[dict[str, Any]] = []
+    if len(texts) >= 5:
+        raw_clusters = cluster_prompts(texts)
+        for cid, members in sorted(raw_clusters.items()):
+            clusters_summary.append(
+                {
+                    "cluster_id": cid,
+                    "size": len(members),
+                    "sample": members[0][:80] if members else "",
+                }
+            )
 
     # Build project distribution
     projects: dict[str, int] = {}
@@ -169,4 +183,5 @@ def build_report_data(settings: Settings | None = None) -> dict[str, Any]:
         "projects": projects,
         "categories": categories,
         "top_terms": top_terms[:10],
+        "clusters": clusters_summary,
     }

@@ -104,7 +104,11 @@ def library(
         for i, p in enumerate(patterns, 1):
             table.add_row(
                 str(i),
-                str(p.get("pattern_text", ""))[:50],
+                (
+                    str(p.get("pattern_text", ""))[:50] + "..."
+                    if len(str(p.get("pattern_text", ""))) > 50
+                    else str(p.get("pattern_text", ""))
+                ),
                 str(p.get("frequency", 0)),
                 str(p.get("category", "")),
             )

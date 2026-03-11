@@ -81,3 +81,50 @@ def test_render_report_empty_data():
     }
     output = render_report(data)
     assert "0" in output  # shows zero counts
+
+
+def test_render_report_shows_hot_terms():
+    """Hot Terms (TF-IDF) table should appear when top_terms data is present."""
+    data = _sample_report_data()
+    data["top_terms"] = [
+        {"term": "test", "tfidf_avg": 0.452, "df": 12},
+        {"term": "fix", "tfidf_avg": 0.381, "df": 8},
+    ]
+    output = render_report(data)
+    assert "Hot Terms" in output or "TF-IDF" in output
+    assert "test" in output
+    assert "0.452" in output
+    assert "12" in output
+
+
+def test_render_report_shows_clusters():
+    """Prompt Clusters section should appear when clusters data is present."""
+    data = _sample_report_data()
+    data["clusters"] = [
+        {"cluster_id": 0, "size": 23, "sample": "Fix the failing test for auth module"},
+        {"cluster_id": 1, "size": 18, "sample": "Add unit tests for the user service"},
+    ]
+    output = render_report(data)
+    assert "Cluster" in output
+    assert "23" in output
+    assert "Fix the failing test" in output
+
+
+def test_render_report_no_clusters_when_absent():
+    """No clusters section when clusters key is missing or empty."""
+    data = _sample_report_data()
+    data["clusters"] = []
+    output = render_report(data)
+    assert "Cluster" not in output
+
+
+def test_truncated_pattern_text_has_ellipsis():
+    """Pattern text truncated beyond 40 chars should end with '...'."""
+    data = _sample_report_data()
+    long_text = "abcdefghij" * 6  # 60 chars, longer than 40
+    data["top_patterns"] = [
+        {"pattern_text": long_text, "frequency": 5, "category": "debug"},
+    ]
+    output = render_report(data)
+    # Our code adds "..." after the first 40 chars
+    assert "..." in output or "\u2026" in output

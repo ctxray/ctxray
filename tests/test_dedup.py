@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from reprompt.core.dedup import DedupEngine
+from unittest.mock import MagicMock, patch
+
+from reprompt.core.dedup import DedupEngine, _get_embedder
 from reprompt.core.models import Prompt
 
 
@@ -111,3 +113,36 @@ def test_dedup_mixed_exact_and_semantic():
     # At minimum: exact dupe removed. Semantic may or may not trigger depending on TF-IDF.
     assert len(unique) <= 3
     assert len(dupes) >= 1
+
+
+# --- ollama_url propagation tests ---
+
+
+def test_get_embedder_ollama_passes_url():
+    """_get_embedder passes ollama_url to OllamaEmbedder."""
+    with patch("reprompt.embeddings.ollama.OllamaEmbedder") as mock_cls:
+        mock_cls.return_value = MagicMock()
+        _get_embedder("ollama", ollama_url="http://myhost:9999")
+        mock_cls.assert_called_once_with(url="http://myhost:9999")
+
+
+def test_get_embedder_ollama_default_url():
+    """_get_embedder uses default url when none provided."""
+    with patch("reprompt.embeddings.ollama.OllamaEmbedder") as mock_cls:
+        mock_cls.return_value = MagicMock()
+        _get_embedder("ollama")
+        mock_cls.assert_called_once_with(url="http://localhost:11434")
+
+
+def test_dedup_engine_passes_ollama_url():
+    """DedupEngine passes ollama_url through to _get_embedder."""
+    engine = DedupEngine(backend="ollama", threshold=0.85, ollama_url="http://custom:11434")
+    assert engine._ollama_url == "http://custom:11434"
+
+
+def test_get_embedder_tfidf_ignores_url():
+    """_get_embedder for tfidf backend ignores ollama_url."""
+    embedder = _get_embedder("tfidf", ollama_url="http://ignored:9999")
+    from reprompt.embeddings.tfidf import TfidfEmbedder
+
+    assert isinstance(embedder, TfidfEmbedder)

@@ -30,6 +30,17 @@ def render_report(data: dict[str, Any]) -> str:
     )
     console.print(Panel(overview_text, title="Overview"))
 
+    # Hot Terms (TF-IDF)
+    if data.get("top_terms"):
+        terms_table = Table(title="Hot Terms (TF-IDF)")
+        terms_table.add_column("#", style="dim", width=4)
+        terms_table.add_column("Term")
+        terms_table.add_column("TF-IDF", justify="right")
+        terms_table.add_column("Docs", justify="right")
+        for i, t in enumerate(data["top_terms"][:10], 1):
+            terms_table.add_row(str(i), t["term"], f"{t['tfidf_avg']:.3f}", str(t.get("df", "")))
+        console.print(terms_table)
+
     # Top patterns table
     if data["top_patterns"]:
         table = Table(title="Top Prompt Patterns")
@@ -38,7 +49,9 @@ def render_report(data: dict[str, Any]) -> str:
         table.add_column("Count", justify="right")
         table.add_column("Category")
         for i, p in enumerate(data["top_patterns"][:10], 1):
-            table.add_row(str(i), p["pattern_text"][:40], str(p["frequency"]), p["category"])
+            pat = p["pattern_text"]
+            pat_display = pat[:40] + "..." if len(pat) > 40 else pat
+            table.add_row(str(i), pat_display, str(p["frequency"]), p["category"])
         console.print(table)
 
     # Projects bar chart
@@ -59,6 +72,13 @@ def render_report(data: dict[str, Any]) -> str:
             bar_len = int(count / total * 20)
             bar = "\u2588" * bar_len
             console.print(f"  {cat:<12} {bar} {pct}%")
+
+    # Prompt Clusters (K-means)
+    if data.get("clusters"):
+        console.print("\n[bold]Prompt Clusters (K-means)[/bold]")
+        for c in data["clusters"]:
+            sample = c["sample"][:80] + "..." if len(c["sample"]) > 80 else c["sample"]
+            console.print(f'  Cluster {c["cluster_id"] + 1} ({c["size"]} prompts):  "{sample}"')
 
     console.print("\nRun `reprompt library` to see your reusable prompt collection")
 

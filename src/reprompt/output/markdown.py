@@ -22,7 +22,9 @@ def export_library_markdown(patterns: list[dict[str, Any]]) -> str:
     lines.append("| # | Pattern | Uses | Category |")
     lines.append("|---|---------|------|----------|")
     for i, p in enumerate(patterns, 1):
-        lines.append(f"| {i} | {p['pattern_text'][:50]} | {p['frequency']} | {p['category']} |")
+        pat = p["pattern_text"]
+        pat_display = pat[:50] + "..." if len(pat) > 50 else pat
+        lines.append(f"| {i} | {pat_display} | {p['frequency']} | {p['category']} |")
     lines.append("")
 
     # Group by category
@@ -34,7 +36,9 @@ def export_library_markdown(patterns: list[dict[str, Any]]) -> str:
         lines.append(f"## {cat.title()}")
         lines.append("")
         for p in cat_patterns:
-            lines.append(f"### {p['pattern_text'][:60]}")
+            text = p["pattern_text"]
+            heading = text[:60] + "..." if len(text) > 60 else text
+            lines.append(f"### {heading}")
             lines.append(f"- **Frequency:** {p['frequency']} times")
             lines.append(f"- **Avg length:** {p['avg_length']:.0f} chars")
             if p.get("examples"):

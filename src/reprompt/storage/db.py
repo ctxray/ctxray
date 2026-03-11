@@ -58,6 +58,8 @@ class PromptDB:
                     last_seen TEXT,
                     examples TEXT
                 );
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_prompt_patterns_text
+                    ON prompt_patterns (pattern_text);
                 CREATE TABLE IF NOT EXISTS term_stats (
                     term TEXT PRIMARY KEY,
                     count INTEGER,
@@ -198,6 +200,58 @@ class PromptDB:
             pattern_id = cursor.lastrowid
             assert pattern_id is not None
             return pattern_id
+        finally:
+            conn.close()
+
+    def upsert_pattern(
+        self,
+        pattern_text: str,
+        frequency: int,
+        avg_length: float,
+        projects: list[str],
+        category: str,
+        first_seen: str,
+        last_seen: str,
+        examples: list[str],
+    ) -> int:
+        """Insert or update a pattern keyed on pattern_text. Returns the pattern ID.
+
+        If a pattern with the same text already exists its frequency, avg_length,
+        category, last_seen, projects, and examples are updated in place so that
+        the row ID (and any external references to it) remains stable.
+        """
+        conn = self._conn()
+        try:
+            conn.execute(
+                """INSERT INTO prompt_patterns
+                   (pattern_text, frequency, avg_length, projects, category,
+                    first_seen, last_seen, examples)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(pattern_text) DO UPDATE SET
+                     frequency  = excluded.frequency,
+                     avg_length = excluded.avg_length,
+                     projects   = excluded.projects,
+                     category   = excluded.category,
+                     last_seen  = excluded.last_seen,
+                     examples   = excluded.examples""",
+                (
+                    pattern_text,
+                    frequency,
+                    avg_length,
+                    json.dumps(projects),
+                    category,
+                    first_seen,
+                    last_seen,
+                    json.dumps(examples),
+                ),
+            )
+            conn.commit()
+            # lastrowid returns 0 on the UPDATE path in SQLite; fetch the real id
+            row = conn.execute(
+                "SELECT id FROM prompt_patterns WHERE pattern_text = ?", (pattern_text,)
+            ).fetchone()
+            assert row is not None
+            return int(row[0])
         finally:
             conn.close()
 
