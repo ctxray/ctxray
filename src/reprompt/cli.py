@@ -67,7 +67,7 @@ def report(
     data = build_report_data(settings=settings)
 
     if format == "json":
-        console.print(format_json_report(data))
+        print(format_json_report(data))
     else:
         console.print(render_report(data))
 

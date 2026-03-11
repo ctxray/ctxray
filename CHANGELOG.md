@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Fix purge validation for date format parsing
 - Fix pattern dedup to avoid duplicate entries
 - Improve Ollama error messages when server is unreachable
+- Fix JSON output (`--format json`) producing invalid escape sequences
 
 ### Added
 - `--version` / `-V` flag to CLI
