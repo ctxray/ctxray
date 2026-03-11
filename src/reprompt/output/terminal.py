@@ -212,3 +212,43 @@ def render_recommendations(data: dict[str, Any]) -> str:
         console.print(f"  [cyan]*[/cyan] {tip}")
 
     return buf.getvalue()
+
+
+def render_merge_view(data: dict[str, Any]) -> str:
+    """Render merge-view clusters to a string using Rich."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    console.print("\n[bold]reprompt merge-view — Similar Prompt Clusters[/bold]")
+    console.print("=" * 40)
+
+    clusters = data.get("clusters", [])
+    summary = data.get("summary", {})
+
+    if not clusters:
+        console.print("No similar prompt clusters found.")
+        console.print("Run [bold]reprompt scan[/bold] to index more sessions.")
+        return buf.getvalue()
+
+    total = summary.get("total_clustered_prompts", 0)
+    count = summary.get("cluster_count", 0)
+    console.print(
+        f"Found [bold]{count}[/bold] clusters of similar prompts "
+        f"([bold]{total}[/bold] prompts total)\n"
+    )
+
+    for c in clusters:
+        console.print(f"[bold]Cluster {c['id'] + 1}: {c['name']}[/bold] ({c['size']} prompts)")
+        canon = c["canonical"]
+        console.print(
+            f'  [green]★[/green] "{canon["text"]}"     [dim]score: {canon["score"]:.2f}[/dim]'
+        )
+        for m in c.get("members", []):
+            console.print(f'    "{m["text"]}"     [dim]{m.get("timestamp", "")}[/dim]')
+        console.print("  [dim]→ Reuse the ★ prompt instead of writing a new one[/dim]\n")
+
+    console.print(f"[bold]Summary:[/bold] {total} prompts could be reduced to {count} templates.")
+    if count > 0:
+        console.print("Run [bold]reprompt save[/bold] to save ★ prompts as reusable templates.")
+
+    return buf.getvalue()

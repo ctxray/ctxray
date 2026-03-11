@@ -87,3 +87,46 @@ def test_clusters_sorted_by_size():
     clusters = build_clusters(texts, timestamps, threshold=0.4)
     if len(clusters) >= 2:
         assert clusters[0]["size"] >= clusters[1]["size"]
+
+
+def test_render_merge_view_output():
+    from reprompt.output.terminal import render_merge_view
+
+    data = {
+        "clusters": [
+            {
+                "id": 0,
+                "name": "Debug: Auth Bug",
+                "size": 3,
+                "canonical": {"text": "debug auth — login returns 401", "score": 0.82},
+                "members": [
+                    {"text": "fix the auth bug", "timestamp": "2026-02-15", "score": 0.31},
+                    {"text": "fix auth issue", "timestamp": "2026-02-18", "score": 0.35},
+                ],
+            }
+        ],
+        "summary": {
+            "total_clustered_prompts": 3,
+            "cluster_count": 1,
+            "reduction_potential": "3 → 1",
+        },
+    }
+    output = render_merge_view(data)
+    assert "auth" in output.lower()
+    assert "debug auth" in output.lower()
+    assert "3" in output
+
+
+def test_render_merge_view_empty():
+    from reprompt.output.terminal import render_merge_view
+
+    data = {
+        "clusters": [],
+        "summary": {
+            "total_clustered_prompts": 0,
+            "cluster_count": 0,
+            "reduction_potential": "0 → 0",
+        },
+    }
+    output = render_merge_view(data)
+    assert "no" in output.lower() or "0" in output

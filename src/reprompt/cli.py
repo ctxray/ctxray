@@ -377,6 +377,48 @@ def recommend(
         print(render_recommendations(data), end="")
 
 
+@app.command("merge-view")
+def merge_view(
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    limit: int = typer.Option(0, "--limit", help="Max clusters to show (0 = all)"),
+) -> None:
+    """Show clusters of similar prompts you keep rewriting."""
+    import json as json_mod
+
+    from reprompt.config import Settings
+    from reprompt.core.merge_view import build_clusters
+    from reprompt.output.terminal import render_merge_view
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    all_prompts = db.get_all_prompts()
+
+    unique = [p for p in all_prompts if p.get("duplicate_of") is None]
+    texts = [p["text"] for p in unique]
+    timestamps = [p.get("timestamp", "") for p in unique]
+
+    clusters = build_clusters(texts, timestamps, threshold=settings.dedup_threshold)
+
+    if limit > 0:
+        clusters = clusters[:limit]
+
+    total_clustered = sum(c["size"] for c in clusters)
+    data = {
+        "clusters": clusters,
+        "summary": {
+            "total_clustered_prompts": total_clustered,
+            "cluster_count": len(clusters),
+            "reduction_potential": f"{total_clustered} → {len(clusters)}",
+        },
+    }
+
+    if json_output:
+        print(json_mod.dumps(data, indent=2, default=str))
+    else:
+        print(render_merge_view(data), end="")
+
+
 @app.command()
 def demo() -> None:
     """Run reprompt on demo data to see what it looks like."""
