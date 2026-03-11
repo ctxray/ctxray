@@ -40,8 +40,7 @@ SKIP_EXACT = {
 }
 
 SKIP_PREFIXES = (
-    "<local-command",
-    "<command-name>",
+    "<",
     "Tool loaded",
     "Base directory for this skill",
 )

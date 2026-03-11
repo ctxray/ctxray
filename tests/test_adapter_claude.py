@@ -96,6 +96,16 @@ def test_skip_prefix_messages():
     assert not should_keep_prompt("Tool loaded. Ready to use.")
 
 
+def test_skip_system_injections():
+    """System-injected XML tags should be filtered."""
+    from reprompt.adapters.claude_code import should_keep_prompt
+
+    assert not should_keep_prompt("<system-reminder>\nPreToolUse:Edit hook context")
+    assert not should_keep_prompt("<task-notification>\n<task-id>abc123</task-id>")
+    assert not should_keep_prompt("<ide_opened_file>The user opened file.py</ide_opened_file>")
+    assert not should_keep_prompt("<available-deferred-tools>\nSomeTool\n</available-deferred-tools>")
+
+
 def test_skip_short_messages():
     """Messages under 10 chars should be filtered."""
     from reprompt.adapters.claude_code import should_keep_prompt
