@@ -1,7 +1,10 @@
 """Shared prompt filtering logic for all adapters.
 
 Filters out noise: short messages, CLI commands, system messages,
-slash commands, and other non-prompt content.
+slash commands, tool invocations, and other non-prompt content.
+
+Covers: Claude Code, Cursor, Aider, Gemini CLI, Cline, OpenClaw,
+GitHub Copilot Chat, Continue.dev, Windsurf.
 """
 
 from __future__ import annotations
@@ -44,7 +47,8 @@ SKIP_EXACT = {
 # --- Prefix patterns to skip ---
 SKIP_PREFIXES = (
     "<",
-    "/",  # slash commands (/help, /commit, /review, etc.)
+    "/",  # slash commands from all tools
+    "!",  # Gemini CLI shell escape prefix
     "Tool loaded",
     "Base directory for this skill",
     "This session is being continued from a previous conversation",
@@ -73,14 +77,51 @@ SKIP_PREFIXES = (
     "Permission denied",
     "No such file",
     "Command not found",
+    "[ERROR]",
+    # Aider status messages
+    "Aider v",
+    "Main model:",
+    "Weak model:",
+    "Editor model:",
+    "Git repo:",
+    "Repo-map:",
+    "Tokens:",
+    # Gemini CLI status
+    "Gemini CLI v",
+    "Using model:",
+    "Tools available:",
+    "MCP servers:",
+    "Session duration:",
 )
 
 # --- CLI tool commands (regex) ---
+# Matches lines that start with a known CLI tool name.
 SKIP_CLI_RE = re.compile(
-    r"^(claude|cursor|aider|copilot|cline|windsurf|continue|git|gh|npm|npx|pip|uv"
-    r"|reprompt|make|cargo|docker|brew|apt|yum|sudo|ssh|scp|rsync|cd|ls|cat|pwd"
-    r"|mkdir|rm|cp|mv|chmod|chown|echo|export|source|which|where|man)\b",
+    r"^(claude|cursor|aider|copilot|cline|windsurf|continue|cn"
+    r"|git|gh|npm|npx|pip|uv|pipx|pipenv|poetry|pdm|conda"
+    r"|reprompt|make|cargo|docker|docker-compose|podman"
+    r"|brew|apt|yum|dnf|pacman|sudo"
+    r"|ssh|scp|rsync|wget|curl"
+    r"|cd|ls|cat|pwd|mkdir|rm|cp|mv|chmod|chown"
+    r"|echo|export|source|which|where|man|env"
+    r"|python|python3|node|ruby|go|java|rustc|gcc|clang)\b",
     re.IGNORECASE,
+)
+
+# --- Aider file management patterns ---
+_AIDER_FILE_RE = re.compile(
+    r"^(Added |Removed ).+ (to|from) the chat\.$"
+)
+
+# --- Aider commit output ---
+_AIDER_COMMIT_RE = re.compile(r"^Commit [a-f0-9]+ ")
+
+# --- Cline tool invocation XML blocks ---
+_CLINE_TOOL_RE = re.compile(
+    r"<(write_to_file|read_file|replace_in_file|search_files|list_files"
+    r"|list_code_definition_names|execute_command|browser_action"
+    r"|use_mcp_tool|access_mcp_resource|ask_followup_question"
+    r"|attempt_completion|plan_mode_respond)\b"
 )
 
 # --- Substrings that indicate system/compact noise ---
@@ -97,11 +138,24 @@ SKIP_CONTAINS = (
     "hook success",
     "SessionStart:",
     "GITHUB_STEP_SUMMARY",
+    # Cline system error
+    "You did not use a tool in your previous response",
 )
 
 
 def should_keep_prompt(text: str) -> bool:
-    """Filter out noise prompts — short messages, exact matches, prefixes, CLI commands."""
+    """Filter out noise prompts — short messages, exact matches, prefixes, CLI commands.
+
+    This is the shared filter used by all adapters. It catches:
+    - Short/empty messages
+    - Acknowledgments (ok, yes, done, etc.)
+    - Slash commands from all tools (/help, /commit, /add, etc.)
+    - CLI tool invocations (git, npm, docker, etc.)
+    - System status messages (Aider banners, Gemini stats, etc.)
+    - Tool invocation XML (Cline tool blocks)
+    - Gemini shell escapes (!command)
+    - System noise substrings
+    """
     text = text.strip()
     if len(text) < MIN_PROMPT_LENGTH:
         return False
@@ -115,5 +169,13 @@ def should_keep_prompt(text: str) -> bool:
     if not re.search(r"[a-zA-Z\u4e00-\u9fff]", text):
         return False
     if SKIP_CLI_RE.match(text):
+        return False
+    # Aider-specific patterns
+    if _AIDER_FILE_RE.match(text):
+        return False
+    if _AIDER_COMMIT_RE.match(text):
+        return False
+    # Cline tool invocation blocks
+    if _CLINE_TOOL_RE.search(text):
         return False
     return True

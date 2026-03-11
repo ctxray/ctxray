@@ -266,3 +266,66 @@ def test_skip_hook_noise():
 
     assert not should_keep_prompt("hook blocking error from some command")
     assert not should_keep_prompt("SessionStart:compact hook success: Success")
+
+
+def test_skip_aider_status_messages():
+    """Aider startup banners and status output should be filtered."""
+    from reprompt.adapters.filters import should_keep_prompt
+
+    assert not should_keep_prompt("Aider v0.82.2")
+    assert not should_keep_prompt("Main model: anthropic/claude-3.7-sonnet with diff edit format")
+    assert not should_keep_prompt("Git repo: .git with 243 files")
+    assert not should_keep_prompt("Repo-map: using 4096 tokens, auto refresh")
+    assert not should_keep_prompt("Added src/main.py to the chat.")
+    assert not should_keep_prompt("Removed src/old.py from the chat.")
+    assert not should_keep_prompt("Tokens: 12,345 sent, 2,345 received. Cost: $0.04")
+    assert not should_keep_prompt("Commit abc1234 Fix: resolve null pointer error")
+
+
+def test_skip_gemini_status_messages():
+    """Gemini CLI status output should be filtered."""
+    from reprompt.adapters.filters import should_keep_prompt
+
+    assert not should_keep_prompt("Gemini CLI v1.2.3")
+    assert not should_keep_prompt("Using model: gemini-2.5-pro")
+    assert not should_keep_prompt("Tools available: 8")
+    assert not should_keep_prompt("MCP servers: 2 connected")
+    assert not should_keep_prompt("!ls -la")  # shell escape
+    assert not should_keep_prompt("!git status")
+
+
+def test_skip_cline_tool_blocks():
+    """Cline XML tool invocation blocks should be filtered."""
+    from reprompt.adapters.filters import should_keep_prompt
+
+    assert not should_keep_prompt(
+        "<write_to_file>\n<path>src/utils.ts</path>\n<content>code</content>"
+    )
+    assert not should_keep_prompt("<execute_command>\n<command>npm install</command>")
+    assert not should_keep_prompt(
+        "<attempt_completion>\n<result>Done.</result>"
+    )
+    assert not should_keep_prompt(
+        "You did not use a tool in your previous response! Please retry."
+    )
+
+
+def test_skip_language_runtime_commands():
+    """Language runtime invocations should be filtered."""
+    from reprompt.adapters.filters import should_keep_prompt
+
+    assert not should_keep_prompt("python3 -m pytest tests/ -v")
+    assert not should_keep_prompt("node server.js --port 3000")
+    assert not should_keep_prompt("go build ./cmd/app")
+    assert not should_keep_prompt("pipx install reprompt-cli")
+
+
+def test_keep_real_prompts_about_tools():
+    """Real questions mentioning tool names should NOT be filtered."""
+    from reprompt.adapters.filters import should_keep_prompt
+
+    assert should_keep_prompt("how do I configure aider to use a different model?")
+    assert should_keep_prompt("explain the gemini cli session format")
+    assert should_keep_prompt("what cline tools are available for file editing?")
+    assert should_keep_prompt("why is my cursor compositor crashing?")
+    assert should_keep_prompt("set up a python virtual environment for this project")
