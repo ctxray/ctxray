@@ -109,9 +109,7 @@ SKIP_CLI_RE = re.compile(
 )
 
 # --- Aider file management patterns ---
-_AIDER_FILE_RE = re.compile(
-    r"^(Added |Removed ).+ (to|from) the chat\.$"
-)
+_AIDER_FILE_RE = re.compile(r"^(Added |Removed ).+ (to|from) the chat\.$")
 
 # --- Aider commit output ---
 _AIDER_COMMIT_RE = re.compile(r"^Commit [a-f0-9]+ ")
@@ -140,6 +138,12 @@ SKIP_CONTAINS = (
     "GITHUB_STEP_SUMMARY",
     # Cline system error
     "You did not use a tool in your previous response",
+    # Skill/workflow invocations (meta-commands, not domain prompts)
+    "superpowers:",
+    "feature-dev:",
+    "code-simplifier:",
+    "claude-md-management:",
+    "请使用 ",  # Chinese "please use X skill to execute"
 )
 
 
