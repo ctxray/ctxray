@@ -255,3 +255,75 @@ def test_cli_library_export(tmp_path, monkeypatch):
     assert Path(export_path).exists()
     content = Path(export_path).read_text()
     assert "Prompt Library" in content or "reprompt" in content
+
+
+class TestScienceE2E:
+    """End-to-end test for the Prompt Science Engine."""
+
+    def test_score_compare_insights_flow(self, tmp_path):
+        """Full flow: extract → score → store → insights."""
+        from reprompt.core.extractors import extract_features
+        from reprompt.core.insights import compute_insights
+        from reprompt.core.scorer import score_prompt
+        from reprompt.storage.db import PromptDB
+
+        db = PromptDB(tmp_path / "test.db")
+
+        prompts = [
+            "Fix the TypeError in auth/login.py:42 when token.expiry is None",
+            "Add tests for UserService — cover duplicate email and missing fields",
+            "Fix bug",
+            "You are a senior engineer.\n\nRefactor PaymentService to strategy pattern.\nDo not break existing tests.\nMust maintain backward compatibility.",
+        ]
+
+        for text in prompts:
+            dna = extract_features(text, source="test", session_id="e2e")
+            breakdown = score_prompt(dna)
+            dna.overall_score = breakdown.total
+            db.store_features(dna.prompt_hash, dna.to_dict())
+
+        # Verify features stored
+        all_features = db.get_all_features()
+        assert len(all_features) == 4
+
+        # Verify scoring makes sense
+        scores = sorted(all_features, key=lambda f: f["overall_score"])
+        # "Fix bug" should score lowest
+        assert scores[0]["word_count"] <= 5
+        # The structured refactor prompt should score highest
+        assert scores[-1]["has_constraints"] is True
+
+        # Verify insights work
+        result = compute_insights(all_features)
+        assert result["prompt_count"] == 4
+        assert result["avg_score"] > 0
+
+    def test_score_cli_e2e(self):
+        """CLI score command produces valid output."""
+        from typer.testing import CliRunner
+        from reprompt.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, [
+            "score",
+            "Fix the TypeError in auth/login.py:42. "
+            "The validate_token function raises when token is None. "
+            "Do not modify the test suite.",
+        ])
+        assert result.exit_code == 0
+        assert "Score" in result.output or "score" in result.output
+
+    def test_compare_cli_e2e(self):
+        """CLI compare command produces valid comparison."""
+        from typer.testing import CliRunner
+        from reprompt.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, [
+            "compare",
+            "Fix bug",
+            "Fix the TypeError in auth/login.py:42 — validate_token raises on None input. "
+            "Add a None guard before the expiry check. Do not modify tests.",
+        ])
+        assert result.exit_code == 0
+        assert "Prompt A" in result.output or "prompt_a" in result.output
