@@ -21,7 +21,9 @@ _SESSION_RE = re.compile(r"^# aider chat started at (\d{4}-\d{2}-\d{2} \d{2}:\d{
 _USER_MSG_RE = re.compile(r"^#### (.+)")
 
 # Default places to search for aider history files.
-_DEFAULT_SEARCH_ROOTS = ("~/projects", "~/repos", "~")
+# Note: "~" (home root) is intentionally excluded — rglob over ~/Library traverses
+# network-mounted paths (OneDrive, iCloud) that can time out on macOS.
+_DEFAULT_SEARCH_ROOTS = ("~/projects", "~/repos", "~/code", "~/src", "~/dev", "~/work")
 
 
 class AiderAdapter(BaseAdapter):
@@ -53,7 +55,11 @@ class AiderAdapter(BaseAdapter):
         for root in self._search_roots:
             if not root.is_dir():
                 continue
-            for p in sorted(root.rglob(self.session_filename)):
+            try:
+                paths = sorted(root.rglob(self.session_filename))
+            except OSError:
+                continue
+            for p in paths:
                 real = str(p.resolve())
                 if real not in seen:
                     seen.add(real)
