@@ -60,9 +60,47 @@ def test_categorize_config():
 
 
 def test_categorize_unknown():
-    assert categorize_prompt("random gibberish text here") == "other"
+    assert categorize_prompt("gibberish xyz text here") == "other"
 
 
 def test_extract_empty():
     patterns = extract_patterns([], min_frequency=2)
     assert patterns == []
+
+
+def test_categorize_document():
+    assert categorize_prompt("整理一下我们的经验教训") == "document"
+    assert categorize_prompt("update the README with new instructions") == "document"
+    assert categorize_prompt("记录这次的踩坑总结") == "document"
+
+
+def test_categorize_run():
+    assert categorize_prompt("启动我们的服务然后开始扫描") == "run"
+    assert categorize_prompt("start the server and restart the worker") == "run"
+    assert categorize_prompt("restart the docker container") == "run"
+
+
+def test_categorize_query():
+    assert categorize_prompt("是否已经保存到github了？") == "query"
+    assert categorize_prompt("have we pushed to production?") == "query"
+
+
+def test_categorize_generate():
+    assert categorize_prompt("generate a random list of numbers") == "generate"
+    assert categorize_prompt("生成一些随机数据") == "generate"
+
+
+def test_categorize_plan():
+    assert categorize_prompt("how should we design the auth system?") == "plan"
+    assert categorize_prompt("如何规划我们的数据库架构") == "plan"
+
+
+def test_categorize_write_a_function():
+    # "write a" should now map to implement (was falling into "other")
+    assert categorize_prompt("write a function to find the maximum") == "implement"
+    assert categorize_prompt("write the parser for CSV files") == "implement"
+
+
+def test_categorize_debug_extended():
+    assert categorize_prompt("the auth is not working") == "debug"
+    assert categorize_prompt("it fails with an exception") == "debug"
