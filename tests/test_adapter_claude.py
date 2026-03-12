@@ -302,12 +302,8 @@ def test_skip_cline_tool_blocks():
         "<write_to_file>\n<path>src/utils.ts</path>\n<content>code</content>"
     )
     assert not should_keep_prompt("<execute_command>\n<command>npm install</command>")
-    assert not should_keep_prompt(
-        "<attempt_completion>\n<result>Done.</result>"
-    )
-    assert not should_keep_prompt(
-        "You did not use a tool in your previous response! Please retry."
-    )
+    assert not should_keep_prompt("<attempt_completion>\n<result>Done.</result>")
+    assert not should_keep_prompt("You did not use a tool in your previous response! Please retry.")
 
 
 def test_skip_language_runtime_commands():
@@ -329,3 +325,23 @@ def test_keep_real_prompts_about_tools():
     assert should_keep_prompt("what cline tools are available for file editing?")
     assert should_keep_prompt("why is my cursor compositor crashing?")
     assert should_keep_prompt("set up a python virtual environment for this project")
+
+
+def test_extracts_project_name_from_subagent_session():
+    adapter = ClaudeCodeAdapter()
+    # Subagent path: .../{project-dir}/{session-uuid}/subagents/agent-*.jsonl
+    name = adapter._project_from_path(
+        "/Users/chris/.claude/projects/-Users-chris-projects-claudeAutomation"
+        "/6279adc7-cb18-477a-8af5-5924579d08aa/subagents/agent-abc123.jsonl"
+    )
+    assert name == "claudeAutomation [subagent]"
+
+
+def test_extracts_project_name_from_subagent_top_level():
+    adapter = ClaudeCodeAdapter()
+    # Subagent in top-level project (no sub-project)
+    name = adapter._project_from_path(
+        "/Users/chris/.claude/projects/-Users-chris-projects-reprompt"
+        "/03d22aee-59fe-4b2a-af1d-ae7d871f816e/subagents/agent-xyz.jsonl"
+    )
+    assert name == "reprompt [subagent]"

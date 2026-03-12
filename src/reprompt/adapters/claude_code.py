@@ -186,12 +186,24 @@ class ClaudeCodeAdapter(BaseAdapter):
     def _project_from_path(self, file_path: str) -> str:
         """Extract project name from Claude Code session path.
 
-        Path format: ~/.claude/projects/-Users-chris-projects-myproject/session.jsonl
-        The parent directory name has dashes replacing path separators.
+        Handles two cases:
+        - Main sessions: ~/.claude/projects/-Users-chris-projects-myproject/session.jsonl
+        - Subagent sessions: ~/.claude/projects/-Users-chris-projects-myproject/{uuid}/subagents/agent-*.jsonl
+          → returns "myproject [subagent]"
         """
-        parent = os.path.basename(os.path.dirname(file_path))
-        parts = parent.split("-")
+        path = Path(file_path)
+        # Detect subagent sessions: the parent dir is named "subagents"
+        if path.parent.name == "subagents":
+            # Go up: subagents/ → {session-uuid}/ → {project-dir}/
+            project_dir = path.parent.parent.parent.name
+            return self._project_name_from_dir(project_dir) + " [subagent]"
+        parent = path.parent.name
+        return self._project_name_from_dir(parent)
+
+    def _project_name_from_dir(self, dir_name: str) -> str:
+        """Convert a dash-encoded directory name to a project name."""
+        parts = dir_name.split("-")
         for i, p in enumerate(parts):
             if p == "projects" and i + 1 < len(parts):
                 return "-".join(parts[i + 1 :])
-        return parent
+        return dir_name
