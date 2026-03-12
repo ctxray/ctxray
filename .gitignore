@@ -34,3 +34,9 @@ Thumbs.db
 # Project
 *.db
 .env
+
+# Local memory / session context (never commit)
+thoughts/
+.claude/
+.tldr/
+.tldrignore
