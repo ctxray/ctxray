@@ -107,6 +107,15 @@ class PromptDB:
                     usage_count INTEGER DEFAULT 0,
                     created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS prompt_features (
+                    prompt_hash TEXT PRIMARY KEY,
+                    features_json TEXT NOT NULL,
+                    overall_score REAL,
+                    task_type TEXT,
+                    computed_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_features_task ON prompt_features (task_type);
+                CREATE INDEX IF NOT EXISTS idx_features_score ON prompt_features (overall_score);
             """)
             conn.commit()
         finally:
@@ -640,5 +649,71 @@ class PromptDB:
         try:
             row = conn.execute("SELECT 1 FROM prompt_templates WHERE name = ?", (name,)).fetchone()
             return row is not None
+        finally:
+            conn.close()
+
+    # -- prompt_features (PromptDNA) -----------------------------------------
+
+    def store_features(self, prompt_hash: str, features: dict[str, Any]) -> None:
+        """Store or update PromptDNA features for a prompt."""
+        conn = self._conn()
+        try:
+            conn.execute(
+                """INSERT INTO prompt_features
+                   (prompt_hash, features_json, overall_score,
+                    task_type, computed_at)
+                   VALUES (?, ?, ?, ?, datetime('now'))
+                   ON CONFLICT(prompt_hash) DO UPDATE SET
+                     features_json = excluded.features_json,
+                     overall_score = excluded.overall_score,
+                     task_type = excluded.task_type,
+                     computed_at = excluded.computed_at""",
+                (
+                    prompt_hash,
+                    json.dumps(features),
+                    features.get("overall_score", 0.0),
+                    features.get("task_type", "other"),
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_features(self, prompt_hash: str) -> dict[str, Any] | None:
+        """Retrieve PromptDNA features for a prompt. Returns None if not found."""
+        conn = self._conn()
+        try:
+            row = conn.execute(
+                "SELECT features_json FROM prompt_features WHERE prompt_hash = ?",
+                (prompt_hash,),
+            ).fetchone()
+            if row is None:
+                return None
+            result: dict[str, Any] = json.loads(row["features_json"])
+            return result
+        finally:
+            conn.close()
+
+    def get_all_features(self) -> list[dict[str, Any]]:
+        """Return all stored feature vectors."""
+        conn = self._conn()
+        try:
+            rows = conn.execute(
+                "SELECT features_json FROM prompt_features ORDER BY overall_score DESC"
+            ).fetchall()
+            return [json.loads(r["features_json"]) for r in rows]
+        finally:
+            conn.close()
+
+    def get_features_by_task_type(self, task_type: str) -> list[dict[str, Any]]:
+        """Return feature vectors filtered by task type."""
+        conn = self._conn()
+        try:
+            rows = conn.execute(
+                "SELECT features_json FROM prompt_features"
+                " WHERE task_type = ? ORDER BY overall_score DESC",
+                (task_type,),
+            ).fetchall()
+            return [json.loads(r["features_json"]) for r in rows]
         finally:
             conn.close()

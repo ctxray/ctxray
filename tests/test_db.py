@@ -235,3 +235,50 @@ def test_search_prompts_no_match(db):
     db.insert_prompt("add caching layer", source="claude-code")
     results = db.search_prompts("nonexistent-term-xyz")
     assert results == []
+
+
+class TestPromptFeaturesStorage:
+    """Test prompt_features table operations."""
+
+    def test_store_and_retrieve_features(self, tmp_path):
+        db = PromptDB(tmp_path / "test.db")
+        features = {
+            "prompt_hash": "abc123",
+            "source": "claude_code",
+            "task_type": "debug",
+            "word_count": 50,
+            "has_role_definition": True,
+            "overall_score": 72.5,
+        }
+        db.store_features("abc123", features)
+        result = db.get_features("abc123")
+        assert result is not None
+        assert result["prompt_hash"] == "abc123"
+        assert result["overall_score"] == 72.5
+
+    def test_get_features_not_found(self, tmp_path):
+        db = PromptDB(tmp_path / "test.db")
+        result = db.get_features("nonexistent")
+        assert result is None
+
+    def test_store_features_upsert(self, tmp_path):
+        db = PromptDB(tmp_path / "test.db")
+        db.store_features("abc", {"prompt_hash": "abc", "overall_score": 50.0})
+        db.store_features("abc", {"prompt_hash": "abc", "overall_score": 75.0})
+        result = db.get_features("abc")
+        assert result["overall_score"] == 75.0
+
+    def test_get_all_features(self, tmp_path):
+        db = PromptDB(tmp_path / "test.db")
+        db.store_features("a", {"prompt_hash": "a", "overall_score": 50.0})
+        db.store_features("b", {"prompt_hash": "b", "overall_score": 80.0})
+        all_features = db.get_all_features()
+        assert len(all_features) == 2
+
+    def test_get_features_by_task_type(self, tmp_path):
+        db = PromptDB(tmp_path / "test.db")
+        db.store_features("a", {"prompt_hash": "a", "task_type": "debug", "overall_score": 50.0})
+        db.store_features("b", {"prompt_hash": "b", "task_type": "implement", "overall_score": 80.0})
+        debug_features = db.get_features_by_task_type("debug")
+        assert len(debug_features) == 1
+        assert debug_features[0]["task_type"] == "debug"
