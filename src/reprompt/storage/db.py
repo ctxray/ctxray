@@ -17,6 +17,7 @@ class PromptDB:
         self.path = path
         path.parent.mkdir(parents=True, exist_ok=True)
         self._init_schema()
+        self._migrate_v08()
 
     def _conn(self) -> sqlite3.Connection:
         """Get a connection with row_factory set."""
@@ -129,6 +130,26 @@ class PromptDB:
         finally:
             conn.close()
 
+    def _migrate_v08(self) -> None:
+        """Add effectiveness columns to existing tables (v0.8.0).
+        Uses try/except OperationalError because ALTER TABLE ADD COLUMN
+        fails if the column already exists (SQLite < 3.37).
+        """
+        conn = self._conn()
+        try:
+            for stmt in [
+                "ALTER TABLE prompts ADD COLUMN effectiveness_score REAL",
+                "ALTER TABLE prompt_patterns ADD COLUMN effectiveness_avg REAL",
+                "ALTER TABLE prompt_patterns ADD COLUMN effectiveness_sample_size INTEGER DEFAULT 0",  # noqa: E501
+            ]:
+                try:
+                    conn.execute(stmt)
+                    conn.commit()
+                except sqlite3.OperationalError:
+                    pass  # column already exists
+        finally:
+            conn.close()
+
     @staticmethod
     def _hash(text: str) -> str:
         """SHA-256 hash of stripped text."""
@@ -166,6 +187,51 @@ class PromptDB:
         try:
             rows = conn.execute("SELECT * FROM prompts ORDER BY id").fetchall()
             return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def update_prompt_effectiveness(self, session_id: str, score: float) -> None:
+        """Set effectiveness_score on all prompts from a given session."""
+        conn = self._conn()
+        try:
+            conn.execute(
+                "UPDATE prompts SET effectiveness_score = ? WHERE session_id = ?",
+                (score, session_id),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def compute_pattern_effectiveness(self) -> None:
+        """Update effectiveness_avg and effectiveness_sample_size for all patterns.
+        For each pattern, finds prompts whose text contains the pattern text
+        (LIKE match) and averages their effectiveness_score.
+        Only updates patterns that have at least one matching scored prompt.
+        """
+        conn = self._conn()
+        try:
+            conn.execute("""
+                UPDATE prompt_patterns
+                SET
+                  effectiveness_avg = (
+                    SELECT AVG(p.effectiveness_score)
+                    FROM prompts p
+                    WHERE p.text LIKE '%' || prompt_patterns.pattern_text || '%'
+                      AND p.effectiveness_score IS NOT NULL
+                  ),
+                  effectiveness_sample_size = (
+                    SELECT COUNT(DISTINCT p.session_id)
+                    FROM prompts p
+                    WHERE p.text LIKE '%' || prompt_patterns.pattern_text || '%'
+                      AND p.effectiveness_score IS NOT NULL
+                  )
+                WHERE EXISTS (
+                  SELECT 1 FROM prompts p
+                  WHERE p.text LIKE '%' || prompt_patterns.pattern_text || '%'
+                    AND p.effectiveness_score IS NOT NULL
+                )
+            """)
+            conn.commit()
         finally:
             conn.close()
 
