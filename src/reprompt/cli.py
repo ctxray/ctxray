@@ -657,6 +657,30 @@ def compare(
 
 
 @app.command()
+def insights(
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+) -> None:
+    """Show research-backed insights about your prompting patterns."""
+    from reprompt.config import Settings
+    from reprompt.core.insights import compute_insights
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    all_features = db.get_all_features()
+    result = compute_insights(all_features)
+
+    if json_output:
+        import json as json_mod
+
+        typer.echo(json_mod.dumps(result, indent=2))
+    else:
+        from reprompt.output.terminal import render_insights
+
+        typer.echo(render_insights(result))
+
+
+@app.command()
 def demo() -> None:
     """Run reprompt on demo data to see what it looks like."""
     import shutil

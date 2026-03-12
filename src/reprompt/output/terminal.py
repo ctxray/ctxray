@@ -339,6 +339,57 @@ def render_score(breakdown: dict[str, Any]) -> str:
     return buf.getvalue()
 
 
+def render_insights(data: dict[str, Any]) -> str:
+    """Render personal prompt insights."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    count = data["prompt_count"]
+    if count == 0:
+        console.print(
+            "\n[dim]No prompt data yet. Run 'reprompt scan' first,"
+            " then 'reprompt insights'.[/dim]"
+        )
+        return buf.getvalue()
+
+    console.print(f"\n[bold]Prompt Insights[/bold] (based on {count} prompts)")
+    console.print("\u2500" * 40)
+
+    console.print(f"  Average Score:   {data['avg_score']:.0f}/100")
+    best = data["best_task_type"]
+    worst = data["worst_task_type"]
+    console.print(f"  Strongest:       {best['type']} ({best['avg_score']:.0f}/100)")
+    console.print(f"  Weakest:         {worst['type']} ({worst['avg_score']:.0f}/100)")
+
+    # Score distribution
+    dist = data.get("score_distribution", {})
+    if dist:
+        console.print("\n[bold]Score Distribution:[/bold]")
+        max_count = max(dist.values()) if dist.values() else 1
+        for bucket, cnt in dist.items():
+            bar_len = int(cnt / max_count * 20) if max_count > 0 else 0
+            bar = "\u2588" * bar_len
+            console.print(f"  {bucket:>6}  {bar} {cnt}")
+
+    # Research-backed insights
+    insights = data.get("insights", [])
+    if insights:
+        console.print(f"\n[bold]Research-backed Findings ({len(insights)}):[/bold]")
+        for i, insight in enumerate(insights, 1):
+            impact_color = {"high": "red", "medium": "yellow", "low": "dim"}.get(
+                insight["impact"], "dim"
+            )
+            console.print(
+                f"\n  [{impact_color}]{i}. {insight['category'].title()}[/{impact_color}]"
+            )
+            console.print(f"     {insight['finding']}")
+            console.print(f"     {insight['optimal']}")
+            console.print(f"     [bold]\u2192 {insight['action']}[/bold]")
+            console.print(f"     [dim][{insight['paper']}][/dim]")
+
+    return buf.getvalue()
+
+
 def render_compare(data: dict[str, Any]) -> str:
     """Render a side-by-side prompt comparison."""
     buf = StringIO()

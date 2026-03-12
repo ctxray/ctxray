@@ -122,6 +122,24 @@ def run_scan(
         ):
             result.new_stored += 1
 
+    # Compute PromptDNA features for new prompts
+    from reprompt.core.extractors import extract_features
+    from reprompt.core.scorer import score_prompt
+
+    for p in unique:
+        try:
+            dna = extract_features(
+                p.text,
+                source=p.source,
+                session_id=p.session_id,
+                project=p.project,
+            )
+            breakdown = score_prompt(dna)
+            dna.overall_score = breakdown.total
+            db.store_features(dna.prompt_hash, dna.to_dict())
+        except Exception:
+            pass  # Feature extraction should never block the scan
+
     # Extract session metadata and compute effectiveness scores
     for file_path, adapter_name in scanned_files:
         matched = next((a for a in adapters if a.name == adapter_name), None)
