@@ -1,7 +1,7 @@
 """Three-pass prompt segmentation into semantic parts.
 
 Splits a prompt into labeled segments: instruction, context, constraint,
-example, system_role, output_format, metadata, filler.
+example, system_role, output_format, filler.
 
 Algorithm:
   Pass 1: Structural split at blank lines, headers, code block boundaries.
@@ -25,7 +25,6 @@ SEGMENT_TYPES = (
     "constraint",
     "example",
     "output_format",
-    "metadata",
     "filler",
 )
 
@@ -117,7 +116,10 @@ def segment_prompt(text: str) -> list[PromptSegment]:
     segments: list[PromptSegment] = []
     current_pos = 0
     for chunk_text, seg_type, conf in classified:
-        # Find this chunk's position in the original text
+        # Find this chunk's position in the original text.
+        # idx == -1 should not occur because chunks come from splitting `text`,
+        # but whitespace normalisation could cause a mismatch; falling back to
+        # current_pos keeps start/end positions monotonically increasing.
         idx = text.find(chunk_text, current_pos)
         if idx == -1:
             idx = current_pos
