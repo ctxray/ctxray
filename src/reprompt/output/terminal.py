@@ -292,3 +292,97 @@ def render_merge_view(data: dict[str, Any]) -> str:
         console.print("Run [bold]reprompt save[/bold] to save ★ prompts as reusable templates.")
 
     return buf.getvalue()
+
+
+def render_score(breakdown: dict[str, Any]) -> str:
+    """Render a prompt score breakdown."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    total = breakdown["total"]
+    grade = (
+        "Excellent" if total >= 80
+        else "Good" if total >= 60
+        else "Fair" if total >= 40
+        else "Poor"
+    )
+
+    console.print(f"\n[bold]Prompt DNA Score: {total:.0f}/100[/bold]  ({grade})")
+    console.print("\u2500" * 40)
+
+    # Category bars
+    categories = [
+        ("Structure", breakdown["structure"], 25),
+        ("Context", breakdown["context"], 25),
+        ("Position", breakdown["position"], 20),
+        ("Repetition", breakdown["repetition"], 15),
+        ("Clarity", breakdown["clarity"], 15),
+    ]
+    for name, cat_score, max_val in categories:
+        pct = cat_score / max_val if max_val > 0 else 0
+        filled = int(pct * 10)
+        bar = "\u2588" * filled + "\u2591" * (10 - filled)
+        console.print(f" {name:<12} {bar}  {cat_score:.0f}/{max_val}")
+
+    # Suggestions
+    suggestions = breakdown.get("suggestions", [])
+    if suggestions:
+        console.print(f"\n[bold]Suggestions ({len(suggestions)}):[/bold]")
+        for s in suggestions:
+            impact_color = {"high": "red", "medium": "yellow", "low": "dim"}.get(
+                s["impact"], "dim"
+            )
+            console.print(
+                f" [{impact_color}]\u25a0[/{impact_color}] [{s['paper']}] {s['message']}"
+            )
+
+    return buf.getvalue()
+
+
+def render_compare(data: dict[str, Any]) -> str:
+    """Render a side-by-side prompt comparison."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    console.print("\n[bold]Prompt Comparison[/bold]")
+
+    table = Table()
+    table.add_column("Feature", style="dim", min_width=18)
+    table.add_column("Prompt A", justify="right")
+    table.add_column("Prompt B", justify="right")
+    table.add_column("\u0394", justify="right")
+
+    a = data["prompt_a"]
+    b = data["prompt_b"]
+
+    rows = [
+        ("Score", a["total"], b["total"]),
+        ("Word Count", a["word_count"], b["word_count"]),
+        ("Structure", a["structure"], b["structure"]),
+        ("Context", a["context"], b["context"]),
+        ("Position", a["position"], b["position"]),
+        ("Repetition", a["repetition"], b["repetition"]),
+        ("Clarity", a["clarity"], b["clarity"]),
+        ("Specificity", a["context_specificity"], b["context_specificity"]),
+        ("Ambiguity", a["ambiguity_score"], b["ambiguity_score"]),
+    ]
+    for label, va, vb in rows:
+        delta = vb - va
+        sign = "+" if delta > 0 else ""
+        color = "green" if delta > 0 else "red" if delta < 0 else "dim"
+        table.add_row(
+            label,
+            f"{va:.1f}" if isinstance(va, float) else str(va),
+            f"{vb:.1f}" if isinstance(vb, float) else str(vb),
+            f"[{color}]{sign}{delta:.1f}[/{color}]",
+        )
+
+    console.print(table)
+
+    # Winner
+    if a["total"] != b["total"]:
+        winner = "B" if b["total"] > a["total"] else "A"
+        diff = abs(b["total"] - a["total"])
+        console.print(f"\n[bold]Prompt {winner} scores {diff:.0f} points higher.[/bold]")
+
+    return buf.getvalue()
