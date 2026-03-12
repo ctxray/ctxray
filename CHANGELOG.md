@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.2] - 2026-03-12
+
+### Added
+- **`skill_invocation` prompt category** — skill/workflow invocations (e.g. `superpowers:brainstorming`, `feature-dev:code-architect`) are now classified as their own category instead of polluting `other` or being silently filtered. Shows up in Prompt Categories so you can see what % of your sessions are workflow-driven vs content-driven
+- **`reprompt purge --all`** — wipes the entire database and resets session tracking (useful to remove demo data or start fresh). Follow with `reprompt scan` to reimport
+
+### Fixed
+- Skill invocations previously added to filter list (wrong approach) — they are analytically valuable and now correctly categorized instead of discarded
+- Regex detection covers any `namespace:skill-name` pattern (9+ char namespace) — future-proof, no hardcoded list required
+
+### Changed
+- Tests: 490 → 493
+
 ## [0.7.1] - 2026-03-11
 
 ### Added

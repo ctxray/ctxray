@@ -347,19 +347,14 @@ def test_extracts_project_name_from_subagent_top_level():
     assert name == "reprompt [subagent]"
 
 
-def test_filters_skill_invocations():
-    """Skill namespace patterns filter workflow meta-commands, not general phrases."""
+def test_skill_invocations_pass_filter():
+    """Skill invocations are NOT filtered — they are categorized as skill_invocation."""
     from reprompt.adapters.filters import should_keep_prompt
 
-    # Skill namespace patterns are filtered regardless of surrounding language
-    assert not should_keep_prompt("请使用 superpowers:executing-plans 执行 docs/plans/foo.md")
-    assert not should_keep_prompt("请使用 feature-dev:feature-dev 开始开发")
-    assert not should_keep_prompt("use the superpowers:brainstorming skill for this")
-    assert not should_keep_prompt("invoke code-simplifier:simplify on this file")
-    assert not should_keep_prompt("claude-md-management:revise-claude-md")
-    # "请使用" alone does NOT filter — too broad, would catch "请使用Python写函数"
+    # Skill invocations pass the filter (categorized later in library.py)
+    assert should_keep_prompt("请使用 superpowers:executing-plans 执行 docs/plans/foo.md")
+    assert should_keep_prompt("use the feature-dev:feature-dev skill")
+    assert should_keep_prompt("invoke code-simplifier:simplify on this file")
+    # Regular prompts also pass
     assert should_keep_prompt("请使用Python写一个排序函数")
-    assert should_keep_prompt("请使用 pandas 处理这份数据")
-    # Real questions about these tools should still pass
     assert should_keep_prompt("what does the brainstorming workflow do?")
-    assert should_keep_prompt("how do I set up feature development in my project?")

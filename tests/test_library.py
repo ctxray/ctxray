@@ -104,3 +104,38 @@ def test_categorize_write_a_function():
 def test_categorize_debug_extended():
     assert categorize_prompt("the auth is not working") == "debug"
     assert categorize_prompt("it fails with an exception") == "debug"
+
+
+def test_categorize_skill_invocation_english():
+    """Skill namespace patterns → skill_invocation category."""
+    from reprompt.core.library import categorize_prompt
+
+    assert categorize_prompt("use the superpowers:brainstorming skill") == "skill_invocation"
+    assert categorize_prompt("invoke feature-dev:code-architect") == "skill_invocation"
+    assert categorize_prompt("code-simplifier:simplify on this module") == "skill_invocation"
+    assert categorize_prompt("claude-md-management:revise-claude-md") == "skill_invocation"
+    assert (
+        categorize_prompt("claude-code-setup:claude-automation-recommender") == "skill_invocation"
+    )
+
+
+def test_categorize_skill_invocation_chinese():
+    """Chinese skill invocations are also categorized correctly."""
+    from reprompt.core.library import categorize_prompt
+
+    assert (
+        categorize_prompt("请使用 superpowers:executing-plans 执行 docs/plans/foo.md")
+        == "skill_invocation"
+    )
+    assert categorize_prompt("请使用 feature-dev:feature-dev 开始开发") == "skill_invocation"
+
+
+def test_skill_invocation_does_not_match_short_patterns():
+    """Short namespace:value patterns (URLs, config, git commits) are NOT skill_invocation."""
+    from reprompt.core.library import categorize_prompt
+
+    # These should fall through to other categories or 'other'
+    assert categorize_prompt("fix: resolve the null pointer error") != "skill_invocation"
+    assert categorize_prompt("please use Python to build this function") != "skill_invocation"
+    assert categorize_prompt("node:packages need updating in the project") != "skill_invocation"
+    assert categorize_prompt("user:admin has no permissions set") != "skill_invocation"

@@ -138,11 +138,6 @@ SKIP_CONTAINS = (
     "GITHUB_STEP_SUMMARY",
     # Cline system error
     "You did not use a tool in your previous response",
-    # Skill/workflow invocations (meta-commands, not domain prompts)
-    "superpowers:",
-    "feature-dev:",
-    "code-simplifier:",
-    "claude-md-management:",
 )
 
 
