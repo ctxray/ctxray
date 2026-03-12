@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.4] - 2026-03-12
+
+### Improved
+- **Mixed Chinese/English tokenization** — Hot Phrases now uses a custom analyzer that handles code-switching text natively: Chinese character runs emit bigrams (报错, 修复, 自动化 etc.), ASCII words use standard tokenization. Zero extra dependencies (regex only)
+- **Chinese stop words** (~90 words, HIT + cn_stopwords) — common Chinese particles, pronouns, conjunctions, discourse markers (好的, 是否, 或者, 现在, 项目, 代码 etc.) are now filtered. Eliminates single-char noise like 们/现/个/么 from Hot Phrases
+- **English conversational stop words** (sklearn gap fill) — sklearn's built-in list (Stone 2010, formal text) misses common chat words: `does`, `yeah`, `ok`, `gotcha`, `doesn`, `wouldn`, `really`, `maybe`, `also` etc. These are now filtered
+- **AI tool names as stop words** — `claude`, `cursor`, `aider`, `gemini` are generic for their own users and no longer pollute Hot Phrases
+- **Chinese bigrams only** — single Chinese characters are almost always stop words or partial words (们 only in 我们, 么 only in 什么); removing unigram emission keeps the phrase table semantically meaningful
+
 ## [0.7.3] - 2026-03-12
 
 ### Improved
