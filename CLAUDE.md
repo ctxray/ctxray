@@ -18,7 +18,7 @@ uv run python -m build                     # build wheel
 
 ```
 src/reprompt/
-├── cli.py              # Typer CLI (scan, report, search, library, recommend, demo, status, purge, install-hook, score, compare, insights)
+├── cli.py              # Typer CLI (scan, report, search, library, recommend, demo, status, purge, install-hook, score, compare, insights, digest)
 ├── config.py           # pydantic-settings, env vars (REPROMPT_ prefix) + TOML config
 ├── demo.py             # Built-in demo data generator (no network required)
 ├── core/
@@ -32,7 +32,8 @@ src/reprompt/
 │   ├── extractors.py    # Tier 1 feature extraction (regex, <1ms)
 │   ├── scorer.py        # Research-calibrated scoring (0-100)
 │   ├── segmenter.py     # Three-pass prompt segmentation
-│   └── insights.py      # Personal insights vs research-optimal
+│   ├── insights.py      # Personal insights vs research-optimal
+│   └── digest.py        # Two-window comparison for weekly digest
 ├── adapters/
 │   ├── base.py         # BaseAdapter ABC
 │   ├── claude_code.py  # Claude Code JSONL parser
@@ -75,7 +76,7 @@ Session files → Adapter.parse() → list[Prompt]
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 371 tests, 95% coverage target
+- Tests: pytest, 460 tests, 95% coverage target
 
 ## Prompt Science Engine
 

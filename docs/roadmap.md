@@ -8,7 +8,7 @@ reprompt is the **prompt analytics** tool for AI coding sessions — understand 
 
 ---
 
-## Current State (v0.5)
+## Current State (v0.7)
 
 ### Adapters (6)
 - Claude Code, OpenClaw, Cursor IDE, Aider, Gemini CLI, Cline
@@ -32,6 +32,10 @@ reprompt is the **prompt analytics** tool for AI coding sessions — understand 
 - `reprompt lint` — prompt quality checks (CI-ready)
 - `reprompt search` — full-text prompt search
 - `reprompt demo` — try with sample data
+- `reprompt digest` — weekly two-window comparison (this week vs last week)
+- `reprompt score "prompt"` — instant 0-100 prompt quality scoring
+- `reprompt compare "a" "b"` — side-by-side feature comparison
+- `reprompt insights` — personal patterns vs research-optimal
 
 ### Integration
 - MCP server for IDE integration
