@@ -549,6 +549,114 @@ def lint(
 
 
 @app.command()
+def score(
+    text: str = typer.Argument(..., help="Prompt text to score"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+) -> None:
+    """Score a prompt using research-backed analysis."""
+    from reprompt.core.extractors import extract_features
+    from reprompt.core.scorer import score_prompt
+
+    dna = extract_features(text, source="manual", session_id="score-cli")
+    breakdown = score_prompt(dna)
+    dna.overall_score = breakdown.total
+
+    if json_output:
+        import json as json_mod
+
+        data = {
+            "total": breakdown.total,
+            "structure": breakdown.structure,
+            "context": breakdown.context,
+            "position": breakdown.position,
+            "repetition": breakdown.repetition,
+            "clarity": breakdown.clarity,
+            "task_type": dna.task_type,
+            "word_count": dna.word_count,
+            "context_specificity": dna.context_specificity,
+            "ambiguity_score": dna.ambiguity_score,
+            "suggestions": [
+                {
+                    "category": s.category,
+                    "paper": s.paper,
+                    "message": s.message,
+                    "impact": s.impact,
+                }
+                for s in breakdown.suggestions
+            ],
+        }
+        typer.echo(json_mod.dumps(data, indent=2))
+    else:
+        from reprompt.output.terminal import render_score
+
+        data = {
+            "total": breakdown.total,
+            "structure": breakdown.structure,
+            "context": breakdown.context,
+            "position": breakdown.position,
+            "repetition": breakdown.repetition,
+            "clarity": breakdown.clarity,
+            "suggestions": [
+                {
+                    "category": s.category,
+                    "paper": s.paper,
+                    "message": s.message,
+                    "impact": s.impact,
+                }
+                for s in breakdown.suggestions
+            ],
+        }
+        typer.echo(render_score(data))
+
+
+@app.command()
+def compare(
+    prompt_a: str = typer.Argument(..., help="First prompt"),
+    prompt_b: str = typer.Argument(..., help="Second prompt"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+) -> None:
+    """Compare two prompts side by side using Prompt DNA analysis."""
+    from reprompt.core.extractors import extract_features
+    from reprompt.core.prompt_dna import PromptDNA
+    from reprompt.core.scorer import ScoreBreakdown, score_prompt
+
+    dna_a = extract_features(prompt_a, source="manual", session_id="compare-a")
+    dna_b = extract_features(prompt_b, source="manual", session_id="compare-b")
+    score_a = score_prompt(dna_a)
+    score_b = score_prompt(dna_b)
+
+    def _build_data(
+        dna: PromptDNA, sc: ScoreBreakdown
+    ) -> dict[str, object]:
+        return {
+            "total": sc.total,
+            "structure": sc.structure,
+            "context": sc.context,
+            "position": sc.position,
+            "repetition": sc.repetition,
+            "clarity": sc.clarity,
+            "word_count": dna.word_count,
+            "task_type": dna.task_type,
+            "context_specificity": dna.context_specificity,
+            "ambiguity_score": dna.ambiguity_score,
+        }
+
+    result = {
+        "prompt_a": _build_data(dna_a, score_a),
+        "prompt_b": _build_data(dna_b, score_b),
+    }
+
+    if json_output:
+        import json as json_mod
+
+        typer.echo(json_mod.dumps(result, indent=2))
+    else:
+        from reprompt.output.terminal import render_compare
+
+        typer.echo(render_compare(result))
+
+
+@app.command()
 def demo() -> None:
     """Run reprompt on demo data to see what it looks like."""
     import shutil
