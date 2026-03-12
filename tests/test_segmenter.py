@@ -1,4 +1,5 @@
 """Tests for prompt segmentation."""
+
 from __future__ import annotations
 
 from reprompt.core.segmenter import segment_prompt

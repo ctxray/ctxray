@@ -12,6 +12,7 @@ Zero external dependencies. <1ms per prompt.
 
 Research basis: The Prompt Report (arXiv:2406.06608) taxonomy of 58 techniques.
 """
+
 from __future__ import annotations
 
 import re

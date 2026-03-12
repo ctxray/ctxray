@@ -4,103 +4,92 @@
 
 **Title:** I built a tool to analyze my Claude Code prompt history — turns out 32% were near-duplicates
 
-**Status:** Posted. Editing body + author comment with conversational style.
-
-### Body（复制粘贴到 Reddit 编辑框）
-
-I've been using Claude Code daily for months and at some point I got curious — am I actually getting better at prompting, or just repeating myself?
-
-So I built a tool to find out. It scans your AI coding session files and figures out which prompts you keep rewriting in slightly different ways. Turns out... a lot of them.
-
-The thing that surprised me most: my debug prompts ("fix the bug", "why is this failing") are way shorter than my implementation prompts — and they lead to longer, messier sessions. Once I saw that pattern, I started being more specific and it actually helped.
-
-Since the first post it's grown quite a bit. Now supports 6 tools (Claude Code, OpenClaw, Cursor, Aider, Gemini CLI, Cline), has a `reprompt lint` command for CI prompt quality checks, a GitHub Action, session effectiveness scoring, and trend tracking over time.
-
-You can try it without your own data — \`reprompt demo\` generates sample sessions so you can see the analysis:
-
-    pipx install reprompt-cli
-    reprompt demo
-
-Everything stays local. 371 tests.
-
-GitHub: https://github.com/reprompt-dev/reprompt
-
-Anyone else noticed patterns in how they prompt? Curious what your most repeated prompt is.
+**Status:** Posted. Body rewritten in conversational style. Do not re-edit existing post. Post follow-up as new thread when reaching 0.8.0 milestone.
 
 ---
 
-### 作者评论（复制粘贴替换现有评论）
+## r/programming (Day 1-2) — v0.7.2 更新版
 
-Author here. The weirdest finding was that I kept rewriting the same prompts in slightly different ways without realizing it. "Fix the auth bug" one day, "fix the authentication issue" the next — basically the same thing.
+**Angle:** r/programming 偏好技术洞察和观点。标题像技术博客标题，body 像跟同事聊技术。新版本把 Prompt Science Engine 融入技术叙事，不只讲 dedup。
 
-After tracking for a week I started keeping a note of prompts that worked well and just reusing them. Sounds obvious in hindsight but you don't notice the pattern until you see the data.
+**Title:** I applied 4 NLP papers to score my AI coding prompts — and rewrote the scoring twice when my intuition was wrong
 
-If you try it: \`reprompt demo\` works without any real sessions, or \`reprompt scan\` if you want to analyze your actual history (Claude Code, Cursor, Aider, Gemini CLI, Cline, OpenClaw — all auto-detected).
+### Body
 
-> **注意：** Reddit 代码块用 4 个空格缩进（不是三个反引号）。上面 pipx 那两行已用正确格式。复制时 backtick 会正常显示。
+I've been using AI coding assistants daily for 6 months. My working assumption was always that better prompts = more specific prompts. Seemed obvious. Turned out to be partially right, but not in the way I expected.
 
----
+I built a tool called reprompt that scans all my AI session files and scores each prompt 0-100 using NLP features derived from published research. Here's what I learned.
 
-## r/programming (Day 1-2)
+The dedup part came first. I had thousands of prompts across hundreds of session files and wanted to find patterns. Exact string matching was useless — "fix the auth bug" and "fix the authentication issue" are obviously the same intent but share almost no tokens. I tried sentence-transformers (all-MiniLM-L6-v2) but for prompts averaging 15 tokens, the quality difference over TF-IDF cosine similarity was marginal and the model download wasn't worth it. TF-IDF with bigram/trigram extraction at threshold 0.85 turned out to be the right tradeoff: fast, no dependencies, catches the semantic near-dupes that matter. Below 0.8 you get false positives ("add auth" matching "add tests"). Above 0.9 you miss obvious dupes.
 
-**Angle:** r/programming 偏好技术洞察和观点，不是工具广告。标题要像技术博客标题，body 像跟同事聊技术。
+After dedup I had ~800 unique prompts. I wanted to know which ones were good. That's where the research came in.
 
-**Title:** Why TF-IDF still beats transformers for deduplicating short text — lessons from analyzing 1,200 AI coding prompts
+Four papers I used: Google 2512.14982 studied repetition patterns in prompts and their effect on output quality. Stanford 2307.03172 documented position bias — models weight the beginning and end of a prompt more heavily, so frontloading context matters. SPELL EMNLP 2023 used perplexity as a proxy for prompt informativeness (higher perplexity = more diverse vocabulary = more informative). The Prompt Report 2406.06608 gave me a task taxonomy (debug, implement, test, refactor, explain, etc.) to normalize across categories.
 
-### Body（复制粘贴到 Reddit）
+From these I built a scoring function with four components: specificity (file paths, line numbers, function names, error messages), position (how much relevant context is in the first 30% of the prompt), repetition penalty, and a vocabulary entropy proxy for informativeness. The weights were research-informed but calibrated empirically on my own data.
 
-I've been using AI coding assistants daily and ended up with thousands of prompts across hundreds of session files. I wanted to deduplicate them, so I tried the obvious approaches and learned a few things.
+The scores were uncomfortable. Here's a concrete example:
 
-First attempt: SHA-256 hashing. Fast, but only catches exact copies. "Fix the auth bug" and "fix the authentication issue" are obviously the same intent, but hash dedup misses them completely.
+    reprompt score "fix the bug"
+    → 23/100
+      Specificity: 8  — no file, no function, no error message
+      Position: 15    — context-free opening
+      Repetition: 0   — none detected
+      Perplexity: 0   — minimal vocabulary
 
-Second attempt: sentence-transformers (all-MiniLM-L6-v2). Works great... but requires a model download, takes 2+ seconds to embed a batch, and is overkill for prompts that average 15 tokens.
+    reprompt score "fix the null pointer in auth.service.ts:47 — token is null when session expires without refresh, expected AuthException not 200"
+    → 89/100
+      Specificity: 42 — file path, line number, error type, expected behavior
+      Position: 22    — context-dense opening
+      Repetition: 0   — none
+      Perplexity: 25  — rich vocabulary
 
-What actually worked: TF-IDF with bigram/trigram extraction and cosine similarity at threshold 0.85. For short text, the term overlap between "fix the auth bug" and "fix the authentication issue" is already high enough that TF-IDF catches it without needing semantic understanding. Below 0.8 you get false positives ("add auth" matching "add tests"). Above 0.9 you miss obvious dupes.
+I rewrote the scoring logic twice. First version over-weighted length (longer prompts scored higher regardless of content). Second version fixed that but under-weighted position — I was treating the prompt as a bag of words, which is wrong. The final version uses a sliding window to evaluate where in the prompt specific signals appear.
 
-The counterintuitive part: TF-IDF's weakness (no semantic understanding) is actually fine here because coding prompts share a constrained vocabulary. "Refactor the database connection pool" and "refactor the db connection pooling" have enough n-gram overlap that you don't need embeddings to match them.
+The `reprompt compare "a" "b"` command shows feature breakdowns side-by-side. `reprompt insights` compares your personal average against research benchmarks per category — it told me my debug prompts averaged 38/100 while my implement prompts averaged 61/100. Knowing that made me change how I prompt for debugging specifically.
 
-I packaged this into a CLI called reprompt. The dedup is one piece — it also does K-means clustering to group prompts into themes, tracks how prompt specificity evolves over time, scores session effectiveness, and has a `reprompt lint` command with a GitHub Action for CI-level prompt quality checks.
+`reprompt digest` gives a weekly summary comparing this week vs last week: average score, specificity trend, category distribution with direction arrows. It runs as a hook at the end of every Claude Code session if you want.
 
-Supports 6 AI coding tools out of the box: Claude Code, Cursor IDE, Aider, Gemini CLI, Cline, and OpenClaw. Each adapter is ~50 lines implementing a common interface — community adapters for more tools are easy to add.
+Everything is local — no cloud, no LLM. The scoring is deterministic NLP. Pluggable embedding backend (TF-IDF default, Ollama optional).
 
     pipx install reprompt-cli
-    reprompt demo
+    reprompt scan && reprompt insights
 
-The \`demo\` command generates sample data so you can see the analysis without your own sessions. Or \`reprompt scan\` to analyze your real sessions (auto-detects installed tools).
-
-Curious if anyone's benchmarked other similarity metrics for short text dedup. Jaccard on token sets was my third attempt — faster than TF-IDF but worse precision on prompts with shared stop-heavy phrases.
+6 tools supported: Claude Code, Cursor, Aider, Gemini CLI, Cline, OpenClaw. 493 tests. MIT.
 
 https://github.com/reprompt-dev/reprompt
 
----
-
-### 作者评论
-
-Author here. One thing I didn't expect: the most useful output isn't the dedup stats, it's seeing which prompt *patterns* correlate with productive sessions.
-
-My debug prompts ("fix the bug", "why is this failing") average 8 tokens. My implementation prompts ("add pagination to the search results using offset/limit with a default page size of 20") average 25 tokens. The short ones correlate with longer, messier sessions. Makes sense in retrospect — vague input, vague output.
-
-The \`recommend\` command surfaces this. It's basically: "hey, your debug prompts are 3x shorter than your implement prompts and your debug sessions are less effective. Try including the filename, function, and expected behavior."
-
-Since v0.4 I also added \`reprompt lint\` — it checks prompts against quality rules (too short, too vague, debug prompts without file references) and exits non-zero on errors. There's a GitHub Action so you can run it in CI. Not that many people will lint their prompts in CI, but it's there for teams that want to enforce standards.
+Curious if others have thought about what makes a coding prompt measurably good. My intuition matched the research maybe 70% of the time — position effects surprised me.
 
 ---
 
-## r/LocalLLaMA (Day 3-5)
+### 作者评论（post 后几小时发）
 
-**Angle:** r/LocalLLaMA 关心的是：隐私、硬件参数、Ollama 具体配置、诚实结果、反商业。这个社区对"伪装成个人项目的商业工具"很敏感，所以要强调 MIT + 个人项目 + 没有付费版。
+Author here. One thing the research angle revealed that my intuition didn't: position matters more than I expected.
 
-**Title:** I wanted to analyze my AI coding prompts without sending them anywhere — built a local-first CLI, default is TF-IDF (no model needed), optional Ollama embeddings
+I used to put context at the end ("...in the auth module, by the way the token handling is in auth.service.ts:47"). Stanford's position bias paper suggests this is worse than frontloading it: "In auth.service.ts:47, fix the null pointer when the token is missing..." The model weights the beginning and end of the prompt more heavily, so burying the specific details in the middle is a structural mistake.
 
-### Body（复制粘贴到 Reddit）
+`reprompt compare` makes this visible. You can paste two versions of the same prompt and see the position score differ even when the content is identical.
 
-Quick context: I use AI coding tools daily (Claude Code, Cursor, Aider, Gemini CLI). After a few months I had hundreds of session files with thousands of prompts scattered across them. I wanted to understand my patterns — which prompts I keep repeating, which ones actually work well — but every analytics tool I found wanted to upload data somewhere.
+The other finding I didn't expect: I was using AI workflow invocations (internal automation patterns) for about 8% of my sessions. Those aren't prompts at all — they're workflow triggers. The latest version classifies these as a separate `skill_invocation` category so they don't pollute the scoring average. Small change, big improvement to signal quality.
 
-So I built reprompt. It's a CLI that runs entirely on your machine. No cloud, no telemetry, no account needed.
+---
 
-Why I care about local: my prompts contain file paths, function names, error messages, internal API endpoints. That's basically a map of my codebase. Not sending that anywhere.
+## r/LocalLLaMA (Day 3-5) — v0.7.2 更新版
 
-The default embedding backend is TF-IDF (scikit-learn). Zero config, no model downloads, no GPU. For short text like coding prompts (~15 tokens average) it works surprisingly well for dedup and clustering.
+**Angle:** 隐私第一、全本地、Ollama 集成具体配置、无商业意图、诚实说明局限性。新增：scoring 也是 100% 本地 NLP，零 LLM 依赖。
+
+**Title:** I wanted to score my AI coding prompts without sending them anywhere — built a local scoring tool using NLP research papers, Ollama optional
+
+### Body
+
+Quick context: I use AI coding tools daily — Claude Code, Cursor, Aider, Gemini CLI. After 6 months I had thousands of prompts in session files and wanted to know which ones actually worked well. Every analytics tool I found either required an account or wanted to send my data somewhere.
+
+My prompts contain file paths, internal function names, error messages from production systems. That's essentially a map of my codebase. Not sending that to an API to get scored.
+
+So I built reprompt. It runs entirely on your machine. Here's the privacy picture:
+
+The default backend is TF-IDF (scikit-learn). No model downloads, no network calls, no GPU. It handles deduplication and clustering fine for short text. For prompts averaging 15 tokens, n-gram overlap captures enough semantic similarity that you don't need embeddings.
 
 If you want better embeddings and you're already running Ollama:
 
@@ -109,42 +98,42 @@ If you want better embeddings and you're already running Ollama:
     backend = "ollama"
     model = "nomic-embed-text"
 
-That's it. It talks to your local Ollama at localhost:11434. Also supports sentence-transformers if you prefer that.
+That's the entire config. It hits your local Ollama at localhost:11434 — nothing leaves the machine.
 
-What it actually does once your prompts are indexed:
+The scoring part (`reprompt score`, `reprompt compare`, `reprompt insights`) is 100% local NLP regardless of which embedding backend you choose. No LLM involved. It's based on features from 4 published papers: specificity signals (file paths, line numbers, error messages), position bias, repetition patterns, perplexity proxy. The score is deterministic — same input, same output, every time.
 
-- Finds prompts you keep rewriting in different words (SHA-256 exact + cosine similarity)
-- Groups similar prompts into clusters (K-means)
-- Builds a personal prompt library sorted by task type (debug/implement/test/refactor)
-- Tracks if your prompts are getting more specific over time
-- \`reprompt recommend\` tells you which patterns correlate with good sessions
-- \`reprompt effectiveness\` scores your sessions (composite of tool usage, errors, specificity)
-- \`reprompt lint\` checks prompt quality (CI-ready, with a GitHub Action)
+I want to be honest about what the score is and isn't. It's a proxy for quality based on observable NLP features correlated with good prompts in research. It will penalize "fix the bug" (23/100) and reward "fix the NPE in auth.service.ts:47 when token expires mid-session" (87/100). Whether your specific AI tool responds better to specific prompts is something you verify empirically — the score is a starting point, not ground truth.
 
-Supports 6 tools out of the box: Claude Code, Cursor IDE, Aider, Gemini CLI, Cline, OpenClaw. Auto-detects what you have installed.
+What I actually use daily:
+
+`reprompt digest --quiet` runs as a hook at the end of every Claude Code session. One line: "↑ specificity 47→62 this week, 156 prompts (+12%), more debug less implement." It takes 0.2 seconds.
+
+`reprompt library` has become a personal cookbook — high-frequency patterns from my actual sessions, organized by task type. I reuse prompts from it instead of writing from scratch.
+
+`reprompt insights` tells me which category of prompts is dragging my average down. Mine is debug — average 38/100 because I default to "fix the bug" when I'm rushed.
+
+Supports 6 tools auto-detected: Claude Code, Cursor IDE, Aider, Gemini CLI, Cline, OpenClaw. Everything stays in a local SQLite file you can query directly. No lock-in.
 
     pipx install reprompt-cli
-    reprompt demo       # built-in sample data, see the analysis immediately
-    reprompt scan       # point at your real sessions
+    reprompt demo       # built-in sample data
+    reprompt scan       # real sessions
 
-Tested on M2 Mac. TF-IDF backend processes ~1200 prompts in under 2 seconds. Ollama backend depends on your setup but adds maybe 10 seconds for the embedding step.
+M2 Mac: ~1,200 prompts process in under 2 seconds (TF-IDF). Individual scoring is instant. Ollama embedding adds ~10 seconds for the batch step depending on your hardware.
 
-MIT licensed, personal project, no company behind it, no paid tier, no plans for one. 371 tests.
+MIT, personal project, no company, no paid tier, no plans for one. 493 tests.
 
 https://github.com/reprompt-dev/reprompt
 
-Anyone running local analytics on their own data? Curious what embedding models you've found work best for short text.
+Anyone running local analytics on their own coding sessions? Curious which embedding models you've found useful for short text clustering.
 
 ---
 
 ### 作者评论
 
-Author here. Built this on an M2 MacBook. Honest results:
+Author here. Built this on an M2 Mac. Honest performance notes:
 
-The TF-IDF backend catches most duplicates for coding prompts because the vocabulary is constrained. "Fix the auth bug" and "fix the authentication issue" have enough token overlap that you don't need semantic embeddings. For longer, more nuanced prompts, Ollama with nomic-embed-text does noticeably better at clustering.
+TF-IDF catches most coding prompt duplicates because the vocabulary is constrained. "Fix the auth bug" and "fix the authentication issue" have enough token overlap that you don't need semantic embeddings. For clustering longer, more nuanced prompts, Ollama with nomic-embed-text noticeably improves results.
 
-The feature I use most is \`reprompt library\` — after a few weeks of scanning it builds a personal collection of prompts organized by what you were doing (debugging, implementing, testing). It's like a prompt cookbook built from what you actually typed, not from someone's blog post. I keep reusing prompts from it instead of writing new ones from scratch.
+The scoring is the part I use most. After I saw my debug prompts averaging 38/100 I started deliberately adding file paths and error messages even when I thought I knew where the problem was. Sessions got shorter. Could be correlation, could be causation — hard to isolate. But the pattern is consistent over 3 weeks.
 
-New in v0.5: \`reprompt trends\` tracks how your prompting evolves over time — specificity score, vocabulary breadth, category distribution across sliding windows. Interesting to see yourself actually improve (or not).
-
-Storage is plain SQLite. You can query it directly if you want. No lock-in.
+Storage is plain SQLite at `~/.local/share/reprompt/prompts.db`. You can run any query you want against it. I've been analyzing my own data with DuckDB for some deeper cuts that the CLI doesn't expose yet.

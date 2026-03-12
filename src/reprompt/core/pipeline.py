@@ -176,7 +176,9 @@ def run_scan(
     return result
 
 
-def build_report_data(settings: Settings | None = None) -> dict[str, Any]:
+def build_report_data(
+    settings: Settings | None = None, n_clusters: int | None = None
+) -> dict[str, Any]:
     """Build report data from stored prompts."""
     if settings is None:
         settings = Settings()
@@ -213,7 +215,7 @@ def build_report_data(settings: Settings | None = None) -> dict[str, Any]:
     # K-means clustering (only if enough texts)
     clusters_summary: list[dict[str, Any]] = []
     if len(texts) >= 5:
-        raw_clusters = cluster_prompts(texts)
+        raw_clusters = cluster_prompts(texts, n_clusters=n_clusters)
         for cid, members in sorted(raw_clusters.items()):
             clusters_summary.append(
                 {

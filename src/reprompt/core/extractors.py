@@ -10,6 +10,7 @@ Research basis for feature selection:
 - Position: Lost in the Middle (arXiv:2307.03172)
 - Specificity: DETAIL (arXiv:2512.02246)
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -54,14 +55,36 @@ _STEP_BY_STEP_RE = re.compile(
 _SECTION_RE = re.compile(r"^#{1,4}\s+\S", re.MULTILINE)
 _SENTENCE_RE = re.compile(r"[.!?]+(?:\s|$)")
 
-_VAGUE_WORDS = frozenset({
-    "something", "somehow", "maybe", "probably", "stuff", "things",
-    "whatever", "anything", "it", "this", "that", "some",
-})
-_HEDGE_WORDS = frozenset({
-    "maybe", "perhaps", "might", "could", "possibly", "somewhat",
-    "kind of", "sort of", "I think", "I guess",
-})
+_VAGUE_WORDS = frozenset(
+    {
+        "something",
+        "somehow",
+        "maybe",
+        "probably",
+        "stuff",
+        "things",
+        "whatever",
+        "anything",
+        "it",
+        "this",
+        "that",
+        "some",
+    }
+)
+_HEDGE_WORDS = frozenset(
+    {
+        "maybe",
+        "perhaps",
+        "might",
+        "could",
+        "possibly",
+        "somewhat",
+        "kind of",
+        "sort of",
+        "I think",
+        "I guess",
+    }
+)
 
 
 def extract_features(
@@ -201,13 +224,53 @@ def _compute_repetition(words: list[str]) -> tuple[float, bool]:
         return (0.0, False)
 
     # Filter to content words (>3 chars, not common stop words)
-    stop = frozenset({
-        "the", "and", "for", "that", "this", "with", "from", "have", "will",
-        "are", "was", "were", "been", "being", "has", "had", "does", "did",
-        "but", "not", "you", "all", "can", "her", "his", "its", "our",
-        "they", "them", "then", "than", "into", "when", "which", "there",
-        "about", "should", "would", "could", "also", "just", "more", "some",
-    })
+    stop = frozenset(
+        {
+            "the",
+            "and",
+            "for",
+            "that",
+            "this",
+            "with",
+            "from",
+            "have",
+            "will",
+            "are",
+            "was",
+            "were",
+            "been",
+            "being",
+            "has",
+            "had",
+            "does",
+            "did",
+            "but",
+            "not",
+            "you",
+            "all",
+            "can",
+            "her",
+            "his",
+            "its",
+            "our",
+            "they",
+            "them",
+            "then",
+            "than",
+            "into",
+            "when",
+            "which",
+            "there",
+            "about",
+            "should",
+            "would",
+            "could",
+            "also",
+            "just",
+            "more",
+            "some",
+        }
+    )
     content_words = [w.lower().strip(".,;:!?\"'()[]{}") for w in words if len(w) > 3]
     content_words = [w for w in content_words if w and w not in stop]
 
@@ -288,9 +351,27 @@ def _score_opening(text: str, has_file_refs: bool, has_errors: bool) -> float:
 
     # Starts with action verb -> strong opening
     action_verbs = {
-        "fix", "add", "create", "implement", "debug", "explain", "write",
-        "update", "remove", "refactor", "build", "test", "review", "deploy",
-        "migrate", "optimize", "delete", "move", "rename", "install", "configure",
+        "fix",
+        "add",
+        "create",
+        "implement",
+        "debug",
+        "explain",
+        "write",
+        "update",
+        "remove",
+        "refactor",
+        "build",
+        "test",
+        "review",
+        "deploy",
+        "migrate",
+        "optimize",
+        "delete",
+        "move",
+        "rename",
+        "install",
+        "configure",
     }
     first_word = first_lower.split()[0] if first_lower.split() else ""
     if first_word in action_verbs:

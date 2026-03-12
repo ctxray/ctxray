@@ -1,5 +1,6 @@
 # tests/test_insights_cli.py
 """Tests for reprompt insights CLI command."""
+
 from __future__ import annotations
 
 from typer.testing import CliRunner

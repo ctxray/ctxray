@@ -107,12 +107,10 @@ def compute_insights(features: list[dict[str, Any]]) -> dict[str, Any]:
                 "paper": "DETAIL arXiv:2512.02246",
                 "finding": f"You: {avg_spec:.2f} avg specificity",
                 "optimal": (
-                    f"Top performers: {OPTIMAL['context_specificity']}+"
-                    " (include code/errors)"
+                    f"Top performers: {OPTIMAL['context_specificity']}+ (include code/errors)"
                 ),
                 "action": (
-                    "Include actual code snippets and error messages"
-                    " instead of describing them"
+                    "Include actual code snippets and error messages instead of describing them"
                 ),
                 "impact": "high",
             }
