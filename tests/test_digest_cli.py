@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
+import json
+
+from typer.testing import CliRunner
+
+from reprompt.cli import app
 from reprompt.output.terminal import render_digest
+
+runner = CliRunner()
 
 
 class TestRenderDigest:
@@ -88,3 +95,69 @@ class TestRenderDigest:
         output = render_digest(data)
         assert "-10" in output
         assert "↓" in output
+
+
+class TestDigestCommand:
+    def test_digest_command_exits_cleanly(self, tmp_path, monkeypatch):
+        """digest command exits 0 with empty DB."""
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        result = runner.invoke(app, ["digest"])
+        assert result.exit_code == 0
+
+    def test_digest_command_quiet_mode(self, tmp_path, monkeypatch):
+        """--quiet prints a single-line summary."""
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        result = runner.invoke(app, ["digest", "--quiet"])
+        assert result.exit_code == 0
+        lines = [ln for ln in result.output.strip().splitlines() if ln]
+        assert len(lines) == 1
+        assert "reprompt:" in lines[0]
+
+    def test_digest_command_json(self, tmp_path, monkeypatch):
+        """--format json returns valid JSON with expected keys."""
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        result = runner.invoke(app, ["digest", "--format", "json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert "current" in data
+        assert "previous" in data
+        assert "count_delta" in data
+
+    def test_digest_command_custom_period(self, tmp_path, monkeypatch):
+        """digest accepts --period flag."""
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        result = runner.invoke(app, ["digest", "--period", "30d"])
+        assert result.exit_code == 0
+
+    def test_digest_shows_prompt_evolution_content(self, tmp_path, monkeypatch):
+        """digest terminal output contains recognizable sections."""
+        from datetime import datetime, timedelta, timezone
+
+        from reprompt.storage.db import PromptDB
+
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        db = PromptDB(tmp_path / "test.db")
+        now = datetime.now(timezone.utc)
+        for i in range(5):
+            ts = (now - timedelta(days=i)).isoformat()
+            db.insert_prompt(
+                f"implement the user authentication flow {i} with JWT tokens",
+                source="claude-code",
+                timestamp=ts,
+            )
+        result = runner.invoke(app, ["digest"])
+        assert result.exit_code == 0
+        assert "digest" in result.output.lower()
+
+    def test_install_hook_with_digest_flag(self, tmp_path, monkeypatch):
+        """--with-digest registers the digest --quiet entry in settings.json."""
+        from pathlib import Path
+
+        claude_dir = tmp_path / ".claude"
+        claude_dir.mkdir()
+        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        result = runner.invoke(app, ["install-hook", "--with-digest"])
+        assert result.exit_code == 0
+        data = json.loads((claude_dir / "settings.json").read_text())
+        commands = [h.get("command") for h in data["hooks"]["Stop"] if isinstance(h, dict)]
+        assert "reprompt digest --quiet" in commands

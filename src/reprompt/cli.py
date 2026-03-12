@@ -681,6 +681,35 @@ def insights(
 
 
 @app.command()
+def digest(
+    period: str = typer.Option("7d", help="Comparison window: 7d, 14d, 30d"),
+    format: str = typer.Option("terminal", help="Output format: terminal, json"),
+    quiet: bool = typer.Option(False, "--quiet", help="One-line summary (for hooks/cron)"),
+) -> None:
+    """Show a weekly summary comparing current vs previous period."""
+    import json as json_mod
+
+    from reprompt.config import Settings
+    from reprompt.core.digest import build_digest
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    data = build_digest(db, period=period)
+
+    if quiet:
+        print(data["summary"])
+        return
+
+    if format == "json":
+        print(json_mod.dumps(data, indent=2, default=str))
+    else:
+        from reprompt.output.terminal import render_digest
+
+        print(render_digest(data), end="")
+
+
+@app.command()
 def demo() -> None:
     """Run reprompt on demo data to see what it looks like."""
     import shutil
@@ -718,6 +747,7 @@ def demo() -> None:
 @app.command("install-hook")
 def install_hook(
     source: str = typer.Option("claude-code", help="AI tool to install hook for"),
+    with_digest: bool = typer.Option(False, "--with-digest", help="Also register digest summary hook"),  # noqa: E501
 ) -> None:
     """Install post-session hook for automatic scanning."""
     home = Path.home()
@@ -751,6 +781,17 @@ def install_hook(
                 return
 
         stop_hooks.append(hook_entry)
+
+        # Optionally also register digest --quiet hook
+        if with_digest:
+            digest_command = "reprompt digest --quiet"
+            digest_entry = {"type": "command", "command": digest_command}
+            already_has_digest = any(
+                isinstance(h, dict) and h.get("command") == digest_command
+                for h in stop_hooks
+            )
+            if not already_has_digest:
+                stop_hooks.append(digest_entry)
 
         import json
 
