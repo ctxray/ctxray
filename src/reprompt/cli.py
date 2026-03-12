@@ -92,13 +92,15 @@ def report(
     html: bool = typer.Option(False, "--html", help="Generate interactive HTML dashboard"),
     output: str = typer.Option("", "--output", "-o", help="Output file path (for --html)"),
     top: int = typer.Option(20, help="Number of top terms to show"),
+    clusters: int = typer.Option(0, "--clusters", help="Number of clusters (0 = auto-select)"),
 ) -> None:
     """Generate analytics report."""
     from reprompt.config import Settings
     from reprompt.core.pipeline import build_report_data
 
     settings = Settings()
-    data = build_report_data(settings=settings)
+    n_clusters_arg = clusters if clusters > 0 else None
+    data = build_report_data(settings=settings, n_clusters=n_clusters_arg)
 
     if html:
         import webbrowser

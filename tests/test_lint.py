@@ -45,11 +45,13 @@ class TestLintPrompt:
 
 class TestLintPrompts:
     def test_multiple_prompts(self):
-        violations = lint_prompts([
-            "fix the authentication bug in auth.py — login returns 401",
-            "fix it",
-            "add pagination to search results with cursor-based navigation",
-        ])
+        violations = lint_prompts(
+            [
+                "fix the authentication bug in auth.py — login returns 401",
+                "fix it",
+                "add pagination to search results with cursor-based navigation",
+            ]
+        )
         assert len(violations) >= 1  # "fix it" triggers violations
 
     def test_empty_list(self):
@@ -74,8 +76,6 @@ class TestFormatResults:
         # Force a violation for formatting test
         from reprompt.core.lint import LintViolation
 
-        v = LintViolation(
-            rule="test", severity="error", message="test", prompt_text=long_prompt
-        )
+        v = LintViolation(rule="test", severity="error", message="test", prompt_text=long_prompt)
         result = format_lint_results([v], 1)
         assert "..." in result

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.3] - 2026-03-12
+
+### Improved
+- **Smarter prompt clustering** — K-means now runs on LSA-reduced (TruncatedSVD + L2-normalized) TF-IDF vectors instead of raw sparse vectors; eliminates the single-dominant-cluster problem where 95%+ of prompts collapsed into one bucket
+- **Auto-select optimal K** — cluster count is now determined automatically via silhouette score sweep (K=3..15) rather than a fixed K=5; pass `--clusters N` to `reprompt report` to override
+- **Cleaner Hot Phrases** — shell tool names (`cd`, `uv`, `pytest`, `git`, `bash`, etc.) added to domain stop word list; year-number bigrams (e.g. "2025 2026") filtered from n-gram extraction; n-gram range expanded to (1, 3) to surface meaningful single-word domain signals
+- **TF-IDF quality flags** — added `sublinear_tf=True` and `max_df=0.8` to dampen high-frequency noise and auto-remove corpus-ubiquitous terms
+
 ## [0.7.2] - 2026-03-12
 
 ### Added

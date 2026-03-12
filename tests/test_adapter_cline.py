@@ -31,8 +31,7 @@ def test_extracts_user_messages(fixtures_path):
     prompts = adapter.parse_session(fixtures_path / "cline_task" / "api_conversation_history.json")
     texts = [p.text for p in prompts]
     assert (
-        "Fix the authentication bug in auth.py — login returns 401 for valid credentials"
-        in texts
+        "Fix the authentication bug in auth.py — login returns 401 for valid credentials" in texts
     )
     assert "Now add unit tests for the user service with pytest fixtures" in texts
     assert "refactor database pool to use async context managers" in texts

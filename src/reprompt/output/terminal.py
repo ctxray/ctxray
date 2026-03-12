@@ -301,10 +301,7 @@ def render_score(breakdown: dict[str, Any]) -> str:
 
     total = breakdown["total"]
     grade = (
-        "Excellent" if total >= 80
-        else "Good" if total >= 60
-        else "Fair" if total >= 40
-        else "Poor"
+        "Excellent" if total >= 80 else "Good" if total >= 60 else "Fair" if total >= 40 else "Poor"
     )
 
     console.print(f"\n[bold]Prompt DNA Score: {total:.0f}/100[/bold]  ({grade})")
@@ -329,12 +326,8 @@ def render_score(breakdown: dict[str, Any]) -> str:
     if suggestions:
         console.print(f"\n[bold]Suggestions ({len(suggestions)}):[/bold]")
         for s in suggestions:
-            impact_color = {"high": "red", "medium": "yellow", "low": "dim"}.get(
-                s["impact"], "dim"
-            )
-            console.print(
-                f" [{impact_color}]\u25a0[/{impact_color}] [{s['paper']}] {s['message']}"
-            )
+            impact_color = {"high": "red", "medium": "yellow", "low": "dim"}.get(s["impact"], "dim")
+            console.print(f" [{impact_color}]\u25a0[/{impact_color}] [{s['paper']}] {s['message']}")
 
     return buf.getvalue()
 
@@ -347,8 +340,7 @@ def render_insights(data: dict[str, Any]) -> str:
     count = data["prompt_count"]
     if count == 0:
         console.print(
-            "\n[dim]No prompt data yet. Run 'reprompt scan' first,"
-            " then 'reprompt insights'.[/dim]"
+            "\n[dim]No prompt data yet. Run 'reprompt scan' first, then 'reprompt insights'.[/dim]"
         )
         return buf.getvalue()
 

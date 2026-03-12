@@ -12,6 +12,7 @@ Research basis:
 - EMNLP 2023 SPELL: prompt perplexity as quality signal
 - The Prompt Report 2406.06608: prompting technique taxonomy
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
@@ -96,7 +97,7 @@ class PromptDNA:
             val = getattr(self, f.name)
             if isinstance(val, bool):
                 vec.append(1.0 if val else 0.0)
-            elif isinstance(val, (int, float)):
+            elif isinstance(val, int | float):
                 vec.append(float(val))
             # Skip strings (hash, source, task_type, critical_info_distribution)
         return vec

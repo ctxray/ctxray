@@ -53,7 +53,7 @@ class TestBuildDigest:
 
     def test_count_delta_positive_when_current_has_more(self, db):
         """count_delta > 0 when current period has more prompts than previous."""
-        _insert_prompts(db, count=5, days_ago=3)   # current window (last 7d)
+        _insert_prompts(db, count=5, days_ago=3)  # current window (last 7d)
         _insert_prompts(db, count=2, days_ago=10)  # previous window (7-14d ago)
         result = build_digest(db, period="7d")
         assert result["count_delta"] == 3  # 5 - 2
@@ -78,7 +78,7 @@ class TestBuildDigest:
 
     def test_count_delta_negative_when_previous_has_more(self, db):
         """count_delta < 0 when previous period has more prompts than current."""
-        _insert_prompts(db, count=2, days_ago=3)   # current window (last 7d)
+        _insert_prompts(db, count=2, days_ago=3)  # current window (last 7d)
         _insert_prompts(db, count=5, days_ago=10)  # previous window (7-14d ago)
         result = build_digest(db, period="7d")
         assert result["count_delta"] == -3  # 2 - 5

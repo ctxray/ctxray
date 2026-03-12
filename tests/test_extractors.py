@@ -1,5 +1,6 @@
 # tests/test_extractors.py
 """Tests for Tier 1 feature extractors."""
+
 from __future__ import annotations
 
 from reprompt.core.extractors import extract_features
@@ -23,7 +24,8 @@ class TestBasicMetrics:
     def test_sentence_count(self):
         dna = extract_features(
             "Fix the bug. Then add tests. Deploy it.",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.sentence_count == 3
 
@@ -39,7 +41,8 @@ class TestStructureDetection:
     def test_role_definition_detected(self):
         dna = extract_features(
             "You are a senior Python developer.\n\nFix the auth bug.",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.has_role_definition is True
 
@@ -50,7 +53,8 @@ class TestStructureDetection:
     def test_constraints_detected(self):
         dna = extract_features(
             "Add a login endpoint. Do not modify existing routes. Must return 201.",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.has_constraints is True
         assert dna.constraint_count >= 2
@@ -68,14 +72,16 @@ Output: "2026-03-05"
     def test_output_format_detected(self):
         dna = extract_features(
             "List all endpoints. Return as JSON with fields: path, method.",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.has_output_format is True
 
     def test_step_by_step_detected(self):
         dna = extract_features(
             "Think step by step about how to refactor this function.",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.has_step_by_step is True
 
@@ -93,7 +99,8 @@ Output: "2026-03-05"
     def test_file_references_detected(self):
         dna = extract_features(
             "Fix the bug in src/auth/login.py at line 42",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.has_file_references is True
         assert dna.file_reference_count >= 1
@@ -101,7 +108,8 @@ Output: "2026-03-05"
     def test_error_messages_detected(self):
         dna = extract_features(
             "Fix this error: TypeError: cannot read property 'name' of undefined",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.has_error_messages is True
 
@@ -119,7 +127,8 @@ class TestResearchBackedFeatures:
         dna = extract_features(
             "Fix the authentication bug in login.py. "
             "The authentication system fails on expired tokens.",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.keyword_repetition_freq > 0.0
 
@@ -131,7 +140,8 @@ class TestResearchBackedFeatures:
         # Key instruction at the start → position near 0.0
         dna = extract_features(
             "Fix the auth bug.\n\nHere is the context:\n```\nsome code\n```",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.key_instruction_position < 0.3
 
@@ -139,7 +149,8 @@ class TestResearchBackedFeatures:
         # Context first, instruction last
         dna = extract_features(
             "Here is the code:\n```\nsome code\n```\n\nFix the auth bug in this code.",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.key_instruction_position > 0.5
 
@@ -147,7 +158,8 @@ class TestResearchBackedFeatures:
         # Starts with specific instruction
         dna = extract_features(
             "Fix the TypeError in auth/login.py:42 when token expires.",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.opening_quality > 0.5
 
@@ -171,21 +183,24 @@ class TestTaskTypeClassification:
     def test_refactor_task(self):
         dna = extract_features(
             "Refactor the payment service to use strategy pattern",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.task_type == "refactor"
 
     def test_explain_task(self):
         dna = extract_features(
             "Explain how the auth middleware works",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.task_type == "explain"
 
     def test_test_task(self):
         dna = extract_features(
             "Add unit tests for the UserService class",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.task_type == "test"
 
@@ -205,7 +220,8 @@ class TestAmbiguityDetection:
         dna = extract_features(
             "Fix the TypeError in auth/login.py:42 — the validate_token function "
             "raises when token.expiry is None. Add a None check before the comparison.",
-            source="test", session_id="s1",
+            source="test",
+            session_id="s1",
         )
         assert dna.ambiguity_score < 0.3
 
