@@ -345,3 +345,17 @@ def test_extracts_project_name_from_subagent_top_level():
         "/03d22aee-59fe-4b2a-af1d-ae7d871f816e/subagents/agent-xyz.jsonl"
     )
     assert name == "reprompt [subagent]"
+
+
+def test_filters_skill_invocations():
+    """Skill/workflow invocation prompts are filtered out."""
+    from reprompt.adapters.filters import should_keep_prompt
+
+    assert not should_keep_prompt("请使用 superpowers:executing-plans 执行 docs/plans/foo.md")
+    assert not should_keep_prompt("请使用 feature-dev:feature-dev 开始开发")
+    assert not should_keep_prompt("use the superpowers:brainstorming skill for this")
+    assert not should_keep_prompt("invoke code-simplifier:simplify on this file")
+    assert not should_keep_prompt("claude-md-management:revise-claude-md")
+    # Real questions about these tools should still pass
+    assert should_keep_prompt("what does the brainstorming workflow do?")
+    assert should_keep_prompt("how do I set up feature development in my project?")

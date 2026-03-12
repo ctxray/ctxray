@@ -338,6 +338,11 @@ def mcp_serve() -> None:
 @app.command()
 def purge(
     older_than: str = typer.Option("90d", help="Delete prompts older than (e.g. 90d)"),
+    all_: bool = typer.Option(
+        False,
+        "--all",
+        help="Delete ALL data and reset the database (clears demo data, all sessions, etc.)",
+    ),
 ) -> None:
     """Clean up old data."""
     import re
@@ -345,12 +350,19 @@ def purge(
     from reprompt.config import Settings
     from reprompt.storage.db import PromptDB
 
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+
+    if all_:
+        deleted = db.purge_all()
+        console.print(f"[bold red]Purged all {deleted} prompts and reset database[/bold red]")
+        console.print("Run [bold]reprompt scan[/bold] to re-import your sessions.")
+        return
+
     m = re.fullmatch(r"(\d+)d?", older_than.strip(), re.IGNORECASE)
     if not m:
         raise typer.BadParameter("Use format like '90d' or '30'")
     days = int(m.group(1))
-    settings = Settings()
-    db = PromptDB(settings.db_path)
     deleted = db.purge_old_prompts(days)
     console.print(f"Purged {deleted} prompts older than {days} days")
 
@@ -625,9 +637,7 @@ def compare(
     score_a = score_prompt(dna_a)
     score_b = score_prompt(dna_b)
 
-    def _build_data(
-        dna: PromptDNA, sc: ScoreBreakdown
-    ) -> dict[str, object]:
+    def _build_data(dna: PromptDNA, sc: ScoreBreakdown) -> dict[str, object]:
         return {
             "total": sc.total,
             "structure": sc.structure,
@@ -747,7 +757,9 @@ def demo() -> None:
 @app.command("install-hook")
 def install_hook(
     source: str = typer.Option("claude-code", help="AI tool to install hook for"),
-    with_digest: bool = typer.Option(False, "--with-digest", help="Also register digest summary hook"),  # noqa: E501
+    with_digest: bool = typer.Option(
+        False, "--with-digest", help="Also register digest summary hook"
+    ),  # noqa: E501
 ) -> None:
     """Install post-session hook for automatic scanning."""
     home = Path.home()
@@ -790,8 +802,7 @@ def install_hook(
             digest_command = "reprompt digest --quiet"
             digest_entry = {"type": "command", "command": digest_command}
             already_has_digest = any(
-                isinstance(h, dict) and h.get("command") == digest_command
-                for h in stop_hooks
+                isinstance(h, dict) and h.get("command") == digest_command for h in stop_hooks
             )
             if not already_has_digest:
                 stop_hooks.append(digest_entry)

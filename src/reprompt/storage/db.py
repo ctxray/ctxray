@@ -401,6 +401,21 @@ class PromptDB:
         finally:
             conn.close()
 
+    def purge_all(self) -> int:
+        """Delete ALL prompts and reset session tracking. Returns count deleted."""
+        conn = self._conn()
+        try:
+            cursor = conn.execute("SELECT COUNT(*) FROM prompts")
+            count = cursor.fetchone()[0]
+            conn.execute("DELETE FROM prompts")
+            conn.execute("DELETE FROM processed_sessions")
+            conn.execute("DELETE FROM prompt_patterns")
+            conn.execute("DELETE FROM term_stats")
+            conn.commit()
+            return count
+        finally:
+            conn.close()
+
     def search_prompts(
         self,
         query: str,
