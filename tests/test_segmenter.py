@@ -1,9 +1,7 @@
 """Tests for prompt segmentation."""
 from __future__ import annotations
 
-import pytest
-
-from reprompt.core.segmenter import PromptSegment, segment_prompt
+from reprompt.core.segmenter import segment_prompt
 
 
 class TestSegmentPrompt:
