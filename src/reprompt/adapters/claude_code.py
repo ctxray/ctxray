@@ -188,7 +188,8 @@ class ClaudeCodeAdapter(BaseAdapter):
 
         Handles two cases:
         - Main sessions: ~/.claude/projects/-Users-chris-projects-myproject/session.jsonl
-        - Subagent sessions: ~/.claude/projects/-Users-chris-projects-myproject/{uuid}/subagents/agent-*.jsonl
+        - Subagent sessions: ~/.claude/projects/-Users-chris-projects-myproject/
+          {uuid}/subagents/agent-*.jsonl
           → returns "myproject [subagent]"
         """
         path = Path(file_path)
