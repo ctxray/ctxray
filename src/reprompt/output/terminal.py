@@ -437,3 +437,64 @@ def render_compare(data: dict[str, Any]) -> str:
         console.print(f"\n[bold]Prompt {winner} scores {diff:.0f} points higher.[/bold]")
 
     return buf.getvalue()
+
+
+def render_digest(data: dict[str, Any]) -> str:
+    """Render a weekly digest summary using Rich."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    period = data.get("period", "7d")
+    current = data.get("current", {})
+    previous = data.get("previous", {})
+    count_delta = data.get("count_delta", 0)
+    spec_delta = data.get("spec_delta", 0.0)
+
+    console.print(f"\n[bold]reprompt digest — Weekly Summary ({period})[/bold]")
+    console.print("=" * 40)
+
+    # Activity
+    curr_count = current.get("prompt_count", 0)
+    sign = "+" if count_delta > 0 else ""
+    count_color = "green" if count_delta > 0 else ("red" if count_delta < 0 else "dim")
+    delta_str = f"{sign}{count_delta}"
+    console.print(
+        f"  Prompts this period:  {curr_count}"
+        f"  [{count_color}]({delta_str} vs previous)[/{count_color}]",
+        highlight=False,
+    )
+
+    curr_spec = current.get("specificity_score", 0.0)
+    spec_arrow = "↑" if spec_delta > 0.01 else ("↓" if spec_delta < -0.01 else "→")
+    spec_color = "green" if spec_delta > 0.01 else ("red" if spec_delta < -0.01 else "dim")
+    spec_delta_str = f"{spec_delta:+.2f}"
+    console.print(
+        f"  Specificity score:    {curr_spec:.2f}"
+        f"  [{spec_color}]{spec_arrow} {spec_delta_str}[/{spec_color}]",
+        highlight=False,
+    )
+
+    avg_len = current.get("avg_length", 0.0)
+    console.print(f"  Avg prompt length:    {avg_len:.0f} chars", highlight=False)
+
+    # Category distribution comparison
+    curr_cats = current.get("category_distribution", {})
+    prev_cats = previous.get("category_distribution", {})
+    if curr_cats:
+        console.print("\n[bold]Category Distribution[/bold]")
+        curr_total = sum(curr_cats.values()) or 1
+        prev_total = sum(prev_cats.values()) or 1
+        all_cats = sorted(
+            set(list(curr_cats.keys()) + list(prev_cats.keys())),
+            key=lambda c: -curr_cats.get(c, 0),
+        )
+        for cat in all_cats[:6]:  # show top 6 categories
+            curr_pct = curr_cats.get(cat, 0) / curr_total
+            prev_pct = prev_cats.get(cat, 0) / prev_total
+            delta_pct = curr_pct - prev_pct
+            bar_len = int(curr_pct * 20)
+            bar = "\u2588" * bar_len
+            arrow = " ↑" if delta_pct > 0.03 else (" ↓" if delta_pct < -0.03 else "  ")
+            console.print(f"  {cat:<12} {bar:<20} {curr_pct:.0%}{arrow}")
+
+    return buf.getvalue()
