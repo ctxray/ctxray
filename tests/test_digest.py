@@ -76,6 +76,13 @@ class TestBuildDigest:
         assert logged is not None
         assert logged["period"] == "7d"
 
+    def test_count_delta_negative_when_previous_has_more(self, db):
+        """count_delta < 0 when previous period has more prompts than current."""
+        _insert_prompts(db, count=2, days_ago=3)   # current window (last 7d)
+        _insert_prompts(db, count=5, days_ago=10)  # previous window (7-14d ago)
+        result = build_digest(db, period="7d")
+        assert result["count_delta"] == -3  # 2 - 5
+
     def test_spec_delta_sign(self, db):
         """spec_delta is positive when current specificity > previous."""
         _insert_prompts(db, count=10, days_ago=3)
