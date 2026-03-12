@@ -143,7 +143,6 @@ SKIP_CONTAINS = (
     "feature-dev:",
     "code-simplifier:",
     "claude-md-management:",
-    "请使用 ",  # Chinese "please use X skill to execute"
 )
 
 
