@@ -161,3 +161,19 @@ class TestDigestCommand:
         data = json.loads((claude_dir / "settings.json").read_text())
         commands = [h.get("command") for h in data["hooks"]["Stop"] if isinstance(h, dict)]
         assert "reprompt digest --quiet" in commands
+
+    def test_install_hook_with_digest_when_hook_already_exists(self, tmp_path, monkeypatch):
+        """--with-digest still adds digest hook even when scan hook already installed."""
+        from pathlib import Path
+
+        claude_dir = tmp_path / ".claude"
+        claude_dir.mkdir()
+        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        # First install: scan hook only
+        runner.invoke(app, ["install-hook"])
+        # Second install: add digest hook to existing install
+        result = runner.invoke(app, ["install-hook", "--with-digest"])
+        assert result.exit_code == 0
+        data = json.loads((claude_dir / "settings.json").read_text())
+        commands = [h.get("command") for h in data["hooks"]["Stop"] if isinstance(h, dict)]
+        assert "reprompt digest --quiet" in commands

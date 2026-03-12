@@ -775,12 +775,15 @@ def install_hook(
         stop_hooks = hooks.setdefault("Stop", [])
 
         # Check if already registered
-        for h in stop_hooks:
-            if isinstance(h, dict) and h.get("command") == hook_command:
-                console.print("Hook already registered in Claude Code settings.")
+        scan_hook_exists = any(
+            isinstance(h, dict) and h.get("command") == hook_command for h in stop_hooks
+        )
+        if scan_hook_exists:
+            console.print("Hook already registered in Claude Code settings.")
+            if not with_digest:
                 return
-
-        stop_hooks.append(hook_entry)
+        else:
+            stop_hooks.append(hook_entry)
 
         # Optionally also register digest --quiet hook
         if with_digest:
