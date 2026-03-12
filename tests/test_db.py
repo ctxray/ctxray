@@ -278,7 +278,9 @@ class TestPromptFeaturesStorage:
     def test_get_features_by_task_type(self, tmp_path):
         db = PromptDB(tmp_path / "test.db")
         db.store_features("a", {"prompt_hash": "a", "task_type": "debug", "overall_score": 50.0})
-        db.store_features("b", {"prompt_hash": "b", "task_type": "implement", "overall_score": 80.0})
+        db.store_features(
+            "b", {"prompt_hash": "b", "task_type": "implement", "overall_score": 80.0}
+        )
         debug_features = db.get_features_by_task_type("debug")
         assert len(debug_features) == 1
         assert debug_features[0]["task_type"] == "debug"

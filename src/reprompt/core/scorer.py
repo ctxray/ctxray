@@ -13,6 +13,7 @@ Each weight is derived from published research findings:
 - Repetition weights from arXiv:2512.14982 (up to 76% improvement)
 - Specificity weights from DETAIL arXiv:2512.02246
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -61,11 +62,11 @@ class ScoreBreakdown:
     total: float = 0.0
 
     # Category scores (each out of their max)
-    structure: float = 0.0      # max 25
-    context: float = 0.0        # max 25
-    position: float = 0.0       # max 20
-    repetition: float = 0.0     # max 15
-    clarity: float = 0.0        # max 15
+    structure: float = 0.0  # max 25
+    context: float = 0.0  # max 25
+    position: float = 0.0  # max 20
+    repetition: float = 0.0  # max 15
+    clarity: float = 0.0  # max 15
 
     suggestions: list[Suggestion] = field(default_factory=list)
 
@@ -82,20 +83,26 @@ def score_prompt(dna: PromptDNA) -> ScoreBreakdown:
     if dna.has_role_definition:
         structure += 5.0
     else:
-        suggestions.append(Suggestion(
-            "structure", "Prompt Report",
-            'Add a role definition (e.g., "You are a senior Python developer")',
-            "medium",
-        ))
+        suggestions.append(
+            Suggestion(
+                "structure",
+                "Prompt Report",
+                'Add a role definition (e.g., "You are a senior Python developer")',
+                "medium",
+            )
+        )
 
     if dna.has_constraints:
         structure += 4.0 + min(dna.constraint_count, 3) * 1.0
     else:
-        suggestions.append(Suggestion(
-            "structure", "Prompt Report",
-            'Add constraints (e.g., "Do not modify tests", "Must be backward-compatible")',
-            "medium",
-        ))
+        suggestions.append(
+            Suggestion(
+                "structure",
+                "Prompt Report",
+                'Add constraints (e.g., "Do not modify tests", "Must be backward-compatible")',
+                "medium",
+            )
+        )
 
     if dna.has_examples:
         structure += 4.0 + min(dna.example_count, 2) * 1.0
@@ -117,20 +124,26 @@ def score_prompt(dna: PromptDNA) -> ScoreBreakdown:
         context += 6.0
     else:
         if dna.task_type in ("debug", "implement", "refactor", "test"):
-            suggestions.append(Suggestion(
-                "context", "DETAIL arXiv:2512.02246",
-                "Add file path references — specificity improves output quality significantly",
-                "high",
-            ))
+            suggestions.append(
+                Suggestion(
+                    "context",
+                    "DETAIL arXiv:2512.02246",
+                    "Add file path references — specificity improves output quality significantly",
+                    "high",
+                )
+            )
 
     if dna.has_error_messages:
         context += 6.0
     elif dna.task_type == "debug":
-        suggestions.append(Suggestion(
-            "context", "DETAIL arXiv:2512.02246",
-            "Include the actual error message — debug prompts with errors are 3.7x more effective",
-            "high",
-        ))
+        suggestions.append(
+            Suggestion(
+                "context",
+                "DETAIL arXiv:2512.02246",
+                "Include the actual error message — debug prompts with errors are 3.7x more effective",  # noqa: E501
+                "high",
+            )
+        )
 
     context += 6.0 * min(dna.context_specificity, 1.0)
     context = min(context, 25.0)
@@ -140,24 +153,30 @@ def score_prompt(dna: PromptDNA) -> ScoreBreakdown:
     position = 20.0 * pos_score
 
     if pos_score < 0.5 and dna.key_instruction_position > 0.3:
-        suggestions.append(Suggestion(
-            "position", "Lost in the Middle arXiv:2307.03172",
-            "Your key instruction is buried in the middle — "
-            "move it to the start or end for better attention (30% degradation in middle)",
-            "high",
-        ))
+        suggestions.append(
+            Suggestion(
+                "position",
+                "Lost in the Middle arXiv:2307.03172",
+                "Your key instruction is buried in the middle — "
+                "move it to the start or end for better attention (30% degradation in middle)",
+                "high",
+            )
+        )
 
     # ── Repetition (0-15) ──
     rep = min(dna.keyword_repetition_freq, 1.0)
     repetition = 15.0 * rep
 
     if rep < 0.1 and dna.word_count > 20:
-        suggestions.append(Suggestion(
-            "repetition", "Google Research arXiv:2512.14982",
-            "Repeating your core requirement at the end of the prompt "
-            "can improve accuracy by up to 76%",
-            "medium",
-        ))
+        suggestions.append(
+            Suggestion(
+                "repetition",
+                "Google Research arXiv:2512.14982",
+                "Repeating your core requirement at the end of the prompt "
+                "can improve accuracy by up to 76%",
+                "medium",
+            )
+        )
 
     # ── Clarity (0-15) ──
     clarity = 0.0
@@ -168,11 +187,14 @@ def score_prompt(dna: PromptDNA) -> ScoreBreakdown:
     # Low ambiguity
     clarity += 5.0 * max(0.0, 1.0 - dna.ambiguity_score)
     if dna.ambiguity_score > 0.5:
-        suggestions.append(Suggestion(
-            "clarity", "DETAIL arXiv:2512.02246",
-            "Prompt is vague — replace pronouns ('it', 'this') with specific names",
-            "high",
-        ))
+        suggestions.append(
+            Suggestion(
+                "clarity",
+                "DETAIL arXiv:2512.02246",
+                "Prompt is vague — replace pronouns ('it', 'this') with specific names",
+                "high",
+            )
+        )
 
     # Reasonable length (not too short)
     if dna.word_count >= 20:
@@ -182,11 +204,14 @@ def score_prompt(dna: PromptDNA) -> ScoreBreakdown:
     elif dna.word_count >= 5:
         clarity += 1.0
     else:
-        suggestions.append(Suggestion(
-            "clarity", "DETAIL arXiv:2512.02246",
-            "Prompt is very short — add context about what, where, and why",
-            "high",
-        ))
+        suggestions.append(
+            Suggestion(
+                "clarity",
+                "DETAIL arXiv:2512.02246",
+                "Prompt is very short — add context about what, where, and why",
+                "high",
+            )
+        )
 
     clarity = min(clarity, 15.0)
 

@@ -1,11 +1,10 @@
 # tests/test_scorer.py
 """Tests for the prompt scoring engine."""
+
 from __future__ import annotations
 
-import pytest
-
 from reprompt.core.prompt_dna import PromptDNA
-from reprompt.core.scorer import score_prompt, ScoreBreakdown
+from reprompt.core.scorer import ScoreBreakdown, score_prompt
 
 
 class TestScorePrompt:
@@ -24,12 +23,18 @@ class TestScorePrompt:
 
     def test_well_structured_prompt_scores_high(self):
         dna = PromptDNA(
-            prompt_hash="h", source="s", task_type="debug",
-            word_count=50, sentence_count=3,
+            prompt_hash="h",
+            source="s",
+            task_type="debug",
+            word_count=50,
+            sentence_count=3,
             has_role_definition=True,
-            has_constraints=True, constraint_count=2,
-            has_code_blocks=True, code_block_count=1,
-            has_file_references=True, file_reference_count=2,
+            has_constraints=True,
+            constraint_count=2,
+            has_code_blocks=True,
+            code_block_count=1,
+            has_file_references=True,
+            file_reference_count=2,
             has_error_messages=True,
             key_instruction_position=0.1,  # front-loaded (good)
             keyword_repetition_freq=0.3,
@@ -42,12 +47,18 @@ class TestScorePrompt:
 
     def test_middle_buried_instruction_penalty(self):
         good = PromptDNA(
-            prompt_hash="h", source="s", task_type="debug",
-            word_count=50, key_instruction_position=0.1,
+            prompt_hash="h",
+            source="s",
+            task_type="debug",
+            word_count=50,
+            key_instruction_position=0.1,
         )
         bad = PromptDNA(
-            prompt_hash="h", source="s", task_type="debug",
-            word_count=50, key_instruction_position=0.5,
+            prompt_hash="h",
+            source="s",
+            task_type="debug",
+            word_count=50,
+            key_instruction_position=0.5,
         )
         good_score = score_prompt(good)
         bad_score = score_prompt(bad)
@@ -55,12 +66,18 @@ class TestScorePrompt:
 
     def test_repetition_bonus(self):
         no_rep = PromptDNA(
-            prompt_hash="h", source="s", task_type="debug",
-            word_count=50, keyword_repetition_freq=0.0,
+            prompt_hash="h",
+            source="s",
+            task_type="debug",
+            word_count=50,
+            keyword_repetition_freq=0.0,
         )
         has_rep = PromptDNA(
-            prompt_hash="h", source="s", task_type="debug",
-            word_count=50, keyword_repetition_freq=0.5,
+            prompt_hash="h",
+            source="s",
+            task_type="debug",
+            word_count=50,
+            keyword_repetition_freq=0.5,
         )
         assert score_prompt(has_rep).repetition > score_prompt(no_rep).repetition
 
@@ -81,14 +98,21 @@ class TestScorePrompt:
 
     def test_high_score_prompt_few_suggestions(self):
         dna = PromptDNA(
-            prompt_hash="h", source="s", task_type="debug",
-            word_count=80, sentence_count=4,
+            prompt_hash="h",
+            source="s",
+            task_type="debug",
+            word_count=80,
+            sentence_count=4,
             has_role_definition=True,
-            has_constraints=True, constraint_count=3,
-            has_examples=True, example_count=1,
+            has_constraints=True,
+            constraint_count=3,
+            has_examples=True,
+            example_count=1,
             has_output_format=True,
-            has_code_blocks=True, code_block_count=1,
-            has_file_references=True, file_reference_count=2,
+            has_code_blocks=True,
+            code_block_count=1,
+            has_file_references=True,
+            file_reference_count=2,
             has_error_messages=True,
             key_instruction_position=0.05,
             keyword_repetition_freq=0.4,

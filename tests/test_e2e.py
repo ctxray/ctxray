@@ -273,7 +273,10 @@ class TestScienceE2E:
             "Fix the TypeError in auth/login.py:42 when token.expiry is None",
             "Add tests for UserService — cover duplicate email and missing fields",
             "Fix bug",
-            "You are a senior engineer.\n\nRefactor PaymentService to strategy pattern.\nDo not break existing tests.\nMust maintain backward compatibility.",
+            (
+                "You are a senior engineer.\n\nRefactor PaymentService to strategy pattern."
+                "\nDo not break existing tests.\nMust maintain backward compatibility."
+            ),
         ]
 
         for text in prompts:
@@ -301,29 +304,37 @@ class TestScienceE2E:
     def test_score_cli_e2e(self):
         """CLI score command produces valid output."""
         from typer.testing import CliRunner
+
         from reprompt.cli import app
 
         runner = CliRunner()
-        result = runner.invoke(app, [
-            "score",
-            "Fix the TypeError in auth/login.py:42. "
-            "The validate_token function raises when token is None. "
-            "Do not modify the test suite.",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "score",
+                "Fix the TypeError in auth/login.py:42. "
+                "The validate_token function raises when token is None. "
+                "Do not modify the test suite.",
+            ],
+        )
         assert result.exit_code == 0
         assert "Score" in result.output or "score" in result.output
 
     def test_compare_cli_e2e(self):
         """CLI compare command produces valid comparison."""
         from typer.testing import CliRunner
+
         from reprompt.cli import app
 
         runner = CliRunner()
-        result = runner.invoke(app, [
-            "compare",
-            "Fix bug",
-            "Fix the TypeError in auth/login.py:42 — validate_token raises on None input. "
-            "Add a None guard before the expiry check. Do not modify tests.",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "compare",
+                "Fix bug",
+                "Fix the TypeError in auth/login.py:42 — validate_token raises on None input. "
+                "Add a None guard before the expiry check. Do not modify tests.",
+            ],
+        )
         assert result.exit_code == 0
         assert "Prompt A" in result.output or "prompt_a" in result.output
