@@ -2,6 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-03-11
+
+### Added
+- `reprompt digest` — weekly summary comparing current vs previous period: prompt volume, specificity score, avg length, category distribution with direction arrows
+- `reprompt digest --quiet` — one-line summary for use in hooks and cron jobs
+- `reprompt digest --format json` — machine-readable digest output
+- `reprompt digest --period 30d` — configurable comparison window (7d, 14d, 30d)
+- `reprompt install-hook --with-digest` — also registers `reprompt digest --quiet` as a Stop hook so every session ends with a summary
+- `digest_log` DB table — persists digest history for trend tracking
+
+### Changed
+- Tests: 454 → 478
+
+## [0.6.0] - 2026-03-11
+
+### Added
+- **Prompt Science Engine** — research-backed prompt analysis
+- `reprompt score "prompt"` — instant 0-100 quality score with breakdown (specificity, position bias, repetition, perplexity)
+- `reprompt compare "a" "b"` — side-by-side feature comparison of two prompts
+- `reprompt insights` — personal patterns vs research-optimal benchmarks, wired into `reprompt scan`
+- `PromptDNA` dataclass — 30+ features per prompt extracted at scan time
+- Tier 1 feature extractors — regex-based, <1ms per prompt
+- Research-calibrated scorer (Google 2512.14982, Stanford 2307.03172, SPELL EMNLP 2023, Prompt Report 2406.06608)
+- Three-pass prompt segmenter (Prompt Report taxonomy)
+- `prompt_features` DB table for PromptDNA storage
+
+### Changed
+- Tests: 371 → 454
+
+## [0.5.0] - 2026-03-11
+
+### Added
+- `reprompt lint` — prompt quality linter with GitHub Action integration
+- Gemini CLI adapter — parses `~/.gemini/tmp/` session files
+- Cline (VS Code) adapter — parses `globalStorage/saoudrizwan.claude-dev/` task files
+- Comprehensive prompt filters for all AI coding tools (slash commands, system injections, tool outputs)
+- Shared filter module (`adapters/filters.py`) extracted for reuse across all adapters
+
+### Changed
+- Tests: 331 → 371
+
+## [0.4.0] - 2026-03-11
+
+### Added
+- Cursor IDE adapter — parses `.vscdb` files (Composer `cursorDiskKV` + legacy `ItemTable` schemas)
+- Aider adapter — parses `.aider.chat.history.md` chat history files
+- HTML dashboard report — `reprompt report --html` renders interactive Chart.js charts
+- `reprompt merge-view` — clusters near-duplicate prompts and selects canonical versions
+- `reprompt templates` / `reprompt save` — save and reuse prompt templates
+- Auto-report after `reprompt scan` (skip with `--quiet`)
+- `reprompt install-hook` now prompts if not yet configured
+
+### Changed
+- Tests: 256 → 331
+
 ## [0.3.2] - 2026-03-11
 
 ### Fixed
