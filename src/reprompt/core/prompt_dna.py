@@ -15,6 +15,7 @@ Research basis:
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
+from typing import Any
 
 
 @dataclass
@@ -78,9 +79,9 @@ class PromptDNA:
     # ── Metadata ──
     extractor_tier: int = 1  # which tier of extractors was used
 
-    def to_dict(self) -> dict[str, object]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dict (for storage and transport)."""
-        result: dict[str, object] = {}
+        result: dict[str, Any] = {}
         for f in fields(self):
             result[f.name] = getattr(self, f.name)
         return result
