@@ -18,7 +18,7 @@ uv run python -m build                     # build wheel
 
 ```
 src/reprompt/
-├── cli.py              # Typer CLI (scan, report, search, library, recommend, demo, status, purge, install-hook)
+├── cli.py              # Typer CLI (scan, report, search, library, recommend, demo, status, purge, install-hook, score, compare, insights)
 ├── config.py           # pydantic-settings, env vars (REPROMPT_ prefix) + TOML config
 ├── demo.py             # Built-in demo data generator (no network required)
 ├── core/
@@ -27,7 +27,12 @@ src/reprompt/
 │   ├── analyzer.py     # TF-IDF hot terms + K-means clustering
 │   ├── library.py      # Pattern extraction + keyword categorization
 │   ├── recommend.py    # Prompt recommendations based on history + effectiveness
-│   └── pipeline.py     # Orchestrator: scan → dedup → store → analyze → cluster
+│   ├── pipeline.py     # Orchestrator: scan → dedup → store → analyze → cluster
+│   ├── prompt_dna.py    # PromptDNA dataclass (30+ features per prompt)
+│   ├── extractors.py    # Tier 1 feature extraction (regex, <1ms)
+│   ├── scorer.py        # Research-calibrated scoring (0-100)
+│   ├── segmenter.py     # Three-pass prompt segmentation
+│   └── insights.py      # Personal insights vs research-optimal
 ├── adapters/
 │   ├── base.py         # BaseAdapter ABC
 │   ├── claude_code.py  # Claude Code JSONL parser
@@ -71,3 +76,13 @@ Session files → Adapter.parse() → list[Prompt]
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
 - Tests: pytest, 371 tests, 95% coverage target
+
+## Prompt Science Engine
+
+Research-backed prompt analysis (added v0.6.0):
+- `reprompt score "prompt"` — instant 0-100 scoring with breakdown
+- `reprompt compare "a" "b"` — side-by-side feature comparison
+- `reprompt insights` — personal patterns vs research-optimal
+
+Papers: Google 2512.14982 (repetition), Stanford 2307.03172 (position),
+SPELL EMNLP 2023 (perplexity), Prompt Report 2406.06608 (taxonomy).
