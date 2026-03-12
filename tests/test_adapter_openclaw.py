@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from reprompt.adapters.openclaw import OpenClawAdapter
 
 # ---------------------------------------------------------------------------
@@ -49,7 +52,7 @@ def test_detect_not_installed(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def _write_jsonl(path: Path, name: str = "session.jsonl") -> Path:  # noqa: F821
+def _write_jsonl(path: Path, name: str = "session.jsonl") -> Path:
     """Helper: create a minimal JSONL file at path/name."""
     path.mkdir(parents=True, exist_ok=True)
     f = path / name
@@ -193,15 +196,13 @@ def test_default_session_path_is_new_location():
 # ---------------------------------------------------------------------------
 # parse_session_meta — metadata extraction
 # ---------------------------------------------------------------------------
-import json as _json  # noqa: E402
-from pathlib import Path as _Path  # noqa: E402 (Path already in scope via fixtures)
 
 
-def _write_meta_jsonl(path: _Path, entries: list[dict], name: str = "session.jsonl") -> _Path:
+def _write_meta_jsonl(path: Path, entries: list[dict], name: str = "session.jsonl") -> Path:
     """Helper: write a JSONL session file with given entries."""
     path.mkdir(parents=True, exist_ok=True)
     f = path / name
-    f.write_text("\n".join(_json.dumps(e) for e in entries) + "\n")
+    f.write_text("\n".join(json.dumps(e) for e in entries) + "\n")
     return f
 
 
