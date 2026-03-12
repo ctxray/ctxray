@@ -53,7 +53,7 @@ reprompt -- AI Session Analytics
 - **Two-layer dedup** -- SHA-256 exact + TF-IDF semantic similarity
 - **Hot terms analysis** -- TF-IDF discovers your most-used technical terms
 - **K-means clustering** -- groups similar prompts into themes
-- **Prompt library** -- extracts high-frequency patterns, auto-categorizes (debug/implement/test/review/refactor/explain/config)
+- **Prompt library** -- extracts high-frequency patterns, auto-categorizes into 12 categories (debug/implement/test/review/refactor/explain/config/document/run/query/generate/plan) with Chinese language support
 - **Weekly digest** -- `reprompt digest` compares this week vs last week: prompt volume, specificity trend, category shifts
 - **Prompt Science Engine** -- research-backed scoring (`reprompt score`), side-by-side comparison (`reprompt compare`), personal insights (`reprompt insights`)
 - **Rich reports** -- beautiful terminal output with tables and bar charts
