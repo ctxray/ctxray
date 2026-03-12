@@ -155,22 +155,35 @@ def library(
             return
         from rich.table import Table
 
+        from reprompt.core.effectiveness import effectiveness_stars
+
+        # Determine if any pattern has effectiveness data
+        has_eff = any(p.get("effectiveness_avg") is not None for p in patterns)
+
         table = Table(title="Prompt Library")
         table.add_column("#", style="dim", width=4)
         table.add_column("Pattern", max_width=50)
         table.add_column("Uses", justify="right")
         table.add_column("Category")
+        if has_eff:
+            table.add_column("Eff", justify="right")
+
         for i, p in enumerate(patterns, 1):
-            table.add_row(
+            pattern_text = str(p.get("pattern_text", ""))
+            display = (pattern_text[:50] + "...") if len(pattern_text) > 50 else pattern_text
+            row = [
                 str(i),
-                (
-                    str(p.get("pattern_text", ""))[:50] + "..."
-                    if len(str(p.get("pattern_text", ""))) > 50
-                    else str(p.get("pattern_text", ""))
-                ),
+                display,
                 str(p.get("frequency", 0)),
                 str(p.get("category", "")),
-            )
+            ]
+            if has_eff:
+                avg = p.get("effectiveness_avg")
+                if avg is not None:
+                    row.append(f"{avg:.2f} {effectiveness_stars(avg)}")
+                else:
+                    row.append("—")
+            table.add_row(*row)
         console.print(table)
 
 
