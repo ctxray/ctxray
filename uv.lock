@@ -2571,7 +2571,7 @@ wheels = [
 
 [[package]]
 name = "reprompt-cli"
-version = "0.7.3"
+version = "0.7.5"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic-settings" },
