@@ -9,7 +9,7 @@
 
 *repomix packs your code for AI. reprompt extracts insights from AI.*
 
-Every developer's AI session history contains reusable prompt patterns -- scattered across hundreds of session files. **reprompt** extracts them, deduplicates, analyzes frequency, and builds a personal prompt library that evolves over time.
+Every developer's AI session history contains reusable prompt patterns -- scattered across hundreds of session files. **reprompt** extracts them, deduplicates, analyzes frequency, builds a personal prompt library, and shows you a weekly digest of how your prompting habits are changing over time.
 
 ![reprompt demo](docs/launch/demo.gif)
 
@@ -20,6 +20,9 @@ pipx install reprompt-cli
 reprompt scan
 reprompt report
 reprompt library
+
+# Weekly digest — compare this week vs last week
+reprompt digest
 
 # Try it without any session history
 reprompt demo
@@ -46,12 +49,15 @@ reprompt -- AI Session Analytics
 
 ## Features
 
-- **Auto-detection** -- finds Claude Code and OpenClaw sessions automatically
+- **Auto-detection** -- finds Claude Code, Cursor, Aider, Gemini CLI, Cline, and OpenClaw sessions automatically
 - **Two-layer dedup** -- SHA-256 exact + TF-IDF semantic similarity
 - **Hot terms analysis** -- TF-IDF discovers your most-used technical terms
 - **K-means clustering** -- groups similar prompts into themes
 - **Prompt library** -- extracts high-frequency patterns, auto-categorizes (debug/implement/test/review/refactor/explain/config)
+- **Weekly digest** -- `reprompt digest` compares this week vs last week: prompt volume, specificity trend, category shifts
+- **Prompt Science Engine** -- research-backed scoring (`reprompt score`), side-by-side comparison (`reprompt compare`), personal insights (`reprompt insights`)
 - **Rich reports** -- beautiful terminal output with tables and bar charts
+- **HTML dashboard** -- `reprompt report --html` renders an interactive Chart.js dashboard
 - **Multiple formats** -- terminal, JSON (for pipelines), Markdown (for docs)
 - **Pluggable adapters** -- add support for any AI coding tool
 - **Prompt search** -- find past prompts by keyword across all sessions
@@ -78,14 +84,15 @@ reprompt -- AI Session Analytics
 
 | Tool | Status | Session Path |
 |------|--------|-------------|
-| Claude Code | Supported | `~/.claude/projects/` |
-| OpenClaw / OpenCode | Supported | `~/.openclaw/` + `~/.opencode/sessions/` |
-| Codex CLI | Planned (v0.4) | `~/.codex/` |
-| Aider | Planned | `~/.aider/` |
-| Gemini CLI | Planned | `~/.gemini/` |
+| Claude Code | ✅ Supported | `~/.claude/projects/` |
+| Cursor | ✅ Supported | `~/Library/Application Support/Cursor/User/` (macOS) |
+| Aider | ✅ Supported | `.aider.chat.history.md` |
+| Gemini CLI | ✅ Supported | `~/.gemini/tmp/` |
+| Cline (VS Code) | ✅ Supported | `globalStorage/saoudrizwan.claude-dev/` |
+| OpenClaw / OpenCode | ✅ Supported | `~/.openclaw/` + `~/.opencode/sessions/` |
 | Continue.dev | Via MCP | MCP protocol |
 | Zed | Via MCP | MCP protocol |
-| Cursor | Supported | `~/Library/Application Support/Cursor/User/` (macOS) |
+| Codex CLI | Planned | `~/.codex/` |
 
 ## Usage
 
@@ -121,11 +128,26 @@ reprompt library prompts.md
 # Get prompt improvement suggestions
 reprompt recommend
 
+# Weekly digest — compare this week vs last week
+reprompt digest
+reprompt digest --period 30d
+reprompt digest --quiet          # one-line summary (great for hooks/cron)
+reprompt digest --format json
+
+# Prompt Science Engine
+reprompt score "your prompt here"
+reprompt compare "prompt A" "prompt B"
+reprompt insights
+
+# HTML dashboard
+reprompt report --html
+
 # Database stats
 reprompt status
 
-# Auto-scan after sessions
+# Auto-scan after sessions (--with-digest also runs digest summary)
 reprompt install-hook
+reprompt install-hook --with-digest
 
 # Cleanup old data
 reprompt purge --older-than 90d
@@ -236,7 +258,7 @@ pipx creates a dedicated virtualenv for reprompt, avoiding conflicts with your s
 ## Roadmap
 
 - **Prompt version control** — track how your prompts evolve across iterations, with semantic diffing and per-version effectiveness scoring
-- **More adapters** — Codex CLI, Aider, Gemini CLI
+- **More adapters** — Codex CLI
 - **Team analytics** — aggregate insights across team members (opt-in, anonymized)
 
 ## Contributing
