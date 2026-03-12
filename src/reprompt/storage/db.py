@@ -116,6 +116,14 @@ class PromptDB:
                 );
                 CREATE INDEX IF NOT EXISTS idx_features_task ON prompt_features (task_type);
                 CREATE INDEX IF NOT EXISTS idx_features_score ON prompt_features (overall_score);
+                CREATE TABLE IF NOT EXISTS digest_log (
+                    id INTEGER PRIMARY KEY,
+                    period TEXT NOT NULL,
+                    window_start TEXT NOT NULL,
+                    window_end TEXT NOT NULL,
+                    generated_at TEXT NOT NULL,
+                    summary TEXT
+                );
             """)
             conn.commit()
         finally:
@@ -715,5 +723,47 @@ class PromptDB:
                 (task_type,),
             ).fetchall()
             return [json.loads(r["features_json"]) for r in rows]
+        finally:
+            conn.close()
+
+    # -- digest_log ---------------------------------------------------------
+
+    def log_digest(
+        self,
+        period: str,
+        window_start: str,
+        window_end: str,
+        summary: str,
+    ) -> None:
+        """Record that a digest was generated."""
+        conn = self._conn()
+        try:
+            conn.execute(
+                """INSERT INTO digest_log
+                   (period, window_start, window_end, generated_at, summary)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    period,
+                    window_start,
+                    window_end,
+                    datetime.now(timezone.utc).isoformat(),
+                    summary,
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_last_digest(self, period: str) -> dict[str, Any] | None:
+        """Return the most recent digest log entry for a given period."""
+        conn = self._conn()
+        try:
+            row = conn.execute(
+                """SELECT * FROM digest_log
+                   WHERE period = ?
+                   ORDER BY generated_at DESC LIMIT 1""",
+                (period,),
+            ).fetchone()
+            return dict(row) if row else None
         finally:
             conn.close()
