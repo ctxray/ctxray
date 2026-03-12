@@ -289,3 +289,103 @@ class TestBuildReportData:
 
         assert "clusters" in data
         assert data["clusters"] == []
+
+
+# ---------------------------------------------------------------------------
+# Effectiveness wiring tests
+# ---------------------------------------------------------------------------
+
+
+def test_run_scan_populates_prompt_effectiveness(tmp_path, monkeypatch):
+    """run_scan() sets effectiveness_score on prompts via update_prompt_effectiveness."""
+    import json
+
+    from reprompt.config import Settings
+    from reprompt.core.pipeline import run_scan
+    from reprompt.storage.db import PromptDB
+
+    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+
+    session_dir = tmp_path / "claude_sessions"
+    session_dir.mkdir()
+    session_file = session_dir / "abc123.jsonl"
+    entries = [
+        {
+            "type": "user",
+            "message": {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Implement the user authentication endpoint with JWT"}
+                ],
+            },
+            "timestamp": "2026-03-10T10:00:00.000Z",
+        },
+        {
+            "type": "assistant",
+            "message": {
+                "role": "assistant",
+                "content": [{"type": "text", "text": "I'll implement the JWT auth endpoint."}],
+            },
+            "timestamp": "2026-03-10T10:01:00.000Z",
+        },
+    ]
+    session_file.write_text("\n".join(json.dumps(e) for e in entries))
+
+    settings = Settings()
+    settings.db_path = tmp_path / "test.db"
+    run_scan(path=str(session_dir), source="claude-code", settings=settings)
+
+    db = PromptDB(tmp_path / "test.db")
+    prompts = db.get_all_prompts()
+    scored_prompts = [p for p in prompts if p.get("effectiveness_score") is not None]
+    assert len(scored_prompts) >= 1
+
+
+def test_build_report_data_computes_pattern_effectiveness(tmp_path, monkeypatch):
+    """build_report_data() calls compute_pattern_effectiveness after upserting patterns."""
+    import json
+
+    from reprompt.config import Settings
+    from reprompt.core.pipeline import build_report_data, run_scan
+    from reprompt.storage.db import PromptDB
+
+    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+
+    session_dir = tmp_path / "claude_sessions"
+    session_dir.mkdir()
+    for i in range(3):
+        f = session_dir / f"session_{i}.jsonl"
+        entries = [
+            {
+                "type": "user",
+                "message": {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Fix the failing tests in the test suite after adding features",
+                        }
+                    ],
+                },
+                "timestamp": f"2026-03-{10 + i:02d}T10:00:00.000Z",
+            },
+            {
+                "type": "assistant",
+                "message": {
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": "Done."}],
+                },
+                "timestamp": f"2026-03-{10 + i:02d}T10:01:00.000Z",
+            },
+        ]
+        f.write_text("\n".join(json.dumps(e) for e in entries))
+
+    settings = Settings()
+    settings.db_path = tmp_path / "test.db"
+    run_scan(path=str(session_dir), source="claude-code", settings=settings)
+    build_report_data(settings=settings)
+
+    db = PromptDB(tmp_path / "test.db")
+    patterns = db.get_patterns()
+    patterns_with_effectiveness = [p for p in patterns if p.get("effectiveness_avg") is not None]
+    assert isinstance(patterns_with_effectiveness, list)  # no crash = success

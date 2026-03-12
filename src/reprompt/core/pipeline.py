@@ -166,6 +166,7 @@ def run_scan(
                         avg_prompt_length=meta.avg_prompt_length,
                         effectiveness_score=score,
                     )
+                    db.update_prompt_effectiveness(meta.session_id, score)
             except Exception:
                 pass  # non-critical — don't break scan if meta fails
 
@@ -211,6 +212,7 @@ def build_report_data(
             last_seen="",
             examples=p.get("examples", []),
         )
+    db.compute_pattern_effectiveness()
 
     # K-means clustering (only if enough texts)
     clusters_summary: list[dict[str, Any]] = []
