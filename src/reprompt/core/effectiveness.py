@@ -59,22 +59,34 @@ def compute_effectiveness(meta: SessionMeta, prompt_specificity: float = 0.5) ->
 
 
 def detect_final_status(entries: list[dict[str, object]]) -> str:
-    """Check last 3 assistant messages for error indicators."""
+    """Check last 3 assistant messages for error indicators.
+
+    Supports two entry formats:
+    - Message-wrapped (Claude Code): ``{"message": {"role": "assistant", "content": ...}}``
+    - Top-level (OpenClaw, Gemini, etc.): ``{"role": "assistant", "content": ...}``
+    """
     assistant_msgs: list[str] = []
     for entry in entries[-20:]:
+        # Try message-wrapped format (Claude Code)
         msg = entry.get("message", {})
         if isinstance(msg, dict) and msg.get("role") == "assistant":
             content = msg.get("content", "")
-            if isinstance(content, list):
-                parts = [
-                    p.get("text", "")
-                    for p in content
-                    if isinstance(p, dict) and p.get("type") == "text"
-                ]
-                text = " ".join(parts)
-            else:
-                text = str(content)
-            assistant_msgs.append(text)
+        # Also try top-level format (OpenClaw, Gemini, etc.)
+        elif entry.get("role") == "assistant":
+            content = entry.get("content", "")
+        else:
+            continue
+
+        if isinstance(content, list):
+            parts = [
+                p.get("text", "")
+                for p in content
+                if isinstance(p, dict) and p.get("type") == "text"
+            ]
+            text = " ".join(parts)
+        else:
+            text = str(content)
+        assistant_msgs.append(text)
 
     last_three = assistant_msgs[-3:]
     for text in last_three:
