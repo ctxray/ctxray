@@ -28,7 +28,8 @@ def build_digest(db: PromptDB, period: str = "7d") -> dict[str, Any]:
     spec_delta = round(current["specificity_score"] - previous["specificity_score"], 2)
 
     # One-liner summary for --quiet mode / digest_log
-    sign = "+" if count_delta >= 0 else ""
+    sign = "+" if count_delta > 0 else ""
+    # 0.01 noise floor — ignore tiny floating-point drift
     arrow = "↑" if spec_delta > 0.01 else ("↓" if spec_delta < -0.01 else "→")
     summary = (
         f"reprompt: {current['prompt_count']} prompts ({sign}{count_delta}),"
