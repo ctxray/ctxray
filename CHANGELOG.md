@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.1] - 2026-03-11
+
+### Added
+- **12 prompt categories** (was 8) — new: `document`, `run`, `query`, `generate`, `plan`; reduces the "other" bucket from ~56% to an estimated <15%
+- **Chinese language support** for all categories — bilingual keyword matching (e.g. "整理" → document, "启动" → run, "是否" → query)
+- **Coding domain stop words** for TF-IDF Hot Phrases — ~60 programming-specific terms filtered (generic verbs: write/create/implement; structure nouns: function/class/variable; LeetCode templates: given/input/output). Hot Phrases now surfaces meaningful domain signals instead of generic boilerplate
+- **Subagent session labeling** — Claude Code subagent sessions (stored under `{project}/{uuid}/subagents/`) are now correctly attributed to their parent project with a `[subagent]` tag (e.g. `claudeAutomation [subagent]`), instead of all appearing under a mystery "subagents" project
+
+### Fixed
+- `cluster_prompts()` previously used no stop words; now uses the same coding stop word list as `compute_tfidf_stats()` for consistent clustering quality
+- "write a function…" prompts were falling into `other`; now correctly categorized as `implement`
+- `not working`, `exception`, `fail` now correctly trigger the `debug` category
+
+### Changed
+- Tests: 478 → 489
+
 ## [0.7.0] - 2026-03-11
 
 ### Added
