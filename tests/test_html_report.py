@@ -146,6 +146,42 @@ def test_special_chars_escaped():
     assert "</html>" in html
 
 
+def test_clusters_rendered():
+    html = render_html_dashboard(
+        _sample_report_data(), _sample_trends_data(), _sample_recommend_data()
+    )
+    assert "Prompt Clusters" in html
+    assert "Fix the failing test for auth" in html
+    assert "#0" in html
+
+
+def test_digest_rendered():
+    digest = {
+        "period": "7d",
+        "count_delta": 12,
+        "spec_delta": 0.06,
+        "eff_avg": 0.73,
+        "current": {"prompt_count": 52, "specificity_score": 0.48},
+        "previous": {"prompt_count": 40, "specificity_score": 0.42},
+        "summary": "reprompt: 52 prompts (+12), specificity 0.48 (↑)",
+    }
+    html = render_html_dashboard(
+        _sample_report_data(), _sample_trends_data(), _sample_recommend_data(), digest
+    )
+    assert "This 7d vs Previous" in html
+    assert "delta-up" in html
+    assert "+12" in html
+    assert "0.73" in html  # eff_avg
+
+
+def test_digest_none_renders_cleanly():
+    html = render_html_dashboard(
+        _sample_report_data(), _sample_trends_data(), _sample_recommend_data(), None
+    )
+    assert "<!DOCTYPE html>" in html
+    assert "This" not in html or "Previous" not in html or "vs Previous" not in html
+
+
 def test_empty_data():
     empty_report = {
         "overview": {
