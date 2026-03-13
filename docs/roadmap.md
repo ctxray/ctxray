@@ -1,123 +1,116 @@
 # reprompt Roadmap
 
-> Last updated: 2026-03-11
+> Last updated: 2026-03-12 · Current version: v0.8.2
 
 ## Vision
 
-reprompt is the **prompt analytics** tool for AI coding sessions — understand your patterns, improve your prompting, track your progress. Zero-config, privacy-first, CLI-first.
+reprompt is the **prompt analytics** tool for AI sessions — understand your patterns, improve your prompting, track your progress. Zero-config, privacy-first, CLI-first.
 
 ---
 
-## Current State (v0.7)
+## Current State (v0.8.2)
 
 ### Adapters (6)
-- Claude Code, OpenClaw, Cursor IDE, Aider, Gemini CLI, Cline
-
-### Analysis
-- Two-layer dedup (SHA-256 + TF-IDF cosine similarity)
-- TF-IDF hot phrase extraction, K-means clustering
-- Auto-categorization (debug/implement/test/review/refactor)
-- Session effectiveness scoring (composite: tool calls, errors, specificity)
-- Prompt merge-view (similar prompt clustering with canonical selection)
+Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline
 
 ### Commands
-- `reprompt scan` — extract prompts from AI session files
-- `reprompt report` — full analytics dashboard (terminal or `--html`)
-- `reprompt library` — organized prompt collection by category
-- `reprompt trends` — specificity and vocabulary evolution over time
-- `reprompt recommend` — personalized improvement suggestions
-- `reprompt effectiveness` — session quality scores
-- `reprompt merge-view` — similar prompt clusters
-- `reprompt save` / `reprompt templates` — save and reuse best prompts
-- `reprompt lint` — prompt quality checks (CI-ready)
-- `reprompt search` — full-text prompt search
-- `reprompt demo` — try with sample data
-- `reprompt digest` — weekly two-window comparison (this week vs last week)
-- `reprompt score "prompt"` — instant 0-100 prompt quality scoring
-- `reprompt compare "a" "b"` — side-by-side feature comparison
-- `reprompt insights` — personal patterns vs research-optimal
+`scan` · `report` · `library` · `trends` · `recommend` · `effectiveness` · `merge-view` · `save` · `templates` · `lint` · `search` · `demo` · `status` · `purge` · `install-hook` · `score` · `compare` · `insights` · `digest` · `mcp-serve`
 
-### Integration
-- MCP server for IDE integration
+### Integrations
+- MCP server (`reprompt mcp-serve`) for IDE integration
 - GitHub Action (`action.yml`) for CI prompt quality checks
+- HTML dashboard (`reprompt report --html`)
 - JSON output on all commands for pipeline integration
 
 ---
 
-## Next Up
+## v0.9 — Chat AI Sources
 
-### More Adapters
+**Theme:** Bring web-based AI chat data into reprompt analysis.
 
-Each adapter is ~50 lines implementing `BaseAdapter.parse_session()`. Community contributions welcome.
+### New Adapters
+| Tool | Mechanism | Status |
+|------|-----------|--------|
+| ChatGPT | `conversations.json` from OpenAI data export | Planned |
+| Claude.ai | ZIP export from Account settings | Planned |
+| Gemini Takeout | Google Takeout → Gemini Apps Activity JSON | Planned |
 
-| Tool | Status | Priority |
-|------|--------|----------|
-| Claude Code | ✅ Shipped | — |
-| OpenClaw | ✅ Shipped | — |
-| Cursor IDE | ✅ Shipped | — |
-| Aider | ✅ Shipped | — |
-| Gemini CLI | ✅ Shipped | — |
-| Cline | ✅ Shipped | — |
-| GitHub Copilot Chat | Planned | High |
-| Continue.dev | Planned | Medium |
-| Windsurf | Planned | Medium |
-
-### Style Analysis
-
-`reprompt style` — extract your prompting style fingerprint:
-- Average length, vocabulary level, structure patterns
-- Preferred categories and opening patterns
-- Specificity habits (file names, line numbers, function names)
-- Pure analysis, no LLM needed
-
-### Template Variables
-
-Extend `reprompt save` with `{variable}` placeholders:
+### New Command: `reprompt import`
 ```bash
-reprompt save --name "debug-specific" \
-  "Debug {file} — {function} returns {actual} instead of {expected}"
-
-reprompt use debug-specific file=auth.py function=login actual=401 expected=200
+reprompt import conversations.json --source chatgpt
+reprompt import export.zip --source claude-chat
 ```
+Complements `reprompt scan` (auto-discover) with explicit file import for manually exported chat histories.
 
-### Enhanced Lint Rules
+### CLI Improvements
+- **Template variables:** `reprompt use <name> key=value` with `{placeholder}` substitution
+- **`reprompt style`:** Personal prompting style fingerprint (avg length, categories, opening patterns)
+- **Configurable lint:** `.reprompt.yml` for per-project rule customization
 
-Expand `reprompt lint` with configurable rules:
-- Custom rule definitions in `.reprompt.yml`
-- Per-project and per-team configurations
-- More built-in rules (implement needs acceptance criteria, test needs target, etc.)
+### Category Expansion
+New categories for chat prompts: `research` · `creative` · `summarize` · `translate` · `draft` · `analyze` · `plan`
 
 ---
 
-## Competitive Landscape (2026-03)
+## v1.0 — Browser Extension
 
-**No direct competitor exists.** reprompt is the only open-source tool that does CLI-first algorithmic analysis of AI coding prompts.
+**Theme:** Real-time capture from any web-based AI tool, bridged to reprompt analysis.
 
-| Tool | Stars | What It Does | How reprompt Differs |
-|------|-------|-------------|---------------------|
-| **promptfoo** | 10.8K | LLM output testing & evaluation | Tests LLM responses, not developer prompts |
-| **DSPy** | 20K+ | Prompt programming framework | Optimizes LLM app prompts, not coding sessions |
-| **Langfuse** | — | LLM observability platform | Server-side tracing, not local CLI |
-| **Vibe-Log** | — | Claude session summaries | LLM-based (expensive, non-reproducible) |
+### reprompt-extension (separate repo)
+A companion browser extension that captures prompts from web AI tools and pipes them into reprompt for analysis.
+
+**Supported platforms (priority order):**
+1. Gemini — biggest pain point (tab-close deletes history, Activities-off blocks cross-device)
+2. ChatGPT — largest user base
+3. Claude.ai — core audience overlap
+4. Perplexity, Mistral, Grok (v1.1+)
+
+**Architecture:**
+- Service Worker intercepts API requests (not DOM scraping — survives UI changes)
+- 100% local storage (IndexedDB) — zero server, zero telemetry
+- Syncs to reprompt CLI via [Chrome Native Messaging](https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging)
+- `reprompt install-extension` registers the native messaging host
+
+**Privacy guarantees:**
+- No network requests except to AI platforms you're already using
+- Explicit prompt list visible in extension popup
+- Per-domain opt-out controls
+- Full delete/export from popup
+
+### New CLI Commands
+```bash
+reprompt install-extension   # register native messaging host
+reprompt extension status    # show connection status + pending sync count
+```
+
+---
+
+## Post-v1.0
+
+| Version | Theme |
+|---------|-------|
+| v1.1 | More platforms (Perplexity, Mistral, Grok) · Ollama integration (optional) |
+| v1.2 | Team features · anonymized pattern sharing · CI lint standards |
+| v2.0+ | VS Code / JetBrains extension · community patterns (server infra decision pending) |
 
 ---
 
 ## Architecture Principles
 
 1. **Zero-config first** — Every feature works without LLM by default
-2. **Privacy by design** — All data stays local
+2. **Privacy by design** — All data stays local; extension has zero server
 3. **Adapter pattern** — New AI tools supported by adding ~50 lines
-4. **CLI first, GUI second** — Terminal is primary, HTML dashboard is secondary
-5. **Composable** — Every command supports JSON output for piping
+4. **Analysis not generation** — We own analysis; DSPy/promptfoo own generation
+5. **CLI first, GUI second** — Terminal is primary, HTML dashboard is secondary
+6. **Composable** — Every command supports JSON output for piping
 
 ---
 
 ## How to Contribute
 
-Small contributions welcome:
 - **New adapter** (~50 lines) — see `src/reprompt/adapters/base.py`
 - **New lint rules** — see `src/reprompt/core/lint.py`
 - **Better categorization** — improve keyword rules in `core/library.py`
-- **Documentation and examples**
+- **Browser extension** — see `reprompt-extension` repo (coming soon)
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for details.
