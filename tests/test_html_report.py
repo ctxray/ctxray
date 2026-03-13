@@ -174,6 +174,32 @@ def test_digest_rendered():
     assert "0.73" in html  # eff_avg
 
 
+def test_digest_category_delta_rendered():
+    digest = {
+        "period": "7d",
+        "count_delta": 5,
+        "spec_delta": 0.02,
+        "eff_avg": None,
+        "current": {
+            "prompt_count": 30,
+            "specificity_score": 0.45,
+            "category_distribution": {"debug": 15, "implement": 10, "test": 5},
+        },
+        "previous": {
+            "prompt_count": 25,
+            "specificity_score": 0.43,
+            "category_distribution": {"debug": 10, "implement": 10, "test": 5},
+        },
+        "summary": "reprompt: 30 prompts (+5), specificity 0.45 (↑)",
+    }
+    html = render_html_dashboard(
+        _sample_report_data(), _sample_trends_data(), _sample_recommend_data(), digest
+    )
+    assert "Category Shift" in html
+    assert "debug" in html
+    assert "implement" in html
+
+
 def test_digest_none_renders_cleanly():
     html = render_html_dashboard(
         _sample_report_data(), _sample_trends_data(), _sample_recommend_data(), None

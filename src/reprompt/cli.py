@@ -715,6 +715,7 @@ def digest(
     period: str = typer.Option("7d", help="Comparison window: 7d, 14d, 30d"),
     format: str = typer.Option("terminal", help="Output format: terminal, json"),
     quiet: bool = typer.Option(False, "--quiet", help="One-line summary (for hooks/cron)"),
+    history: bool = typer.Option(False, "--history", help="Show past digest log entries"),
 ) -> None:
     """Show a weekly summary comparing current vs previous period."""
     import json as json_mod
@@ -725,6 +726,17 @@ def digest(
 
     settings = Settings()
     db = PromptDB(settings.db_path)
+
+    if history:
+        rows = db.get_digest_history(period=period, limit=10)
+        if format == "json":
+            print(json_mod.dumps(rows, indent=2, default=str))
+        else:
+            from reprompt.output.terminal import render_digest_history
+
+            print(render_digest_history(rows, period), end="")
+        return
+
     data = build_digest(db, period=period)
 
     if quiet:

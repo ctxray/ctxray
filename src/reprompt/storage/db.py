@@ -848,3 +848,17 @@ class PromptDB:
             return dict(row) if row else None
         finally:
             conn.close()
+
+    def get_digest_history(self, period: str, limit: int = 10) -> list[dict[str, Any]]:
+        """Return past digest log entries for a period, newest first."""
+        conn = self._conn()
+        try:
+            rows = conn.execute(
+                """SELECT * FROM digest_log
+                   WHERE period = ?
+                   ORDER BY generated_at DESC LIMIT ?""",
+                (period, limit),
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()

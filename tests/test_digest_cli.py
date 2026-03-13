@@ -7,7 +7,7 @@ import json
 from typer.testing import CliRunner
 
 from reprompt.cli import app
-from reprompt.output.terminal import render_digest
+from reprompt.output.terminal import render_digest, render_digest_history
 
 runner = CliRunner()
 
@@ -105,6 +105,24 @@ class TestRenderDigest:
         assert "implement" in output
         assert "debug" in output
 
+    def test_render_digest_history_empty(self):
+        output = render_digest_history([], "7d")
+        assert "history" in output.lower()
+        assert "No digest history" in output
+
+    def test_render_digest_history_shows_rows(self):
+        rows = [
+            {
+                "generated_at": "2026-03-10T08:00:00+00:00",
+                "window_start": "2026-03-03T00:00:00+00:00",
+                "window_end": "2026-03-10T00:00:00+00:00",
+                "summary": "reprompt: 42 prompts (+5), specificity 0.62 (↑)",
+            }
+        ]
+        output = render_digest_history(rows, "7d")
+        assert "42 prompts" in output
+        assert "2026-03-10" in output
+
     def test_render_digest_negative_delta(self):
         data = {
             "period": "7d",
@@ -180,6 +198,21 @@ class TestDigestCommand:
         result = runner.invoke(app, ["digest"])
         assert result.exit_code == 0
         assert "digest" in result.output.lower()
+
+    def test_digest_history_flag_empty(self, tmp_path, monkeypatch):
+        """--history with empty DB prints a no-history message."""
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        result = runner.invoke(app, ["digest", "--history"])
+        assert result.exit_code == 0
+        assert "history" in result.output.lower()
+
+    def test_digest_history_flag_json(self, tmp_path, monkeypatch):
+        """--history --format json returns a JSON list."""
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        result = runner.invoke(app, ["digest", "--history", "--format", "json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert isinstance(data, list)
 
     def test_install_hook_with_digest_flag(self, tmp_path, monkeypatch):
         """--with-digest registers the digest --quiet entry in settings.json."""

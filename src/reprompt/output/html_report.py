@@ -153,6 +153,35 @@ def render_html_dashboard(
                 f"</div>"
             )
 
+        # Category delta mini-table
+        curr_cats = curr.get("category_distribution", {})
+        prev_cats = digest_data.get("previous", {}).get("category_distribution", {})
+        cat_rows = ""
+        if curr_cats:
+            curr_total = sum(curr_cats.values()) or 1
+            prev_total = sum(prev_cats.values()) or 1
+            top_cats = sorted(curr_cats, key=lambda c: -curr_cats[c])[:6]
+            for cat in top_cats:
+                cp = curr_cats.get(cat, 0) / curr_total
+                pp = prev_cats.get(cat, 0) / prev_total
+                dp = cp - pp
+                arrow = "↑" if dp > 0.03 else ("↓" if dp < -0.03 else "→")
+                cls = "delta-up" if dp > 0.03 else ("delta-down" if dp < -0.03 else "delta-neutral")
+                cat_rows += (
+                    f"<tr><td>{_html_escape(cat)}</td>"
+                    f"<td>{cp:.0%}</td>"
+                    f'<td class="{cls}">{arrow} {dp:+.0%}</td></tr>\n'
+                )
+        cat_section = ""
+        if cat_rows:
+            cat_section = (
+                "<h3 style='margin:16px 0 8px'>Category Shift</h3>"
+                "<table><thead><tr>"
+                "<th>Category</th><th>This Period</th><th>Change</th>"
+                "</tr></thead>"
+                f"<tbody>{cat_rows}</tbody></table>"
+            )
+
         digest_html = f"""
 <div class="section">
   <div class="card">
@@ -172,6 +201,7 @@ def render_html_dashboard(
       </div>
       {eff_card}
     </div>
+    {cat_section}
   </div>
 </div>
 """

@@ -499,3 +499,31 @@ def render_digest(data: dict[str, Any]) -> str:
             console.print(f"  {cat:<12} {bar:<20} {curr_pct:.0%}{arrow}")
 
     return buf.getvalue()
+
+
+def render_digest_history(rows: list[dict[str, Any]], period: str) -> str:
+    """Render a table of past digest runs."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    console.print(f"\n[bold]reprompt digest history ({period})[/bold]")
+    console.print("=" * 40)
+
+    if not rows:
+        console.print("  No digest history found. Run `reprompt digest` to generate one.")
+        return buf.getvalue()
+
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Generated", style="dim", width=20)
+    table.add_column("Window", width=27)
+    table.add_column("Summary")
+
+    for row in rows:
+        generated = str(row.get("generated_at", ""))[:19]
+        start = str(row.get("window_start", ""))[:10]
+        end = str(row.get("window_end", ""))[:10]
+        summary = str(row.get("summary", ""))
+        table.add_row(generated, f"{start} → {end}", summary)
+
+    console.print(table)
+    return buf.getvalue()
