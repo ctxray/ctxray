@@ -129,7 +129,7 @@ def render_html_dashboard(
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>reprompt Dashboard</title>
+<title>reprompt — Prompt Analytics</title>
 <style>
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
 body {{
@@ -137,8 +137,13 @@ body {{
   background: #1a1a2e; color: #e0e0e0; padding: 24px;
   line-height: 1.6;
 }}
-h1 {{ text-align: center; margin-bottom: 8px; color: #e94560; }}
-.subtitle {{ text-align: center; color: #888; margin-bottom: 32px; font-size: 0.9rem; }}
+h1 {{ text-align: center; margin-bottom: 8px; font-size: 2rem; letter-spacing: -0.5px; }}
+h1 .re {{ color: #888; font-weight: 400; }}
+h1 .prompt {{ color: #e94560; font-weight: 700; }}
+.subtitle {{
+  text-align: center; color: #666; margin-bottom: 32px;
+  font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase;
+}}
 .stats-row {{
   display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px; margin-bottom: 32px;
@@ -189,8 +194,8 @@ li {{ margin-bottom: 6px; }}
 </head>
 <body>
 
-<h1>reprompt Dashboard</h1>
-<p class="subtitle">Prompt analytics &amp; recommendations</p>
+<h1><span class="re">re</span><span class="prompt">prompt</span></h1>
+<p class="subtitle">Prompt Analytics</p>
 
 <!-- Stat cards -->
 <div class="stats-row">
