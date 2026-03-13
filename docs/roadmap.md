@@ -6,6 +6,8 @@
 
 reprompt is the **prompt analytics** tool for AI sessions — understand your patterns, improve your prompting, track your progress. Zero-config, privacy-first, CLI-first.
 
+**Category definition:** reprompt analyzes *human inputs* (how you prompt), not *LLM outputs* (how models respond). Every other tool in the eval/observability space — Promptfoo, Braintrust, DeepEval, Langfuse — answers "did my AI system answer correctly?" reprompt answers "am I asking well?" This is an unoccupied category.
+
 ---
 
 ## Current State (v0.8.2)
@@ -89,7 +91,7 @@ reprompt extension status    # show connection status + pending sync count
 
 ## Post-v1.0
 
-v1.1 will likely include Windows Native Messaging support, more platforms (Perplexity, Mistral, Grok), and optional Ollama integration for deeper qualitative analysis. Team features (anonymized pattern sharing, CI lint standards) are candidates for v1.2. Nothing beyond v1.1 is formally scheduled.
+v1.1 will likely include Windows Native Messaging support, more platforms (Perplexity, Mistral, Grok), `reprompt suggest` (opt-in Ollama integration: given a prompt draft, suggest improvements using your personal history as few-shot examples), and `.repromptignore` filtering. Team features (anonymized pattern sharing, CI lint standards) are candidates for v1.2. Nothing beyond v1.1 is formally scheduled.
 
 ---
 
@@ -98,7 +100,7 @@ v1.1 will likely include Windows Native Messaging support, more platforms (Perpl
 1. **Zero-config first** — Every feature works without LLM by default
 2. **Privacy by design** — All data stays local; extension has zero server
 3. **Adapter pattern** — New AI tools supported by adding ~50 lines
-4. **Analysis not generation** — We own analysis; DSPy/promptfoo own generation
+4. **Input not output** — We analyze human prompts (inputs); LLM eval tools analyze model responses (outputs)
 5. **CLI first, GUI second** — Terminal is primary, HTML dashboard is secondary
 6. **Composable** — Every command supports JSON output for piping
 
