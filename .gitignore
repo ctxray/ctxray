@@ -41,3 +41,6 @@ thoughts/
 .tldr/
 .tldrignore
 .worktrees/
+
+# Launch / marketing drafts (not part of the codebase)
+docs/launch/
