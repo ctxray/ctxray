@@ -52,6 +52,9 @@ The `reprompt compare "a" "b"` command shows feature breakdowns side-by-side. `r
 
 Everything is local — no cloud, no LLM. The scoring is deterministic NLP. Pluggable embedding backend (TF-IDF default, Ollama optional).
 
+    pipx install reprompt-cli
+    reprompt scan && reprompt insights
+
 6 tools supported: Claude Code, Cursor, Aider, Gemini CLI, Cline, OpenClaw. 493 tests. MIT.
 
 https://github.com/reprompt-dev/reprompt
@@ -99,7 +102,7 @@ That's the entire config. It hits your local Ollama at localhost:11434 — nothi
 
 The scoring part (`reprompt score`, `reprompt compare`, `reprompt insights`) is 100% local NLP regardless of which embedding backend you choose. No LLM involved. It's based on features from 4 published papers: specificity signals (file paths, line numbers, error messages), position bias, repetition patterns, perplexity proxy. The score is deterministic — same input, same output, every time.
 
-Worth noting: I rewrote the scoring logic twice. First version over-weighted length. Second version ignored position — treating the prompt as a bag of words. The final   version uses a sliding window to evaluate where signals appear in the prompt. I want to be honest about what the score is and isn't. It's a proxy for quality based on observable NLP features correlated with good prompts in research. It will penalize "fix the bug" (23/100) and reward "fix the NPE in auth.service.ts:47 when token expires mid-session" (87/100). Whether your specific AI tool responds better to specific prompts is something you verify empirically — the score is a starting point, not ground truth.
+I want to be honest about what the score is and isn't. It's a proxy for quality based on observable NLP features correlated with good prompts in research. It will penalize "fix the bug" (23/100) and reward "fix the NPE in auth.service.ts:47 when token expires mid-session" (87/100). Whether your specific AI tool responds better to specific prompts is something you verify empirically — the score is a starting point, not ground truth.
 
 What I actually use daily:
 
@@ -121,7 +124,7 @@ MIT, personal project, no company, no paid tier, no plans for one. 493 tests.
 
 https://github.com/reprompt-dev/reprompt
 
-Anyone running local analytics on their own coding sessions? Curious anyone running nomic-embed-text or mxbai-embed-large for short-text clustering? Curious if there's a meaningful quality difference over TF-IDF at this token count range(10-30 tokens).
+Anyone running local analytics on their own coding sessions? Curious which embedding models you've found useful for short text clustering.
 
 ---
 
