@@ -6,6 +6,8 @@ import json
 
 import pytest
 
+pytest.importorskip("fastmcp")
+
 from reprompt.storage.db import PromptDB
 
 
