@@ -27,6 +27,10 @@ def build_digest(db: PromptDB, period: str = "7d") -> dict[str, Any]:
     count_delta = current["prompt_count"] - previous["prompt_count"]
     spec_delta = round(current["specificity_score"] - previous["specificity_score"], 2)
 
+    # Effectiveness summary (None if no session data)
+    eff_summary = db.get_effectiveness_summary()
+    eff_avg: float | None = eff_summary.get("avg_score") if eff_summary.get("total") else None
+
     # One-liner summary for --quiet mode / digest_log
     sign = "+" if count_delta > 0 else ""
     # 0.01 noise floor — ignore tiny floating-point drift
@@ -35,6 +39,8 @@ def build_digest(db: PromptDB, period: str = "7d") -> dict[str, Any]:
         f"reprompt: {current['prompt_count']} prompts ({sign}{count_delta}),"
         f" specificity {current['specificity_score']:.2f} ({arrow})"
     )
+    if eff_avg is not None:
+        summary += f", quality {eff_avg:.2f}"
 
     # Log this digest run
     db.log_digest(
@@ -50,5 +56,6 @@ def build_digest(db: PromptDB, period: str = "7d") -> dict[str, Any]:
         "previous": previous,
         "count_delta": count_delta,
         "spec_delta": spec_delta,
+        "eff_avg": eff_avg,
         "summary": summary,
     }

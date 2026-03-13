@@ -89,3 +89,110 @@ class TestBuildDigest:
         result = build_digest(db, period="7d")
         # With 0 prompts in previous window, delta should be >= 0
         assert result["spec_delta"] >= 0
+
+
+# ---------------------------------------------------------------------------
+# Effectiveness in digest
+# ---------------------------------------------------------------------------
+
+
+def _make_db_with_session_meta(tmp_path):
+    """Helper: DB with session metadata for effectiveness testing."""
+    from reprompt.storage.db import PromptDB
+
+    db = PromptDB(tmp_path / "test.db")
+    db.upsert_session_meta(
+        session_id="s1",
+        source="claude-code",
+        project="myproject",
+        start_time="2026-03-10T10:00:00+00:00",
+        end_time="2026-03-10T11:00:00+00:00",
+        duration_seconds=3600,
+        prompt_count=5,
+        tool_call_count=10,
+        error_count=0,
+        final_status="success",
+        avg_prompt_length=120.0,
+        effectiveness_score=0.78,
+    )
+    return db
+
+
+def test_build_digest_includes_eff_avg(tmp_path):
+    """build_digest returns eff_avg from session_meta data."""
+    from unittest.mock import patch
+
+    from reprompt.core.digest import build_digest
+
+    db = _make_db_with_session_meta(tmp_path)
+
+    with patch("reprompt.core.digest.compute_window_snapshot") as mock_snap:
+        mock_snap.return_value = {
+            "prompt_count": 5,
+            "specificity_score": 0.60,
+            "avg_length": 100.0,
+            "category_distribution": {},
+        }
+        result = build_digest(db, period="7d")
+
+    assert "eff_avg" in result
+    assert result["eff_avg"] == pytest.approx(0.78, abs=0.01)
+
+
+def test_build_digest_eff_avg_none_when_no_sessions(tmp_path):
+    """build_digest returns eff_avg=None when no session data exists."""
+    from unittest.mock import patch
+
+    from reprompt.core.digest import build_digest
+    from reprompt.storage.db import PromptDB
+
+    db = PromptDB(tmp_path / "test.db")
+
+    with patch("reprompt.core.digest.compute_window_snapshot") as mock_snap:
+        mock_snap.return_value = {
+            "prompt_count": 0,
+            "specificity_score": 0.0,
+            "avg_length": 0.0,
+            "category_distribution": {},
+        }
+        result = build_digest(db, period="7d")
+
+    assert result["eff_avg"] is None
+
+
+def test_render_digest_shows_effectiveness_when_present():
+    """render_digest includes effectiveness line when eff_avg is provided."""
+    from reprompt.output.terminal import render_digest
+
+    snap = {"prompt_count": 10, "specificity_score": 0.65, "avg_length": 120.0}
+    curr = {**snap, "category_distribution": {}}
+    prev = {**snap, "prompt_count": 8, "avg_length": 110.0, "category_distribution": {}}
+    data = {
+        "period": "7d",
+        "current": curr,
+        "previous": prev,
+        "count_delta": 2,
+        "spec_delta": 0.05,
+        "eff_avg": 0.78,
+    }
+    output = render_digest(data)
+    assert "0.78" in output or "★" in output
+
+
+def test_render_digest_no_crash_without_effectiveness():
+    """render_digest works fine when eff_avg is absent or None."""
+    from reprompt.output.terminal import render_digest
+
+    snap = {"prompt_count": 10, "specificity_score": 0.65, "avg_length": 120.0}
+    curr = {**snap, "category_distribution": {}}
+    prev = {**snap, "prompt_count": 8, "avg_length": 110.0, "category_distribution": {}}
+    data = {
+        "period": "7d",
+        "current": curr,
+        "previous": prev,
+        "count_delta": 2,
+        "spec_delta": 0.05,
+        "eff_avg": None,
+    }
+    output = render_digest(data)
+    assert "Prompts this period" in output

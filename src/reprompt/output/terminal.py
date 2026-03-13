@@ -469,6 +469,15 @@ def render_digest(data: dict[str, Any]) -> str:
     avg_len = current.get("avg_length", 0.0)
     console.print(f"  Avg prompt length:    {avg_len:.0f} chars", highlight=False)
 
+    eff_avg = data.get("eff_avg")
+    if eff_avg is not None:
+        from reprompt.core.effectiveness import effectiveness_stars
+
+        console.print(
+            f"  Session quality:      {eff_avg:.2f} {effectiveness_stars(eff_avg)}",
+            highlight=False,
+        )
+
     # Category distribution comparison
     curr_cats = current.get("category_distribution", {})
     prev_cats = previous.get("category_distribution", {})
