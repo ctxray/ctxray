@@ -106,6 +106,7 @@ def report(
         import webbrowser
         from pathlib import Path
 
+        from reprompt.core.digest import build_digest
         from reprompt.core.recommend import compute_recommendations
         from reprompt.core.trends import compute_trends
         from reprompt.output.html_report import render_html_dashboard
@@ -114,8 +115,12 @@ def report(
         db = PromptDB(settings.db_path)
         trends_data = compute_trends(db, period="7d", n_windows=6)
         recommend_data = compute_recommendations(db)
+        try:
+            digest_data = build_digest(db, period="7d")
+        except Exception:
+            digest_data = None
 
-        html_content = render_html_dashboard(data, trends_data, recommend_data)
+        html_content = render_html_dashboard(data, trends_data, recommend_data, digest_data)
         out_path = Path(output) if output else Path("reprompt-report.html")
         out_path.write_text(html_content, encoding="utf-8")
 

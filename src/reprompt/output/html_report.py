@@ -36,6 +36,7 @@ def render_html_dashboard(
     report_data: dict[str, Any],
     trends_data: dict[str, Any],
     recommend_data: dict[str, Any],
+    digest_data: dict[str, Any] | None = None,
 ) -> str:
     """Render a complete self-contained HTML dashboard page.
 
@@ -47,6 +48,8 @@ def render_html_dashboard(
         Prompt evolution trends with windows and insights.
     recommend_data:
         Recommendations with best prompts, alerts, tips.
+    digest_data:
+        Optional weekly digest comparing current vs previous period.
 
     Returns
     -------
@@ -115,6 +118,77 @@ def render_html_dashboard(
     insights_html = ""
     for ins in trends_data.get("insights", []):
         insights_html += f"<li>{_html_escape(str(ins))}</li>\n"
+
+    # Build digest comparison block
+    digest_html = ""
+    if digest_data:
+        count_delta = digest_data.get("count_delta", 0)
+        spec_delta = digest_data.get("spec_delta", 0.0)
+        eff_avg = digest_data.get("eff_avg")
+        curr = digest_data.get("current", {})
+        period = _html_escape(str(digest_data.get("period", "7d")))
+
+        def _delta_cls(v: float, threshold: float = 0.01) -> str:
+            if v > threshold:
+                return "delta-up"
+            if v < -threshold:
+                return "delta-down"
+            return "delta-neutral"
+
+        def _sign(v: float) -> str:
+            return "+" if v > 0 else ""
+
+        count_cls = _delta_cls(float(count_delta))
+        spec_cls = _delta_cls(spec_delta)
+        count_sign = _sign(float(count_delta))
+        spec_sign = _sign(spec_delta)
+        spec_curr = curr.get("specificity_score", 0.0)
+
+        eff_card = ""
+        if eff_avg is not None:
+            eff_card = (
+                f'<div class="stat-card">'
+                f'<div class="value">{eff_avg:.2f}</div>'
+                f'<div class="label">Avg Quality</div>'
+                f"</div>"
+            )
+
+        digest_html = f"""
+<div class="section">
+  <div class="card">
+    <h2>This {period} vs Previous</h2>
+    <div class="stats-row" style="margin-bottom:0">
+      <div class="stat-card">
+        <div class="value {count_cls}">{count_sign}{count_delta}</div>
+        <div class="label">Prompt Count Change</div>
+      </div>
+      <div class="stat-card">
+        <div class="value {spec_cls}">{spec_sign}{spec_delta:+.2f}</div>
+        <div class="label">Specificity Change</div>
+      </div>
+      <div class="stat-card">
+        <div class="value">{spec_curr:.2f}</div>
+        <div class="label">Current Specificity</div>
+      </div>
+      {eff_card}
+    </div>
+  </div>
+</div>
+"""
+
+    # Build clusters table
+    clusters_rows = ""
+    for cl in report_data.get("clusters", []):
+        cid = cl.get("cluster_id", "")
+        size = cl.get("size", 0)
+        sample = _html_escape(str(cl.get("sample", "")))
+        clusters_rows += f"<tr><td>#{cid}</td><td>{size}</td><td>{sample}</td></tr>\n"
+    _no_cluster_msg = "<p>Not enough data for clustering (need 5+ prompts).</p>"
+    _cluster_inner = (
+        f"<table><thead><tr><th>#</th><th>Size</th><th>Sample</th></tr></thead>"
+        f"<tbody>{clusters_rows}</tbody></table>"
+    )
+    clusters_table = _cluster_inner if clusters_rows else _no_cluster_msg
 
     # Date range footer
     dr_start = _html_escape(str(date_range[0])) if date_range[0] else "N/A"
@@ -187,6 +261,9 @@ li {{ margin-bottom: 6px; }}
   text-align: center; color: #666; font-size: 0.8rem; margin-top: 40px;
   padding-top: 16px; border-top: 1px solid #2a2a4a;
 }}
+.delta-up {{ color: #4caf50; }}
+.delta-down {{ color: #e94560; }}
+.delta-neutral {{ color: #aaa; }}
 @media (max-width: 860px) {{
   .chart-grid {{ grid-template-columns: 1fr; }}
 }}
@@ -217,6 +294,7 @@ li {{ margin-bottom: 6px; }}
   </div>
 </div>
 
+{digest_html}
 <!-- Charts 2x2 -->
 <div class="chart-grid">
   <div class="card">
@@ -255,6 +333,13 @@ li {{ margin-bottom: 6px; }}
       <thead><tr><th>Term</th><th>Avg TF-IDF</th><th>Doc Freq</th></tr></thead>
       <tbody>{terms_rows}</tbody>
     </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="card">
+    <h2>Prompt Clusters</h2>
+    {clusters_table}
   </div>
 </div>
 
