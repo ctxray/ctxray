@@ -37,10 +37,11 @@ Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline
 
 ### New Command: `reprompt import`
 ```bash
-reprompt import conversations.json --source chatgpt
+reprompt import conversations.json            # auto-detect source
 reprompt import export.zip --source claude-chat
+reprompt import takeout.json --source gemini-takeout
 ```
-Complements `reprompt scan` (auto-discover) with explicit file import for manually exported chat histories.
+`reprompt scan` = auto-discover session directories. `reprompt import` = explicit file from a manual export. Both write to the same SQLite DB; all existing commands (`report`, `digest`, `trends`) work with imported data.
 
 ### CLI Improvements
 - **Template variables:** `reprompt use <name> key=value` with `{placeholder}` substitution
@@ -70,6 +71,7 @@ A companion browser extension that captures prompts from web AI tools and pipes 
 - 100% local storage (IndexedDB) — zero server, zero telemetry
 - Syncs to reprompt CLI via [Chrome Native Messaging](https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging)
 - `reprompt install-extension` registers the native messaging host
+- macOS + Linux supported at v1.0; Windows deferred to v1.1
 
 **Privacy guarantees:**
 - No network requests except to AI platforms you're already using
@@ -87,11 +89,7 @@ reprompt extension status    # show connection status + pending sync count
 
 ## Post-v1.0
 
-| Version | Theme |
-|---------|-------|
-| v1.1 | More platforms (Perplexity, Mistral, Grok) · Ollama integration (optional) |
-| v1.2 | Team features · anonymized pattern sharing · CI lint standards |
-| v2.0+ | VS Code / JetBrains extension · community patterns (server infra decision pending) |
+v1.1 will likely include Windows Native Messaging support, more platforms (Perplexity, Mistral, Grok), and optional Ollama integration for deeper qualitative analysis. Team features (anonymized pattern sharing, CI lint standards) are candidates for v1.2. Nothing beyond v1.1 is formally scheduled.
 
 ---
 
