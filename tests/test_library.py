@@ -139,3 +139,57 @@ def test_skill_invocation_does_not_match_short_patterns():
     assert categorize_prompt("please use Python to build this function") != "skill_invocation"
     assert categorize_prompt("node:packages need updating in the project") != "skill_invocation"
     assert categorize_prompt("user:admin has no permissions set") != "skill_invocation"
+
+
+# --- New category tests (v0.9 chat AI expansion) ---
+
+
+def test_categorize_research():
+    from reprompt.core.library import categorize_prompt
+
+    assert categorize_prompt("Research the latest trends in renewable energy storage") == "research"
+    assert categorize_prompt("What are the current findings on intermittent fasting?") == "research"
+
+
+def test_categorize_creative():
+    from reprompt.core.library import categorize_prompt
+
+    assert categorize_prompt("Write a short story about a robot who learns to paint") == "creative"
+    assert categorize_prompt("Compose a haiku about autumn leaves") == "creative"
+
+
+def test_categorize_summarize():
+    from reprompt.core.library import categorize_prompt
+
+    text = "Summarize this article about climate change in 3 bullet points"
+    assert categorize_prompt(text) == "summarize"
+    assert categorize_prompt("Give me the key takeaways from this research paper") == "summarize"
+
+
+def test_categorize_translate():
+    from reprompt.core.library import categorize_prompt
+
+    assert categorize_prompt("Translate this paragraph into Japanese") == "translate"
+    assert categorize_prompt("How do you say good morning in French?") == "translate"
+
+
+def test_categorize_draft():
+    from reprompt.core.library import categorize_prompt
+
+    text = "Draft an email to my manager requesting time off next week"
+    assert categorize_prompt(text) == "draft"
+    assert categorize_prompt("Write a cover letter for a software engineering position") == "draft"
+
+
+def test_categorize_analyze():
+    from reprompt.core.library import categorize_prompt
+
+    assert categorize_prompt("Analyze the pros and cons of remote work policies") == "analyze"
+    assert categorize_prompt("Compare these two investment strategies") == "analyze"
+
+
+def test_categorize_brainstorm():
+    from reprompt.core.library import categorize_prompt
+
+    assert categorize_prompt("Brainstorm ideas for a birthday party theme") == "brainstorm"
+    assert categorize_prompt("What are some creative ways to reduce food waste?") == "brainstorm"
