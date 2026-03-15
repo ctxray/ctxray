@@ -36,7 +36,7 @@ class TestScanResult:
 class TestGetAdapters:
     def test_returns_list(self):
         adapters = get_adapters()
-        assert len(adapters) == 6
+        assert len(adapters) == 8
 
     def test_adapter_names(self):
         adapters = get_adapters()
@@ -46,6 +46,8 @@ class TestGetAdapters:
         assert "aider" in names
         assert "gemini" in names
         assert "cline" in names
+        assert "chatgpt-export" in names
+        assert "claude-chat-export" in names
 
 
 class TestRunScan:

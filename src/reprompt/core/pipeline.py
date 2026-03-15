@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from reprompt.adapters.aider import AiderAdapter
+from reprompt.adapters.chatgpt import ChatGPTAdapter
+from reprompt.adapters.claude_chat import ClaudeChatAdapter
 from reprompt.adapters.claude_code import ClaudeCodeAdapter
 from reprompt.adapters.cline import ClineAdapter
 from reprompt.adapters.cursor import CursorAdapter
@@ -37,6 +39,8 @@ def get_adapters() -> list[
     | AiderAdapter
     | GeminiAdapter
     | ClineAdapter
+    | ChatGPTAdapter
+    | ClaudeChatAdapter
 ]:
     """Return all available adapters."""
     return [
@@ -46,6 +50,8 @@ def get_adapters() -> list[
         AiderAdapter(),
         GeminiAdapter(),
         ClineAdapter(),
+        ChatGPTAdapter(),
+        ClaudeChatAdapter(),
     ]
 
 
