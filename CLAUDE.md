@@ -18,7 +18,7 @@ uv run python -m build                     # build wheel
 
 ```
 src/reprompt/
-├── cli.py              # Typer CLI (scan, report, search, library, recommend, demo, status, purge, install-hook, score, compare, insights, digest)
+├── cli.py              # Typer CLI (scan, import, report, search, library, recommend, demo, status, purge, install-hook, score, compare, insights, digest)
 ├── config.py           # pydantic-settings, env vars (REPROMPT_ prefix) + TOML config
 ├── demo.py             # Built-in demo data generator (no network required)
 ├── core/
@@ -41,7 +41,9 @@ src/reprompt/
 │   ├── cursor.py       # Cursor IDE .vscdb parser (cursorDiskKV + legacy ItemTable)
 │   ├── aider.py        # Aider markdown chat history parser (.aider.chat.history.md)
 │   ├── gemini.py       # Gemini CLI JSON session parser (~/.gemini/tmp/)
-│   └── cline.py        # Cline VS Code agent task parser (globalStorage/saoudrizwan.claude-dev/)
+│   ├── cline.py        # Cline VS Code agent task parser (globalStorage/saoudrizwan.claude-dev/)
+│   ├── chatgpt.py      # ChatGPT conversations.json export parser
+│   └── claude_chat.py  # Claude.ai web chat export parser (JSON/ZIP)
 ├── embeddings/
 │   ├── base.py         # BaseEmbedder ABC
 │   ├── tfidf.py        # Default (sklearn, zero config)
@@ -76,7 +78,7 @@ Session files → Adapter.parse() → list[Prompt]
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 530 tests, 95% coverage target
+- Tests: pytest, 568 tests, 95% coverage target
 
 ## Prompt Science Engine
 
