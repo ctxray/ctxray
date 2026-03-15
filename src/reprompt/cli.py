@@ -86,6 +86,124 @@ def _hook_registered() -> bool:
         return False
 
 
+def _detect_import_source(path: Path) -> str | None:
+    """Auto-detect the source format of an import file."""
+    import json as _json
+
+    try:
+        suffix = path.suffix.lower()
+        if suffix in (".zip", ".dms"):
+            # Claude.ai exports come as ZIP/.dms
+            return "claude-chat"
+        raw = path.read_text(encoding="utf-8")
+        data = _json.loads(raw)
+    except (OSError, _json.JSONDecodeError, UnicodeDecodeError):
+        return None
+
+    # Normalize to list
+    items = data if isinstance(data, list) else [data]
+    if not items:
+        return None
+
+    first = items[0]
+    if isinstance(first, dict):
+        if "mapping" in first:
+            return "chatgpt"
+        if "chat_messages" in first:
+            return "claude-chat"
+    return None
+
+
+@app.command(name="import")
+def import_file(
+    file: str = typer.Argument(..., help="Path to export file (JSON or ZIP)"),
+    source: str | None = typer.Option(
+        None, help="Source format: chatgpt, claude-chat (auto-detected if omitted)"
+    ),
+) -> None:
+    """Import prompts from a Chat AI export file."""
+    from reprompt.adapters.chatgpt import ChatGPTAdapter
+    from reprompt.adapters.claude_chat import ClaudeChatAdapter
+    from reprompt.config import Settings
+    from reprompt.core.dedup import DedupEngine
+    from reprompt.core.extractors import extract_features
+    from reprompt.core.scorer import score_prompt
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    path = Path(file)
+
+    if not path.exists():
+        console.print(f"[red]Error: file not found: {file}[/red]")
+        raise typer.Exit(1)
+
+    # Resolve source
+    detected = source or _detect_import_source(path)
+    if detected is None:
+        console.print("[red]Error: could not detect source format. Use --source.[/red]")
+        raise typer.Exit(1)
+
+    adapter_map = {
+        "chatgpt": ChatGPTAdapter,
+        "claude-chat": ClaudeChatAdapter,
+    }
+    adapter_cls = adapter_map.get(detected)
+    if adapter_cls is None:
+        console.print(
+            f"[red]Error: unknown source '{detected}'. Use: {', '.join(adapter_map)}[/red]"
+        )
+        raise typer.Exit(1)
+
+    adapter = adapter_cls()
+    prompts = adapter.parse_session(path)
+
+    if not prompts:
+        console.print("[yellow]No prompts found in file.[/yellow]")
+        return
+
+    # Dedup
+    engine = DedupEngine(
+        backend=settings.embedding_backend,
+        threshold=settings.dedup_threshold,
+        ollama_url=settings.ollama_url,
+    )
+    unique, dupes = engine.deduplicate(prompts)
+
+    # Store
+    db = PromptDB(settings.db_path)
+    new_stored = 0
+    for p in unique:
+        if db.insert_prompt(
+            p.text,
+            source=p.source,
+            project=p.project or "",
+            session_id=p.session_id,
+            timestamp=p.timestamp,
+        ):
+            new_stored += 1
+
+    # Extract features for new prompts
+    for p in unique:
+        try:
+            dna = extract_features(
+                p.text, source=p.source, session_id=p.session_id, project=p.project
+            )
+            breakdown = score_prompt(dna)
+            dna.overall_score = breakdown.total
+            db.store_features(dna.prompt_hash, dna.to_dict())
+        except Exception:
+            pass
+
+    # Mark file as processed
+    db.mark_session_processed(str(path), source=adapter.name)
+
+    console.print(f"[bold]Import complete[/bold] ({adapter.name})")
+    console.print(f"  Prompts found:  {len(prompts)}")
+    console.print(f"  Unique:         {len(unique)}")
+    console.print(f"  Duplicates:     {len(dupes)}")
+    console.print(f"  New stored:     {new_stored}")
+
+
 @app.command()
 def report(
     format: str = typer.Option("terminal", help="Output format: terminal, json"),
