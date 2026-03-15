@@ -44,3 +44,16 @@ thoughts/
 
 # Launch / marketing drafts (not part of the codebase)
 docs/launch/
+
+# Brand assets & design tools (local reference only)
+docs/brand-system.html
+docs/logo-proposals.html
+docs/icon-*
+docs/logo-*
+
+# Implementation plans (local reference only)
+docs/superpowers/plans/
+
+# Generated outputs
+reprompt-report.html
+*-hot-phrases-tf-idf.txt

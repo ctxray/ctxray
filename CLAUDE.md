@@ -76,7 +76,7 @@ Session files → Adapter.parse() → list[Prompt]
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 460 tests, 95% coverage target
+- Tests: pytest, 530 tests, 95% coverage target
 
 ## Prompt Science Engine
 
