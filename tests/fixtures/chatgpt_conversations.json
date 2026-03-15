@@ -1,0 +1,105 @@
+[
+  {
+    "title": "Python async help",
+    "create_time": 1710000000.0,
+    "update_time": 1710000300.0,
+    "mapping": {
+      "root-node-001": {
+        "id": "root-node-001",
+        "parent": null,
+        "children": ["msg-system-001"],
+        "message": null
+      },
+      "msg-system-001": {
+        "id": "msg-system-001",
+        "parent": "root-node-001",
+        "children": ["msg-user-001"],
+        "message": {
+          "id": "msg-system-001",
+          "author": {"role": "system"},
+          "create_time": 1710000000.0,
+          "content": {"content_type": "text", "parts": ["You are ChatGPT."]}
+        }
+      },
+      "msg-user-001": {
+        "id": "msg-user-001",
+        "parent": "msg-system-001",
+        "children": ["msg-asst-001"],
+        "message": {
+          "id": "msg-user-001",
+          "author": {"role": "user"},
+          "create_time": 1710000010.0,
+          "content": {"content_type": "text", "parts": ["Explain how Python async/await works with a simple example"]}
+        }
+      },
+      "msg-asst-001": {
+        "id": "msg-asst-001",
+        "parent": "msg-user-001",
+        "children": ["msg-user-002"],
+        "message": {
+          "id": "msg-asst-001",
+          "author": {"role": "assistant"},
+          "create_time": 1710000020.0,
+          "content": {"content_type": "text", "parts": ["Python's async/await is built on coroutines..."]}
+        }
+      },
+      "msg-user-002": {
+        "id": "msg-user-002",
+        "parent": "msg-asst-001",
+        "children": [],
+        "message": {
+          "id": "msg-user-002",
+          "author": {"role": "user"},
+          "create_time": 1710000100.0,
+          "content": {"content_type": "text", "parts": ["Can you show me how to use asyncio.gather to run multiple coroutines concurrently?"]}
+        }
+      }
+    }
+  },
+  {
+    "title": "Recipe ideas",
+    "create_time": 1710100000.0,
+    "update_time": 1710100200.0,
+    "mapping": {
+      "root-node-002": {
+        "id": "root-node-002",
+        "parent": null,
+        "children": ["msg-user-003"],
+        "message": null
+      },
+      "msg-user-003": {
+        "id": "msg-user-003",
+        "parent": "root-node-002",
+        "children": ["msg-asst-002"],
+        "message": {
+          "id": "msg-user-003",
+          "author": {"role": "user"},
+          "create_time": 1710100010.0,
+          "content": {"content_type": "text", "parts": ["Suggest three quick dinner recipes using chicken and rice that take under 30 minutes"]}
+        }
+      },
+      "msg-asst-002": {
+        "id": "msg-asst-002",
+        "parent": "msg-user-003",
+        "children": ["msg-user-004"],
+        "message": {
+          "id": "msg-asst-002",
+          "author": {"role": "assistant"},
+          "create_time": 1710100020.0,
+          "content": {"content_type": "text", "parts": ["Here are three quick chicken and rice recipes..."]}
+        }
+      },
+      "msg-user-004": {
+        "id": "msg-user-004",
+        "parent": "msg-asst-002",
+        "children": [],
+        "message": {
+          "id": "msg-user-004",
+          "author": {"role": "user"},
+          "create_time": 1710100100.0,
+          "content": {"content_type": "text", "parts": ["Translate the first recipe into Spanish please"]}
+        }
+      }
+    }
+  }
+]
