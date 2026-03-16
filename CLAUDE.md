@@ -77,6 +77,20 @@ Session files → Adapter.parse() → list[Prompt]
   → Output: terminal / JSON / Markdown
 ```
 
+## Open-Core Architecture (Three Repos)
+
+```
+reprompt (public)              ← THIS REPO: open-source CLI core, PyPI: reprompt-cli
+reprompt-pro (private)         ← Commercial plugin: persona, wrapped, telemetry
+reprompt-extension (private)   ← Browser extension: Chrome/Firefox prompt capture
+```
+
+- Plugin system: `cli.py` loads `entry_points(group="reprompt.plugins")` at startup
+- reprompt-pro registers via `[project.entry-points."reprompt.plugins"]` in its pyproject.toml
+- To enable pro features: `cd ~/projects/reprompt && uv pip install -e ../reprompt-pro`
+- Extension connects via Native Messaging bridge (`bridge/` module)
+- **Rule:** Commercial code never enters this repo. Pro features go to reprompt-pro.
+
 ## Key Conventions
 
 - Package name: `reprompt-cli` (PyPI), CLI command: `reprompt`
