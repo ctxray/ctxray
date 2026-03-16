@@ -75,7 +75,7 @@ class _TomlConfigSource(PydanticBaseSettingsSource):
 
 
 class Settings(BaseSettings):
-    model_config = {"env_prefix": "REPROMPT_"}
+    model_config = {"env_prefix": "REPROMPT_", "extra": "ignore"}
 
     # Embedding
     embedding_backend: str = "tfidf"
