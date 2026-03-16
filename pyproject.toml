@@ -57,6 +57,13 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
 
+[tool.coverage.run]
+omit = [
+    "src/reprompt/mcp.py",
+    "src/reprompt/mcp_main.py",
+    "src/reprompt/embeddings/ollama.py",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
