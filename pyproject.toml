@@ -33,7 +33,7 @@ openai = ["openai>=1.0"]
 mcp = ["fastmcp>=2.0"]
 chinese = ["jieba>=0.42"]
 science = ["textstat>=0.7", "yake>=0.4", "spacy>=3.7"]
-dev = ["pytest>=8.0", "ruff>=0.4", "mypy>=1.0", "pytest-cov>=5.0"]
+dev = ["pytest>=8.0", "ruff>=0.4", "mypy>=1.0", "pytest-cov>=5.0", "jieba>=0.42"]
 
 [project.scripts]
 reprompt = "reprompt.cli:app"
