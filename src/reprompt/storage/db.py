@@ -13,11 +13,14 @@ from typing import Any
 class PromptDB:
     """SQLite-backed storage for prompt data."""
 
+    # Schema version constants (increment when adding migrations)
+    _SCHEMA_VERSION = 2  # v1=initial schema, v2=v0.8 effectiveness columns
+
     def __init__(self, path: Path) -> None:
         self.path = path
         path.parent.mkdir(parents=True, exist_ok=True)
         self._init_schema()
-        self._migrate_v08()
+        self._run_migrations()
 
     def _conn(self) -> sqlite3.Connection:
         """Get a connection with row_factory set."""
@@ -130,23 +133,31 @@ class PromptDB:
         finally:
             conn.close()
 
-    def _migrate_v08(self) -> None:
-        """Add effectiveness columns to existing tables (v0.8.0).
-        Uses try/except OperationalError because ALTER TABLE ADD COLUMN
-        fails if the column already exists (SQLite < 3.37).
-        """
+    def _run_migrations(self) -> None:
+        """Run ordered schema migrations based on PRAGMA user_version."""
         conn = self._conn()
         try:
-            for stmt in [
-                "ALTER TABLE prompts ADD COLUMN effectiveness_score REAL",
-                "ALTER TABLE prompt_patterns ADD COLUMN effectiveness_avg REAL",
-                "ALTER TABLE prompt_patterns ADD COLUMN effectiveness_sample_size INTEGER DEFAULT 0",  # noqa: E501
-            ]:
-                try:
-                    conn.execute(stmt)
-                    conn.commit()
-                except sqlite3.OperationalError:
-                    pass  # column already exists
+            current = conn.execute("PRAGMA user_version").fetchone()[0]
+
+            if current < 1:
+                # v1: base schema (tables created by _init_schema, just set version)
+                pass
+
+            if current < 2:
+                # v2 (v0.8.0): effectiveness columns on prompts + prompt_patterns
+                for stmt in [
+                    "ALTER TABLE prompts ADD COLUMN effectiveness_score REAL",
+                    "ALTER TABLE prompt_patterns ADD COLUMN effectiveness_avg REAL",
+                    "ALTER TABLE prompt_patterns ADD COLUMN effectiveness_sample_size INTEGER DEFAULT 0",  # noqa: E501
+                ]:
+                    try:
+                        conn.execute(stmt)
+                    except sqlite3.OperationalError:
+                        pass  # column already exists (DB created after v0.8)
+
+            # Set version to current
+            conn.execute(f"PRAGMA user_version = {self._SCHEMA_VERSION}")
+            conn.commit()
         finally:
             conn.close()
 

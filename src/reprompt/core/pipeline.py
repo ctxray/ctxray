@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,8 @@ from reprompt.core.dedup import DedupEngine
 from reprompt.core.library import categorize_prompt, extract_patterns
 from reprompt.core.models import Prompt
 from reprompt.storage.db import PromptDB
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -144,7 +147,9 @@ def run_scan(
             dna.overall_score = breakdown.total
             db.store_features(dna.prompt_hash, dna.to_dict())
         except Exception:
-            pass  # Feature extraction should never block the scan
+            logger.debug(
+                "PromptDNA extraction failed for prompt %s: %s", p.text[:40], exc_info=True
+            )
 
     # Extract session metadata and compute effectiveness scores
     for file_path, adapter_name in scanned_files:

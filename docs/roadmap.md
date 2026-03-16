@@ -1,6 +1,6 @@
 # reprompt Roadmap
 
-> Last updated: 2026-03-12 · Current version: v0.8.2
+> Last updated: 2026-03-16 · Current version: v1.0.0
 
 ## Vision
 
@@ -10,88 +10,46 @@ reprompt is the **prompt analytics** tool for AI sessions — understand your pa
 
 ---
 
-## Current State (v0.8.2)
+## Current State (v1.0.0) — Production Stable
 
-### Adapters (6)
-Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline
+### Adapters (8)
+Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT · Claude.ai
 
-### Commands
-`scan` · `report` · `library` · `trends` · `recommend` · `effectiveness` · `merge-view` · `save` · `templates` · `lint` · `search` · `demo` · `status` · `purge` · `install-hook` · `score` · `compare` · `insights` · `digest` · `mcp-serve`
+### Commands (23)
+`scan` · `import` · `report` · `library` · `trends` · `recommend` · `effectiveness` · `merge-view` · `save` · `templates` · `use` · `lint` · `search` · `demo` · `status` · `purge` · `install-hook` · `install-extension` · `extension-status` · `score` · `compare` · `insights` · `digest` · `style` · `wrapped` · `telemetry` · `mcp-serve`
 
 ### Integrations
 - MCP server (`reprompt mcp-serve`) for IDE integration
 - GitHub Action (`action.yml`) for CI prompt quality checks
 - HTML dashboard (`reprompt report --html`)
+- Browser extension (Chrome/Firefox) via Native Messaging bridge
 - JSON output on all commands for pipeline integration
 
----
-
-## v0.9 — Chat AI Sources
-
-**Theme:** Bring web-based AI chat data into reprompt analysis.
-
-### New Adapters
-| Tool | Mechanism | Status |
-|------|-----------|--------|
-| ChatGPT | `conversations.json` from OpenAI data export | Planned |
-| Claude.ai | ZIP export from Account settings | Planned |
-| Gemini Takeout | Google Takeout → Gemini Apps Activity JSON | Planned |
-
-### New Command: `reprompt import`
-```bash
-reprompt import conversations.json            # auto-detect source
-reprompt import export.zip --source claude-chat
-reprompt import takeout.json --source gemini-takeout
-```
-`reprompt scan` = auto-discover session directories. `reprompt import` = explicit file from a manual export. Both write to the same SQLite DB; all existing commands (`report`, `digest`, `trends`) work with imported data.
-
-### CLI Improvements
-- **Template variables:** `reprompt use <name> key=value` with `{placeholder}` substitution
-- **`reprompt style`:** Personal prompting style fingerprint (avg length, categories, opening patterns)
-- **Configurable lint:** `.reprompt.yml` for per-project rule customization
-
-### Category Expansion
-New categories for chat prompts: `research` · `creative` · `summarize` · `translate` · `draft` · `analyze` · `plan`
+### v1.0.0 Hardening (this release)
+- Empty-state UX guidance for `report` and `digest`
+- Scan "Try next" onboarding hints for new users
+- Feature extraction errors logged (no more silent swallowing)
+- DB schema versioning via `PRAGMA user_version`
+- CI: ≥90% coverage gate, pre-publish test step
+- Stable public API (`score_prompt`, `compare_prompts`, `extract_features`)
+- 935+ tests, ≥90% coverage
 
 ---
 
-## v1.0 — Browser Extension
+## v1.1+ — Future Work
 
-**Theme:** Real-time capture from any web-based AI tool, bridged to reprompt analysis.
+| Feature | Description |
+|---------|-------------|
+| `reprompt consolidate` | Automated prompt merging (currently read-only `merge-view` is sufficient) |
+| Homebrew formula | `brew install reprompt` via `homebrew-reprompt` tap |
+| SSE transport for MCP | Alternative to stdio for remote IDE setups |
+| More adapters | Perplexity, Mistral, Grok, Gemini Takeout |
+| `reprompt suggest` | Ollama-powered prompt improvement suggestions |
+| `.repromptignore` | Per-project filtering rules |
+| Team features | Anonymized pattern sharing, CI lint standards |
+| Windows Native Messaging | Extension support on Windows |
 
-### reprompt-extension (separate repo)
-A companion browser extension that captures prompts from web AI tools and pipes them into reprompt for analysis.
-
-**Supported platforms (priority order):**
-1. Gemini — biggest pain point (tab-close deletes history, Activities-off blocks cross-device)
-2. ChatGPT — largest user base
-3. Claude.ai — core audience overlap
-4. Perplexity, Mistral, Grok (v1.1+)
-
-**Architecture:**
-- Service Worker intercepts API requests (not DOM scraping — survives UI changes)
-- 100% local storage (IndexedDB) — zero server, zero telemetry
-- Syncs to reprompt CLI via [Chrome Native Messaging](https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging)
-- `reprompt install-extension` registers the native messaging host
-- macOS + Linux supported at v1.0; Windows deferred to v1.1
-
-**Privacy guarantees:**
-- No network requests except to AI platforms you're already using
-- Explicit prompt list visible in extension popup
-- Per-domain opt-out controls
-- Full delete/export from popup
-
-### New CLI Commands
-```bash
-reprompt install-extension   # register native messaging host
-reprompt extension status    # show connection status + pending sync count
-```
-
----
-
-## Post-v1.0
-
-v1.1 will likely include Windows Native Messaging support, more platforms (Perplexity, Mistral, Grok), `reprompt suggest` (opt-in Ollama integration: given a prompt draft, suggest improvements using your personal history as few-shot examples), and `.repromptignore` filtering. Team features (anonymized pattern sharing, CI lint standards) are candidates for v1.2. Nothing beyond v1.1 is formally scheduled.
+Nothing beyond v1.1 is formally scheduled.
 
 ---
 
@@ -111,6 +69,6 @@ v1.1 will likely include Windows Native Messaging support, more platforms (Perpl
 - **New adapter** (~50 lines) — see `src/reprompt/adapters/base.py`
 - **New lint rules** — see `src/reprompt/core/lint.py`
 - **Better categorization** — improve keyword rules in `core/library.py`
-- **Browser extension** — see `reprompt-extension` repo (coming soon)
+- **Browser extension** — see `reprompt-extension` repo
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for details.

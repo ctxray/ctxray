@@ -101,6 +101,13 @@ def scan(
                 "after every Claude Code session.[/dim]"
             )
 
+    # Next steps for new users (show once, on first scan with data)
+    if result.new_stored > 0 and stats.get("total_prompts", 0) <= result.new_stored + 10:
+        console.print("\n[bold]Try next:[/bold]")
+        console.print('  reprompt score [dim]"your prompt"[/dim]   — instant quality score')
+        console.print("  reprompt library              — see your prompt patterns")
+        console.print("  reprompt insights             — personal analysis")
+
 
 def _hook_registered() -> bool:
     """Check if reprompt hook is registered in Claude Code settings."""
@@ -223,7 +230,11 @@ def import_file(
             dna.overall_score = breakdown.total
             db.store_features(dna.prompt_hash, dna.to_dict())
         except Exception:
-            pass
+            import logging
+
+            logging.getLogger("reprompt.cli").debug(
+                "Feature extraction failed during import: %s", exc_info=True
+            )
 
     # Mark file as processed
     db.mark_session_processed(str(path), source=adapter.name)
@@ -254,6 +265,14 @@ def report(
     n_clusters_arg = clusters if clusters > 0 else None
     source_filter = source if source else None
     data = build_report_data(settings=settings, n_clusters=n_clusters_arg, source=source_filter)
+
+    # Early exit with guidance when DB is empty
+    total = data.get("overview", {}).get("total_prompts", 0)
+    if total == 0:
+        console.print(
+            "No prompts found. Run [bold]reprompt scan[/bold] to analyze your AI sessions."
+        )
+        return
 
     if html:
         import webbrowser
@@ -965,6 +984,20 @@ def digest(
             from reprompt.output.terminal import render_digest_history
 
             print(render_digest_history(rows, period), end="")
+        return
+
+    stats = db.get_stats()
+
+    # Early guidance when DB is empty (after history check)
+    if stats.get("total_prompts", 0) == 0:
+        if quiet:
+            print("reprompt: no data yet — run reprompt scan")
+        elif format == "json":
+            print(json_mod.dumps({"error": "no data", "hint": "run reprompt scan"}))
+        else:
+            console.print(
+                "No prompt data yet. Run [bold]reprompt scan[/bold] first to populate the database."
+            )
         return
 
     data = build_digest(db, period=period)

@@ -21,8 +21,8 @@ def test_version():
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
     assert "reprompt" in result.output
-    # Check version format (e.g. "reprompt 0.2.0")
-    assert "reprompt 0." in result.output
+    # Check version format (e.g. "reprompt 1.0.0")
+    assert "reprompt 1." in result.output
 
 
 def test_status_empty(tmp_path, monkeypatch):

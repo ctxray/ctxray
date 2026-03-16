@@ -2,6 +2,94 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0] - 2026-03-16
+
+### Changed
+- **Stability release** — no new features, focused on reliability and trust
+- Empty-state guidance for `report` and `digest` commands
+- Scan shows "Try next" hints for new users
+- Feature extraction errors logged instead of silently swallowed
+
+### Infrastructure
+- DB schema versioning via `PRAGMA user_version` — ordered migrations, no more ad-hoc ALTER TABLE
+- CI enforces ≥90% test coverage; publish workflow runs tests before PyPI upload
+- Removed unused `[science]` optional dependency group
+- CHANGELOG backfill for all versions since v0.7.4
+
+## [0.9.3] - 2026-03-16
+
+### Added
+- `reprompt report --source` and `reprompt search --source` — filter by source adapter
+
+## [0.9.2] - 2026-03-15
+
+### Added
+- **Wrapped reports** — `reprompt wrapped` generates an annual Prompt DNA report (terminal, HTML, shareable)
+- **6 prompt personas** — Architect, Debugger, Explorer, Novelist, Sniper, Teacher (auto-classified)
+- **Telemetry** — opt-in anonymous 26-dimension feature vectors (no prompt text, no PII)
+- **Share** — HMAC-SHA256 signed upload to getreprompt.dev/api/share
+- Open-core plugin system: `entry_points(group="reprompt.plugins")` loaded at startup
+
+### Changed
+- Migrated wrapped, personas, telemetry, share into open-source CLI (from reprompt-pro)
+
+## [0.9.1] - 2026-03-14
+
+### Added
+- **Multi-language PromptDNA** — Chinese feature extraction via jieba (optional `[chinese]` extra)
+- **Native messaging bridge** — Chrome/Firefox extension support (`reprompt install-extension`)
+- **Style fingerprint** — `reprompt style` shows personal prompting patterns
+- **Template variables** — `reprompt use template_name key=value` with `{placeholder}` substitution
+- **Enhanced recommendations** — `reprompt recommend` uses effectiveness data
+
+### Infrastructure
+- Plugin system for open-core architecture (reprompt-pro registers via entry_points)
+- DB aggregation queries for plugin data access
+
+## [0.9.0] - 2026-03-13
+
+### Added
+- **ChatGPT import** — `reprompt import conversations.json` parses OpenAI export format
+- **Claude.ai import** — `reprompt import claude-export.zip` parses Claude web chat exports
+- **`reprompt import` command** — unified import with auto-detection of source format
+- 7 non-coding prompt categories for Chat AI support (brainstorm, summarize, explain, translate, roleplay, creative, casual)
+
+### Changed
+- Tests: 580 → 680+
+
+## [0.8.2] - 2026-03-13
+
+### Added
+- **Digest category deltas** — `reprompt digest` shows per-category % change with arrows
+- **`reprompt digest --history`** — view past digest log entries
+
+## [0.8.1] - 2026-03-12
+
+### Added
+- **HTML dashboard** — `reprompt report --html` generates interactive Chart.js dashboard
+- Digest + cluster data wired into HTML report
+
+## [0.8.0] - 2026-03-12
+
+### Added
+- **Effectiveness columns** — `prompts.effectiveness_score`, `prompt_patterns.effectiveness_avg`
+- **`reprompt library`** shows Eff column with score + star rating
+- **`reprompt digest`** shows avg session quality
+- **OpenClaw `parse_session_meta()`** — session quality scoring for OpenClaw/OpenCode sessions
+- `db.update_prompt_effectiveness()` and `db.compute_pattern_effectiveness()` methods
+- Pipeline: `run_scan()` propagates session scores to prompts; `build_report_data()` recomputes pattern averages
+
+### Infrastructure
+- `_migrate_v08()` adds effectiveness columns via safe ALTER TABLE
+
+### Changed
+- Tests: 480 → 510+
+
+## [0.7.5] - 2026-03-12
+
+### Added
+- Expanded Chinese stop words — 65 function words from stopwords-iso added
+
 ## [0.7.4] - 2026-03-12
 
 ### Improved

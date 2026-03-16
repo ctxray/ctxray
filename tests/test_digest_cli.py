@@ -169,9 +169,14 @@ class TestDigestCommand:
         result = runner.invoke(app, ["digest", "--format", "json"])
         assert result.exit_code == 0
         data = json.loads(result.output)
-        assert "current" in data
-        assert "previous" in data
-        assert "count_delta" in data
+        # Empty DB returns an error hint; non-empty returns digest keys
+        if "error" in data:
+            assert data["error"] == "no data"
+            assert "reprompt scan" in data["hint"]
+        else:
+            assert "current" in data
+            assert "previous" in data
+            assert "count_delta" in data
 
     def test_digest_command_custom_period(self, tmp_path, monkeypatch):
         """digest accepts --period flag."""
