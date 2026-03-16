@@ -741,6 +741,18 @@ class PromptDB:
         finally:
             conn.close()
 
+    def increment_template_usage(self, name: str) -> None:
+        """Increment usage_count for a template by name."""
+        conn = self._conn()
+        try:
+            conn.execute(
+                "UPDATE prompt_templates SET usage_count = usage_count + 1 WHERE name = ?",
+                (name,),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
     # -- prompt_features (PromptDNA) -----------------------------------------
 
     def store_features(self, prompt_hash: str, features: dict[str, Any]) -> None:
@@ -804,6 +816,101 @@ class PromptDB:
                 (task_type,),
             ).fetchall()
             return [json.loads(r["features_json"]) for r in rows]
+        finally:
+            conn.close()
+
+    # -- Wrapped stats ---------------------------------------------------
+
+    def get_wrapped_stats(self) -> dict[str, Any]:
+        """Aggregate stats for the Wrapped report.
+
+        Returns dict with total_prompts, scored_prompts, avg_scores
+        (per category), avg_overall, top_score, and top_task_type.
+        """
+        conn = self._conn()
+        try:
+            total = conn.execute("SELECT COUNT(*) AS c FROM prompts").fetchone()["c"]
+
+            rows = conn.execute(
+                "SELECT features_json, overall_score, task_type FROM prompt_features"
+            ).fetchall()
+
+            scored = len(rows)
+            if scored == 0:
+                return {
+                    "total_prompts": total,
+                    "scored_prompts": 0,
+                    "avg_scores": {
+                        "structure": 0.0,
+                        "context": 0.0,
+                        "position": 0.0,
+                        "repetition": 0.0,
+                        "clarity": 0.0,
+                    },
+                    "avg_overall": 0.0,
+                    "top_score": 0.0,
+                    "top_task_type": None,
+                }
+
+            categories = ("structure", "context", "position", "repetition", "clarity")
+            sums: dict[str, float] = {c: 0.0 for c in categories}
+            overall_sum = 0.0
+            top_score = 0.0
+            task_counts: dict[str, int] = {}
+
+            for row in rows:
+                features: dict[str, Any] = json.loads(row["features_json"])
+                for cat in categories:
+                    sums[cat] += float(features.get(cat, 0.0))
+                score = float(row["overall_score"] or 0.0)
+                overall_sum += score
+                if score > top_score:
+                    top_score = score
+                tt = row["task_type"] or "other"
+                task_counts[tt] = task_counts.get(tt, 0) + 1
+
+            avg_scores = {cat: sums[cat] / scored for cat in categories}
+            top_task_type = max(task_counts, key=task_counts.get)  # type: ignore[arg-type]
+
+            return {
+                "total_prompts": total,
+                "scored_prompts": scored,
+                "avg_scores": avg_scores,
+                "avg_overall": overall_sum / scored,
+                "top_score": top_score,
+                "top_task_type": top_task_type,
+            }
+        finally:
+            conn.close()
+
+    def get_task_type_distribution(self) -> dict[str, int]:
+        """Prompt counts per task type, sorted by count descending."""
+        conn = self._conn()
+        try:
+            rows = conn.execute(
+                "SELECT task_type, COUNT(*) AS cnt FROM prompt_features"
+                " GROUP BY task_type ORDER BY cnt DESC"
+            ).fetchall()
+            return {row["task_type"]: row["cnt"] for row in rows}
+        finally:
+            conn.close()
+
+    def get_score_history(self, limit: int = 50) -> list[dict[str, Any]]:
+        """Recent scored prompts, newest first.
+
+        Returns list of dicts with prompt_hash, overall_score,
+        task_type, and computed_at.
+        """
+        conn = self._conn()
+        try:
+            rows = conn.execute(
+                "SELECT prompt_hash, overall_score, task_type, computed_at"
+                " FROM prompt_features"
+                " WHERE overall_score IS NOT NULL"
+                " ORDER BY computed_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+            return [dict(r) for r in rows]
         finally:
             conn.close()
 

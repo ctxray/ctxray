@@ -18,7 +18,7 @@ uv run python -m build                     # build wheel
 
 ```
 src/reprompt/
-├── cli.py              # Typer CLI (scan, import, report, search, library, recommend, demo, status, purge, install-hook, score, compare, insights, digest)
+├── cli.py              # Typer CLI (scan, import, report, search, library, recommend, demo, status, purge, install-hook, install-extension, extension-status, score, compare, insights, digest, style, use) + plugin loading
 ├── config.py           # pydantic-settings, env vars (REPROMPT_ prefix) + TOML config
 ├── demo.py             # Built-in demo data generator (no network required)
 ├── core/
@@ -33,7 +33,10 @@ src/reprompt/
 │   ├── scorer.py        # Research-calibrated scoring (0-100)
 │   ├── segmenter.py     # Three-pass prompt segmentation
 │   ├── insights.py      # Personal insights vs research-optimal
-│   └── digest.py        # Two-window comparison for weekly digest
+│   ├── digest.py        # Two-window comparison for weekly digest
+│   ├── style.py         # Personal prompting style fingerprint
+│   ├── lang_detect.py   # Language detection (zh/ja/ko/en) via Unicode ranges
+│   └── extractors_zh.py # Chinese feature extraction (jieba + Chinese regex)
 ├── adapters/
 │   ├── base.py         # BaseAdapter ABC
 │   ├── claude_code.py  # Claude Code JSONL parser
@@ -50,6 +53,11 @@ src/reprompt/
 │   ├── ollama.py       # Optional: pip install reprompt-cli[ollama]
 │   ├── local_embed.py  # Optional: pip install reprompt-cli[local] (sentence-transformers)
 │   └── openai_embed.py # Optional: pip install reprompt-cli[openai]
+├── bridge/
+│   ├── protocol.py    # Native Messaging stdio protocol (4-byte length-prefixed JSON)
+│   ├── handler.py     # Message handler (ping, sync_prompts, get_status)
+│   ├── host.py        # Entry point launched by Chrome/Firefox as subprocess
+│   └── manifest.py    # Manifest generator for Chrome/Firefox/Chromium
 ├── storage/
 │   └── db.py           # SQLite: prompts, processed_sessions, prompt_patterns, term_stats
 └── output/
@@ -78,7 +86,7 @@ Session files → Adapter.parse() → list[Prompt]
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 568 tests, 95% coverage target
+- Tests: pytest, 741 tests, 95% coverage target
 
 ## Prompt Science Engine
 
