@@ -17,6 +17,25 @@ app = typer.Typer(
 console = Console()
 
 
+def _load_plugins() -> None:
+    """Auto-discover and load reprompt plugins (e.g. reprompt-pro)."""
+    try:
+        from importlib.metadata import entry_points
+
+        eps = entry_points(group="reprompt.plugins")
+        for ep in eps:
+            try:
+                register_fn = ep.load()
+                register_fn(app)
+            except Exception:
+                pass  # plugin load failure should never break core CLI
+    except Exception:
+        pass
+
+
+_load_plugins()
+
+
 def _version_callback(value: bool) -> None:
     if value:
         typer.echo(f"reprompt {__version__}")
@@ -616,6 +635,79 @@ def templates(
 
 
 @app.command()
+def style(
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+) -> None:
+    """Show your personal prompting style fingerprint."""
+    import json as json_mod
+
+    from reprompt.config import Settings
+    from reprompt.core.library import categorize_prompt
+    from reprompt.core.style import compute_style
+    from reprompt.output.terminal import render_style
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    rows = db.get_all_prompts()
+    prompts = [
+        {
+            "text": r["text"],
+            "category": categorize_prompt(r["text"]),
+            "char_count": r.get("char_count", len(r["text"])),
+        }
+        for r in rows
+        if r.get("duplicate_of") is None
+    ]
+
+    data = compute_style(prompts)
+
+    if json_output:
+        print(json_mod.dumps(data, indent=2))
+    else:
+        print(render_style(data), end="")
+
+
+@app.command()
+def use(
+    name: str = typer.Argument(..., help="Template name to use"),
+    variables: list[str] = typer.Argument(None, help="Variables as key=value pairs"),
+) -> None:
+    """Use a saved template with variable substitution."""
+    from reprompt.config import Settings
+    from reprompt.core.templates import extract_variables, render_template
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    template = db.get_template(name)
+
+    if template is None:
+        console.print(f"[red]Template '{name}' not found.[/red]")
+        console.print("Run [bold]reprompt templates[/bold] to see available templates.")
+        raise typer.Exit(1)
+
+    text = template["text"]
+
+    # Parse key=value pairs
+    var_dict: dict[str, str] = {}
+    for v in variables or []:
+        if "=" in v:
+            key, val = v.split("=", 1)
+            var_dict[key] = val
+
+    rendered = render_template(text, var_dict)
+
+    # Show unfilled variables as hint
+    remaining = extract_variables(rendered)
+    if remaining:
+        console.print(f"[dim]Unfilled variables: {', '.join(remaining)}[/dim]")
+
+    console.print(rendered)
+    db.increment_template_usage(name)
+
+
+@app.command()
 def lint(
     source: str = typer.Option(None, help="Adapter to scan (claude-code, aider, gemini, etc.)"),
     path: str = typer.Option(None, help="Path to scan for session files"),
@@ -964,3 +1056,130 @@ def install_hook(
         console.print("reprompt will automatically scan when Claude Code sessions end.")
     else:
         console.print(f"[yellow]Hook installation for '{source}' not yet supported[/yellow]")
+
+
+@app.command("install-extension")
+def install_extension(
+    browser: str = typer.Option("chrome", help="Browser: chrome, chromium, firefox"),
+    extension_id: str = typer.Option(
+        "", "--extension-id", help="Chrome extension ID (required for chrome/chromium)"
+    ),
+) -> None:
+    """Register Native Messaging host for the browser extension."""
+    import json as json_mod
+
+    from reprompt.bridge.manifest import (
+        generate_chrome_manifest,
+        generate_firefox_manifest,
+        get_manifest_dir,
+        get_manifest_filename,
+    )
+
+    # Find the host script path
+    host_script = _create_host_wrapper()
+
+    # Generate manifest
+    if browser in ("chrome", "chromium"):
+        if not extension_id:
+            console.print(
+                "[yellow]No --extension-id provided. "
+                "You'll need to update the manifest after installing the extension.[/yellow]"
+            )
+            extension_id = "PLACEHOLDER_EXTENSION_ID"
+        manifest = generate_chrome_manifest(str(host_script), extension_id)
+    elif browser == "firefox":
+        manifest = generate_firefox_manifest(str(host_script))
+    else:
+        console.print(f"[red]Unknown browser: {browser}. Use chrome, chromium, or firefox.[/red]")
+        raise typer.Exit(1)
+
+    # Write manifest
+    try:
+        manifest_dir = get_manifest_dir(browser)
+    except ValueError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+
+    manifest_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = manifest_dir / get_manifest_filename()
+    manifest_path.write_text(json_mod.dumps(manifest, indent=2))
+
+    console.print("[bold green]Native messaging host registered![/bold green]")
+    console.print(f"  Browser:  {browser}")
+    console.print(f"  Manifest: {manifest_path}")
+    console.print(f"  Host:     {host_script}")
+    if extension_id == "PLACEHOLDER_EXTENSION_ID":
+        console.print(
+            "\n[yellow]Next: install the reprompt extension, then re-run with "
+            "--extension-id to update the manifest.[/yellow]"
+        )
+
+
+def _create_host_wrapper() -> Path:
+    """Create a shell wrapper script that launches the Python host."""
+    import stat
+    import sys as sys_mod
+
+    wrapper_dir = Path.home() / ".config" / "reprompt"
+    wrapper_dir.mkdir(parents=True, exist_ok=True)
+    wrapper_path = wrapper_dir / "reprompt-bridge-host"
+
+    # Find the Python executable that has reprompt installed
+    python_path = sys_mod.executable
+
+    wrapper_path.write_text(f"#!/bin/sh\nexec {python_path} -u -m reprompt.bridge.host\n")
+    wrapper_path.chmod(wrapper_path.stat().st_mode | stat.S_IEXEC)
+    return wrapper_path
+
+
+@app.command("extension-status")
+def extension_status() -> None:
+    """Check browser extension connection status."""
+    from reprompt.bridge.manifest import (
+        get_manifest_dir,
+        get_manifest_filename,
+    )
+    from reprompt.config import Settings
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+
+    # Check manifest registration
+    registered_browsers: list[str] = []
+    for browser in ("chrome", "chromium", "firefox"):
+        try:
+            manifest_dir = get_manifest_dir(browser)
+            manifest_path = manifest_dir / get_manifest_filename()
+            if manifest_path.exists():
+                registered_browsers.append(browser)
+        except ValueError:
+            continue
+
+    if registered_browsers:
+        console.print(f"[green]Registered:[/green] {', '.join(registered_browsers)}")
+    else:
+        console.print(
+            "[yellow]Not registered.[/yellow] Run [bold]reprompt install-extension[/bold]."
+        )
+
+    # Check DB for extension-sourced prompts
+    db = PromptDB(settings.db_path)
+    conn = db._conn()
+    try:
+        row = conn.execute(
+            "SELECT COUNT(*) as cnt FROM prompts WHERE source LIKE '%-ext'"
+        ).fetchone()
+        ext_count = row["cnt"] if row else 0
+    finally:
+        conn.close()
+
+    console.print(f"  Extension prompts: {ext_count}")
+
+    # Check last sync
+    from reprompt.bridge.handler import _get_last_sync
+
+    last_sync = _get_last_sync(db)
+    if last_sync:
+        console.print(f"  Last sync:         {last_sync}")
+    else:
+        console.print("  Last sync:         never")
