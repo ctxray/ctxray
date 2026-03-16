@@ -173,6 +173,46 @@ def compute_recommendations(db: PromptDB) -> dict[str, Any]:
                 "Longer, more descriptive prompts tend to produce better results."
             )
 
+        # 8. Best prompt per category (from high-effectiveness sessions)
+        best_by_cat_rows = conn.execute(
+            """SELECT p.text, p.char_count, s.effectiveness_score,
+                      s.project
+               FROM prompts p
+               JOIN session_meta s ON p.session_id = s.session_id
+               WHERE p.duplicate_of IS NULL
+                 AND s.effectiveness_score >= 0.5
+               ORDER BY s.effectiveness_score DESC""",
+        ).fetchall()
+        best_by_category: dict[str, dict[str, Any]] = {}
+        for r in best_by_cat_rows:
+            cat = categorize_prompt(r["text"])
+            if cat not in best_by_category:
+                best_by_category[cat] = {
+                    "text": r["text"],
+                    "effectiveness": round(r["effectiveness_score"], 2),
+                    "project": r["project"],
+                }
+
+        # 9. Progress: compare avg length of recent vs older prompts
+        all_rows = conn.execute(
+            """SELECT char_count, timestamp FROM prompts
+               WHERE duplicate_of IS NULL AND timestamp != ''
+               ORDER BY timestamp""",
+        ).fetchall()
+        progress: dict[str, Any] = {}
+        if len(all_rows) >= 10:
+            mid = len(all_rows) // 2
+            older = [r["char_count"] for r in all_rows[:mid]]
+            newer = [r["char_count"] for r in all_rows[mid:]]
+            old_avg = sum(older) / len(older) if older else 0
+            new_avg = sum(newer) / len(newer) if newer else 0
+            progress = {
+                "older_avg_length": round(old_avg, 1),
+                "newer_avg_length": round(new_avg, 1),
+                "length_change": round(new_avg - old_avg, 1),
+                "total_prompts": len(all_rows),
+            }
+
     finally:
         conn.close()
 
@@ -184,4 +224,6 @@ def compute_recommendations(db: PromptDB) -> dict[str, Any]:
         "category_effectiveness": category_effectiveness,
         "overall_tips": overall_tips,
         "total_prompts": total_prompts,
+        "best_by_category": best_by_category,
+        "progress": progress,
     }

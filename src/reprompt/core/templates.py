@@ -42,3 +42,21 @@ def save_template(
 
     template_id = db.save_template(name=name, text=text, category=category)
     return {"id": template_id, "name": name, "category": category}
+
+
+def extract_variables(text: str) -> list[str]:
+    """Extract {variable} placeholder names from template text."""
+    import re
+
+    return re.findall(r"\{(\w+)\}", text)
+
+
+def render_template(text: str, variables: dict[str, str]) -> str:
+    """Replace {variable} placeholders with provided values.
+
+    Missing variables are left as-is (not raised as errors).
+    """
+    result = text
+    for key, value in variables.items():
+        result = result.replace(f"{{{key}}}", value)
+    return result

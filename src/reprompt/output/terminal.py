@@ -527,3 +527,58 @@ def render_digest_history(rows: list[dict[str, Any]], period: str) -> str:
 
     console.print(table)
     return buf.getvalue()
+
+
+def render_style(data: dict[str, Any]) -> str:
+    """Render personal style fingerprint."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    if data["prompt_count"] == 0:
+        console.print(
+            "\n[dim]No prompts yet. Run 'reprompt scan' or 'reprompt import' first.[/dim]"
+        )
+        return buf.getvalue()
+
+    console.print("\n[bold]Your Prompting Style[/bold]")
+    console.print("\u2500" * 40)
+
+    # One-liner summary
+    pct = int(data["top_category_pct"] * 100)
+    top_opener = data["opening_patterns"][0]["word"] if data["opening_patterns"] else "..."
+    console.print(
+        f"  {data['avg_length']:.0f}-char avg \u00b7 "
+        f"{pct}% {data['top_category']} \u00b7 "
+        f"opens with '{top_opener.title()}...' \u00b7 "
+        f"specificity {data['specificity']:.2f}"
+    )
+    console.print()
+
+    # Category breakdown
+    console.print("[bold]Categories[/bold]")
+    total = data["prompt_count"]
+    for cat, count in sorted(data["category_distribution"].items(), key=lambda x: -x[1]):
+        bar_len = int(count / total * 20)
+        bar = "\u2588" * bar_len
+        console.print(f"  {cat:<14} {bar} {count}")
+    console.print()
+
+    # Opening patterns
+    console.print("[bold]Common Openers[/bold]")
+    for p in data["opening_patterns"]:
+        console.print(f"  '{p['word']}' \u2014 {p['count']}x ({int(p['pct'] * 100)}%)")
+    console.print()
+
+    # Length distribution
+    console.print("[bold]Length Profile[/bold]")
+    dist = data["length_distribution"]
+    for bucket, label in [
+        ("short", "<30"),
+        ("medium", "30-80"),
+        ("long", "80-200"),
+        ("very_long", "200+"),
+    ]:
+        console.print(f"  {label:<8} {dist[bucket]}")
+    console.print()
+
+    return buf.getvalue()

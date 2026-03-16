@@ -107,3 +107,52 @@ def test_render_templates_empty():
 
     output = render_templates([])
     assert "No templates" in output
+
+
+def test_render_template_basic():
+    from reprompt.core.templates import render_template
+
+    text = "Fix the {error_type} in {file_path}"
+    result = render_template(text, {"error_type": "TypeError", "file_path": "auth/login.py"})
+    assert result == "Fix the TypeError in auth/login.py"
+
+
+def test_render_template_no_vars():
+    from reprompt.core.templates import render_template
+
+    text = "Fix the bug in the login flow"
+    result = render_template(text, {})
+    assert result == "Fix the bug in the login flow"
+
+
+def test_render_template_missing_var():
+    from reprompt.core.templates import render_template
+
+    text = "Fix {error} in {file}"
+    result = render_template(text, {"error": "TypeError"})
+    # Missing variables should be left as-is
+    assert result == "Fix TypeError in {file}"
+
+
+def test_render_template_extra_vars():
+    from reprompt.core.templates import render_template
+
+    text = "Fix {error} in code"
+    result = render_template(text, {"error": "Bug", "unused": "value"})
+    assert result == "Fix Bug in code"
+
+
+def test_extract_variables():
+    from reprompt.core.templates import extract_variables
+
+    text = "Fix {error_type} in {file_path} for {project}"
+    vars = extract_variables(text)
+    assert vars == ["error_type", "file_path", "project"]
+
+
+def test_extract_variables_none():
+    from reprompt.core.templates import extract_variables
+
+    text = "Fix the bug in login"
+    vars = extract_variables(text)
+    assert vars == []

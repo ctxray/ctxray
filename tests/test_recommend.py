@@ -135,3 +135,78 @@ class TestRecommendCommand:
         result = runner.invoke(app, ["recommend"])
         assert result.exit_code == 0
         assert "recommend" in result.output.lower() or "Prompt" in result.output
+
+
+def test_best_by_category(tmp_path):
+    """Recommendations include best prompts grouped by category."""
+    from reprompt.core.recommend import compute_recommendations
+    from reprompt.storage.db import PromptDB
+
+    db = PromptDB(tmp_path / "test.db")
+    # Insert prompts with session meta for effectiveness
+    db.insert_prompt(
+        "Fix auth bug in login.py — returns 401 for valid tokens",
+        source="test",
+        project="p",
+        session_id="s1",
+        timestamp="2026-03-01",
+    )
+    db.insert_prompt(
+        "Add comprehensive unit tests for UserService.create_user",
+        source="test",
+        project="p",
+        session_id="s1",
+        timestamp="2026-03-01",
+    )
+    db.upsert_session_meta(
+        session_id="s1",
+        source="test",
+        project="p",
+        start_time="2026-03-01T10:00:00",
+        end_time="2026-03-01T11:00:00",
+        duration_seconds=3600,
+        prompt_count=2,
+        tool_call_count=10,
+        error_count=0,
+        final_status="success",
+        avg_prompt_length=50.0,
+        effectiveness_score=0.8,
+    )
+    result = compute_recommendations(db)
+    assert "best_by_category" in result
+    # Should have at least one category with best prompts
+    if result["best_by_category"]:
+        first_cat = list(result["best_by_category"].values())[0]
+        assert "text" in first_cat
+        assert "effectiveness" in first_cat
+
+
+def test_progress_tracking(tmp_path):
+    """Recommendations include progress data when enough history exists."""
+    from reprompt.core.recommend import compute_recommendations
+    from reprompt.storage.db import PromptDB
+
+    db = PromptDB(tmp_path / "test.db")
+    # Insert prompts across two time periods
+    for i in range(5):
+        db.insert_prompt(
+            f"Short prompt {i}",
+            source="test",
+            project="p",
+            session_id=f"old-{i}",
+            timestamp=f"2026-02-0{i + 1}",
+        )
+    for i in range(5):
+        db.insert_prompt(
+            f"Detailed prompt with specific file reference and constraints number {i}",
+            source="test",
+            project="p",
+            session_id=f"new-{i}",
+            timestamp=f"2026-03-0{i + 1}",
+        )
+
+    result = compute_recommendations(db)
+    assert "progress" in result
+    assert result["progress"] != {}
+    assert "older_avg_length" in result["progress"]
+    assert "newer_avg_length" in result["progress"]
