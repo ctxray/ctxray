@@ -17,6 +17,18 @@ app = typer.Typer(
 console = Console()
 
 
+def _register_free_tier_commands() -> None:
+    """Register Free tier commands (wrapped + telemetry) directly."""
+    from reprompt.commands.telemetry import telemetry_app
+    from reprompt.commands.wrapped import wrapped
+
+    app.command()(wrapped)
+    app.add_typer(telemetry_app, name="telemetry", help="Manage anonymous telemetry")
+
+
+_register_free_tier_commands()
+
+
 def _load_plugins() -> None:
     """Auto-discover and load reprompt plugins (e.g. reprompt-pro)."""
     try:
