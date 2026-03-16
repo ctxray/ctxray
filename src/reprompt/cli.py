@@ -242,6 +242,9 @@ def report(
     output: str = typer.Option("", "--output", "-o", help="Output file path (for --html)"),
     top: int = typer.Option(20, help="Number of top terms to show"),
     clusters: int = typer.Option(0, "--clusters", help="Number of clusters (0 = auto-select)"),
+    source: str = typer.Option(
+        "", "--source", "-s", help="Filter by source (e.g. chatgpt-ext, claude-ext, claude-code)"
+    ),
 ) -> None:
     """Generate analytics report."""
     from reprompt.config import Settings
@@ -249,7 +252,8 @@ def report(
 
     settings = Settings()
     n_clusters_arg = clusters if clusters > 0 else None
-    data = build_report_data(settings=settings, n_clusters=n_clusters_arg)
+    source_filter = source if source else None
+    data = build_report_data(settings=settings, n_clusters=n_clusters_arg, source=source_filter)
 
     if html:
         import webbrowser
@@ -345,6 +349,9 @@ def library(
 def search(
     query: str = typer.Argument(..., help="Search term (case-insensitive)"),
     limit: int = typer.Option(20, help="Maximum results to show"),
+    source: str = typer.Option(
+        "", "--source", "-s", help="Filter by source (e.g. chatgpt-ext, claude-ext, claude-code)"
+    ),
 ) -> None:
     """Search your prompt history by keyword."""
     from reprompt.config import Settings
@@ -352,7 +359,8 @@ def search(
 
     settings = Settings()
     db = PromptDB(settings.db_path)
-    results = db.search_prompts(query, limit=limit)
+    source_filter = source if source else None
+    results = db.search_prompts(query, source=source_filter, limit=limit)
 
     if not results:
         console.print(f"No prompts matching [bold]{query}[/bold]")
