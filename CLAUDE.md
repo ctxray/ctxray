@@ -36,7 +36,9 @@ src/reprompt/
 │   ├── digest.py        # Two-window comparison for weekly digest
 │   ├── style.py         # Personal prompting style fingerprint
 │   ├── lang_detect.py   # Language detection (zh/ja/ko/en) via Unicode ranges
-│   └── extractors_zh.py # Chinese feature extraction (jieba + Chinese regex)
+│   ├── extractors_zh.py # Chinese feature extraction (jieba + Chinese regex)
+│   ├── persona.py       # 6 prompt personas (Architect/Debugger/Explorer/Novelist/Sniper/Teacher)
+│   └── wrapped.py       # WrappedReport dataclass + build_wrapped(db) aggregation
 ├── adapters/
 │   ├── base.py         # BaseAdapter ABC
 │   ├── claude_code.py  # Claude Code JSONL parser
@@ -58,12 +60,27 @@ src/reprompt/
 │   ├── handler.py     # Message handler (ping, sync_prompts, get_status)
 │   ├── host.py        # Entry point launched by Chrome/Firefox as subprocess
 │   └── manifest.py    # Manifest generator for Chrome/Firefox/Chromium
+├── commands/
+│   ├── wrapped.py     # `reprompt wrapped` CLI command (--json, --html, --share)
+│   └── telemetry.py   # `reprompt telemetry on|off|status` subcommands
+├── telemetry/
+│   ├── consent.py     # TelemetryConsent enum, install_id, TOML persistence
+│   ├── events.py      # Pydantic TelemetryEvent model, bucketing helpers
+│   ├── queue.py       # SQLite telemetry_queue CRUD with 30-day TTL
+│   ├── sender.py      # HTTP batch sender (urllib, 2s timeout, fire-and-forget)
+│   ├── collector.py   # Orchestrator: consent → event → queue → sender
+│   └── prompt.py      # First-run consent prompt (Rich)
+├── sharing/
+│   ├── client.py      # HMAC-SHA256 signed upload to getreprompt.dev/api/share
+│   └── clipboard.py   # Cross-platform clipboard copy (pbcopy/xclip/xsel)
 ├── storage/
 │   └── db.py           # SQLite: prompts, processed_sessions, prompt_patterns, term_stats
 └── output/
-    ├── terminal.py     # Rich tables + bar charts + hot terms + clusters
-    ├── json_out.py     # JSON for pipelines
-    └── markdown.py     # Markdown export
+    ├── terminal.py         # Rich tables + bar charts + hot terms + clusters
+    ├── json_out.py         # JSON for pipelines
+    ├── markdown.py         # Markdown export
+    ├── wrapped_terminal.py # Rich Prompt Wrapped report rendering
+    └── wrapped_html.py     # Self-contained HTML share card (dark theme)
 ```
 
 ## Data Flow
@@ -100,7 +117,7 @@ reprompt-extension (private)   ← Browser extension: Chrome/Firefox prompt capt
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 741 tests, 95% coverage target
+- Tests: pytest, 923 tests, 95% coverage target
 
 ## Prompt Science Engine
 
