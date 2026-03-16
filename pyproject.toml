@@ -1,6 +1,6 @@
 [project]
 name = "reprompt-cli"
-version = "0.9.2"
+version = "0.9.3"
 description = "Discover, analyze, and evolve your best prompts from AI coding sessions"
 readme = "README.md"
 license = { text = "MIT" }

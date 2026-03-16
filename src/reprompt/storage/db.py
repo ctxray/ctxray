@@ -181,11 +181,16 @@ class PromptDB:
         finally:
             conn.close()
 
-    def get_all_prompts(self) -> list[dict[str, Any]]:
-        """Return all prompts as dicts."""
+    def get_all_prompts(self, source: str | None = None) -> list[dict[str, Any]]:
+        """Return all prompts as dicts, optionally filtered by source."""
         conn = self._conn()
         try:
-            rows = conn.execute("SELECT * FROM prompts ORDER BY id").fetchall()
+            if source:
+                rows = conn.execute(
+                    "SELECT * FROM prompts WHERE source = ? ORDER BY id", (source,)
+                ).fetchall()
+            else:
+                rows = conn.execute("SELECT * FROM prompts ORDER BY id").fetchall()
             return [dict(r) for r in rows]
         finally:
             conn.close()
@@ -487,6 +492,7 @@ class PromptDB:
         query: str,
         *,
         category: str | None = None,
+        source: str | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         """Search prompts by keyword (case-insensitive LIKE match on text).
@@ -497,6 +503,10 @@ class PromptDB:
         try:
             sql = "SELECT * FROM prompts WHERE duplicate_of IS NULL AND text LIKE ? COLLATE NOCASE"
             params: list[Any] = [f"%{query}%"]
+
+            if source:
+                sql += " AND source = ?"
+                params.append(source)
 
             if category:
                 sql += " AND id IN (SELECT p.id FROM prompts p WHERE p.text LIKE ? COLLATE NOCASE)"

@@ -184,15 +184,17 @@ def run_scan(
 
 
 def build_report_data(
-    settings: Settings | None = None, n_clusters: int | None = None
+    settings: Settings | None = None,
+    n_clusters: int | None = None,
+    source: str | None = None,
 ) -> dict[str, Any]:
-    """Build report data from stored prompts."""
+    """Build report data from stored prompts, optionally filtered by source."""
     if settings is None:
         settings = Settings()
 
     db = PromptDB(settings.db_path)
     stats = db.get_stats()
-    all_prompts = db.get_all_prompts()
+    all_prompts = db.get_all_prompts(source=source)
 
     texts = [p["text"] for p in all_prompts if p.get("duplicate_of") is None]
 
