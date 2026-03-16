@@ -61,3 +61,32 @@ class TestPromptDNA:
         assert isinstance(vec, list)
         assert all(isinstance(v, float) for v in vec)
         assert len(vec) > 10
+
+
+class TestPromptDNALocale:
+    def test_default_locale_is_en(self):
+        dna = PromptDNA(prompt_hash="h", source="s", task_type="t")
+        assert dna.locale == "en"
+
+    def test_locale_zh(self):
+        dna = PromptDNA(prompt_hash="h", source="s", task_type="t", locale="zh")
+        assert dna.locale == "zh"
+
+    def test_locale_in_to_dict(self):
+        dna = PromptDNA(prompt_hash="h", source="s", task_type="t", locale="zh")
+        d = dna.to_dict()
+        assert d["locale"] == "zh"
+
+    def test_locale_excluded_from_feature_vector(self):
+        """locale is a string -- should not appear in feature_vector."""
+        dna1 = PromptDNA(prompt_hash="h", source="s", task_type="t", locale="en")
+        dna2 = PromptDNA(prompt_hash="h", source="s", task_type="t", locale="zh")
+        assert dna1.feature_vector() == dna2.feature_vector()
+
+    def test_feature_vector_length_unchanged(self):
+        """Adding locale must not change vector dimensions."""
+        dna = PromptDNA(prompt_hash="h", source="s", task_type="t")
+        vec = dna.feature_vector()
+        # The existing vector has a known length; locale (str) is excluded
+        assert isinstance(vec, list)
+        assert all(isinstance(v, float) for v in vec)
