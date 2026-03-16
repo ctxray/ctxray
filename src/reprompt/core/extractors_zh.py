@@ -1,14 +1,10 @@
-# src/reprompt/core/extractors.py
-"""Tier 1 feature extractors -- regex-based, zero external dependencies.
+# src/reprompt/core/extractors_zh.py
+"""Chinese feature extractors for PromptDNA.
 
-Extracts 30+ features from prompt text in <1ms. All features are computable
-without any ML model or external service.
+Ports all 30+ Tier 1 features with Chinese-specific regex patterns.
+Uses jieba for word segmentation when available, falls back to character-level.
 
-Research basis for feature selection:
-- Structure features: The Prompt Report (arXiv:2406.06608)
-- Repetition: Google Research (arXiv:2512.14982)
-- Position: Lost in the Middle (arXiv:2307.03172)
-- Specificity: DETAIL (arXiv:2512.02246)
+Produces the same PromptDNA output shape as the English extractor.
 """
 
 from __future__ import annotations
@@ -17,18 +13,25 @@ import hashlib
 import re
 from collections import Counter
 
-from reprompt.core.lang_detect import detect_prompt_language
 from reprompt.core.library import categorize_prompt
 from reprompt.core.prompt_dna import PromptDNA
 from reprompt.core.segmenter import PromptSegment, segment_prompt
 
-# -- Regex patterns --
+# -- Try importing jieba (optional) --
+try:
+    import jieba
+
+    _HAS_JIEBA = True
+except ImportError:
+    _HAS_JIEBA = False
+
+# -- Chinese regex patterns --
 
 _CODE_BLOCK_RE = re.compile(r"```[\s\S]*?```", re.MULTILINE)
 _FILE_REF_RE = re.compile(
     r"(?:[\w./~-]+\.(?:py|ts|js|go|rs|java|rb|cpp|c|h|jsx|tsx|vue|svelte|css|html|yaml|yml"
     r"|toml|json|sql|sh|md))"
-    r"|(?:line\s+\d+)"
+    r"|(?:(?:第|line\s+)\d+(?:行)?)"
     r"|(?::\d+(?::\d+)?)"
 )
 _ERROR_RE = re.compile(
@@ -36,89 +39,149 @@ _ERROR_RE = re.compile(
     r"|ImportError|RuntimeError|IndexError|SyntaxError|NameError|FileNotFoundError"
     r"|ConnectionError|TimeoutError|PermissionError|OSError|IOError"
     r"|failed|FAILED|FAIL)"
+    r"|(?:错误|异常|报错|失败|崩溃)"
 )
-_ROLE_RE = re.compile(r"(?i)^(?:you are|act as|as a|role:)", re.MULTILINE)
+_ROLE_RE = re.compile(
+    r"(?:^|(?<=\n))(?:你是一?个?|作为|扮演|角色[:：]|假设你是|假装你是|你现在是)",
+    re.MULTILINE,
+)
 _CONSTRAINT_RE = re.compile(
-    r"(?i)\b(?:do not|don't|must not|never|avoid|must|should|ensure|make sure"
-    r"|only|without|except|unless)\b"
+    r"(?:不要|不能|不可以|必须|请勿|禁止|务必|确保|限制|仅|只能|除非|避免"
+    r"|不得|严禁|切勿|一定要|保证|不许)"
 )
 _EXAMPLE_RE = re.compile(
-    r"(?i)(?:example|e\.g\.|for instance|input\s*:.*output\s*:|before\s*:.*after\s*:)",
+    r"(?:例如|比如|举例|示例|像是|譬如"
+    r"|输入[:：].*输出[:：]"
+    r"|如[:：]|比方说)",
     re.DOTALL,
 )
 _OUTPUT_FORMAT_RE = re.compile(
-    r"(?i)(?:(?:return|output|format|respond)\s+(?:as|in|with)\b"
-    r"|(?:json|markdown|csv|yaml|xml|table)\b.*(?:format|field|column))"
+    r"(?:(?:输出|返回|格式|响应).*(?:JSON|json|表格|列表|markdown|Markdown|csv|CSV|yaml|YAML|xml|XML)"
+    r"|以.*格式(?:输出|返回|响应)"
+    r"|(?:JSON|json|表格|列表|markdown|csv).*(?:格式|字段|列))"
 )
 _STEP_BY_STEP_RE = re.compile(
-    r"(?i)(?:step[- ]by[- ]step|think through|one at a time|let'?s think|chain of thought)"
+    r"(?:分步骤|逐步|一步一步|一步步"
+    r"|第[一二三四五六七八九十]步"
+    r"|先.*然后.*最后"
+    r"|思维链|chain of thought"
+    r"|step[- ]by[- ]step)"
 )
-_SECTION_RE = re.compile(r"^#{1,4}\s+\S", re.MULTILINE)
-_SENTENCE_RE = re.compile(r"[.!?]+(?:\s|$)")
+_SECTION_RE = re.compile(
+    r"(?:^#{1,4}\s+\S|^[一二三四五六七八九十]+[、.]\s*\S)",
+    re.MULTILINE,
+)
+_SENTENCE_RE = re.compile(r"[。！？；!?]+")
 
-_VAGUE_WORDS = frozenset(
+_VAGUE_WORDS_ZH = frozenset(
     {
-        "something",
-        "somehow",
-        "maybe",
-        "probably",
-        "stuff",
-        "things",
-        "whatever",
-        "anything",
-        "it",
-        "this",
-        "that",
-        "some",
-    }
-)
-_HEDGE_WORDS = frozenset(
-    {
-        "maybe",
-        "perhaps",
-        "might",
-        "could",
-        "possibly",
-        "somewhat",
-        "kind of",
-        "sort of",
-        "I think",
-        "I guess",
+        "东西",
+        "那个",
+        "这个",
+        "什么",
+        "一些",
+        "某些",
+        "之类",
+        "等等",
+        "大概",
+        "好像",
+        "可能",
+        "随便",
+        "差不多",
     }
 )
 
+_HEDGE_WORDS_ZH = frozenset(
+    {
+        "可能",
+        "也许",
+        "大概",
+        "或许",
+        "好像",
+        "似乎",
+        "感觉",
+        "我觉得",
+        "我想",
+        "我猜",
+        "应该",
+        "差不多",
+    }
+)
 
-def extract_features(
+# Chinese action verbs for opening quality scoring
+_ACTION_VERBS_ZH = frozenset(
+    {
+        "修复",
+        "修改",
+        "添加",
+        "创建",
+        "实现",
+        "调试",
+        "解释",
+        "编写",
+        "更新",
+        "删除",
+        "重构",
+        "构建",
+        "测试",
+        "审查",
+        "部署",
+        "迁移",
+        "优化",
+        "移除",
+        "重命名",
+        "安装",
+        "配置",
+        "分析",
+        "设计",
+        "检查",
+        "生成",
+        "查找",
+        "帮我",
+        "请",
+    }
+)
+
+
+def _segment_words(text: str) -> list[str]:
+    """Segment Chinese text into words using jieba or character fallback."""
+    if _HAS_JIEBA:
+        return [w for w in jieba.cut(text) if w.strip()]
+    # Fallback: split on whitespace + treat each CJK char as a word
+    tokens: list[str] = []
+    for part in text.split():
+        if re.search(r"[\u4e00-\u9fff]", part):
+            # Split CJK characters individually (crude but functional)
+            for char in part:
+                if "\u4e00" <= char <= "\u9fff":
+                    tokens.append(char)
+                elif char.strip():
+                    tokens.append(char)
+        else:
+            tokens.append(part)
+    return [t for t in tokens if t.strip()]
+
+
+def extract_features_zh(
     text: str,
     *,
     source: str,
     session_id: str,
     project: str | None = None,
 ) -> PromptDNA:
-    """Extract all Tier 1 features from a prompt and return a PromptDNA.
+    """Extract all Tier 1 features from a Chinese prompt.
 
-    Detects prompt language and routes to the appropriate locale extractor.
-    This is the main entry point. Runs in <1ms for typical prompts.
+    Produces the same PromptDNA shape as the English extractor.
+    Uses Chinese-specific regex patterns and jieba word segmentation.
     """
     stripped = text.strip()
     prompt_hash = hashlib.sha256(stripped.encode()).hexdigest() if stripped else ""
 
     if not stripped:
-        return PromptDNA(prompt_hash=prompt_hash, source=source, task_type="other", locale="en")
-
-    # -- Language detection and routing --
-    lang_info = detect_prompt_language(stripped)
-
-    if lang_info.lang == "zh":
-        # Lazy import to avoid loading jieba for English-only users
-        from reprompt.core.extractors_zh import extract_features_zh
-
-        return extract_features_zh(text, source=source, session_id=session_id, project=project)
-
-    # -- English extraction (default path) --
+        return PromptDNA(prompt_hash=prompt_hash, source=source, task_type="other", locale="zh")
 
     # -- Basic metrics --
-    words = re.findall(r"\b\w+\b", stripped)
+    words = _segment_words(stripped)
     word_count = len(words)
     line_count = len(stripped.splitlines())
     sentences = _SENTENCE_RE.split(stripped)
@@ -133,28 +196,28 @@ def extract_features(
     constraint_count = len(constraints)
     has_constraints = constraint_count > 0
     has_examples = bool(_EXAMPLE_RE.search(stripped))
-    example_count = _count_examples(stripped)
+    example_count = _count_examples_zh(stripped)
     has_output_format = bool(_OUTPUT_FORMAT_RE.search(stripped))
     has_step_by_step = bool(_STEP_BY_STEP_RE.search(stripped))
     section_count = len(_SECTION_RE.findall(stripped))
 
-    # -- Code blocks --
+    # -- Code blocks (same as English -- code is universal) --
     code_blocks = _CODE_BLOCK_RE.findall(stripped)
     code_block_count = len(code_blocks)
     has_code_blocks = code_block_count > 0
     code_chars = sum(len(b) for b in code_blocks)
     code_block_ratio = code_chars / len(stripped) if stripped else 0.0
 
-    # -- File references --
+    # -- File references (same patterns + Chinese line refs) --
     file_refs = _FILE_REF_RE.findall(stripped)
     file_reference_count = len(file_refs)
     has_file_references = file_reference_count > 0
 
-    # -- Error messages --
+    # -- Error messages (English patterns + Chinese keywords) --
     has_error_messages = bool(_ERROR_RE.search(stripped))
 
     # -- Research: Keyword repetition [Google 2512.14982] --
-    keyword_repetition_freq, instruction_repetition = _compute_repetition(words)
+    keyword_repetition_freq, instruction_repetition = _compute_repetition_zh(words)
 
     # -- Research: Instruction position [Lost in the Middle 2307.03172] --
     segments = segment_prompt(stripped)
@@ -162,15 +225,15 @@ def extract_features(
     critical_info_distribution = _classify_distribution(segments)
 
     # -- Attention sink: Opening quality --
-    opening_quality = _score_opening(stripped, has_file_references, has_error_messages)
+    opening_quality = _score_opening_zh(stripped, has_file_references, has_error_messages)
 
     # -- Context specificity --
-    context_specificity = _compute_specificity(
+    context_specificity = _compute_specificity_zh(
         stripped, has_code_blocks, has_file_references, has_error_messages, word_count
     )
 
     # -- Ambiguity --
-    ambiguity_score = _compute_ambiguity(stripped, words, word_count)
+    ambiguity_score = _compute_ambiguity_zh(stripped, words, word_count)
 
     # -- Complexity --
     complexity_score = _compute_complexity(
@@ -181,7 +244,7 @@ def extract_features(
         prompt_hash=prompt_hash,
         source=source,
         task_type=task_type,
-        token_count=word_count,  # approximate; real tokenization is Tier 3
+        token_count=word_count,  # approximate
         word_count=word_count,
         sentence_count=sentence_count,
         line_count=line_count,
@@ -208,85 +271,85 @@ def extract_features(
         complexity_score=round(complexity_score, 4),
         ambiguity_score=round(ambiguity_score, 4),
         extractor_tier=1,
-        locale="en",
+        locale="zh",
     )
 
 
 # -- Internal helpers --
 
 
-def _count_examples(text: str) -> int:
-    """Count the number of examples in the prompt."""
+def _count_examples_zh(text: str) -> int:
+    """Count examples in Chinese text."""
     count = 0
-    count += len(re.findall(r"(?i)\bexample\s*\d*\s*:", text))
-    count += len(re.findall(r"(?i)input\s*:.*?output\s*:", text, re.DOTALL))
-    if count == 0 and re.search(r"(?i)\b(example|e\.g\.)", text):
+    count += len(re.findall(r"(?:示例|例子|例)\s*\d*\s*[:：]", text))
+    count += len(re.findall(r"输入[:：].*?输出[:：]", text, re.DOTALL))
+    if count == 0 and re.search(r"(?:例如|比如|举例|示例|譬如)", text):
         count = 1
     return count
 
 
-def _compute_repetition(words: list[str]) -> tuple[float, bool]:
-    """Compute keyword repetition frequency.
+def _compute_repetition_zh(words: list[str]) -> tuple[float, bool]:
+    """Compute keyword repetition for Chinese words.
 
-    Based on Google Research arXiv:2512.14982: repeating core prompt once
-    (k=2) yields up to 76% accuracy improvement on non-reasoning tasks.
-    We measure how much the user naturally repeats key content words.
-
-    Returns (repetition_freq, instruction_repeated).
+    Chinese stop words differ from English. Uses jieba-segmented words.
     """
     if len(words) < 4:
         return (0.0, False)
 
-    # Filter to content words (>3 chars, not common stop words)
-    stop = frozenset(
+    stop_zh = frozenset(
         {
-            "the",
-            "and",
-            "for",
-            "that",
-            "this",
-            "with",
-            "from",
-            "have",
-            "will",
-            "are",
-            "was",
-            "were",
-            "been",
-            "being",
-            "has",
-            "had",
-            "does",
-            "did",
-            "but",
-            "not",
-            "you",
-            "all",
-            "can",
-            "her",
-            "his",
-            "its",
-            "our",
-            "they",
-            "them",
-            "then",
-            "than",
-            "into",
-            "when",
-            "which",
-            "there",
-            "about",
-            "should",
-            "would",
-            "could",
-            "also",
-            "just",
-            "more",
-            "some",
+            "的",
+            "了",
+            "在",
+            "是",
+            "我",
+            "有",
+            "和",
+            "就",
+            "不",
+            "人",
+            "都",
+            "一",
+            "一个",
+            "上",
+            "也",
+            "很",
+            "到",
+            "说",
+            "要",
+            "去",
+            "你",
+            "会",
+            "着",
+            "没有",
+            "看",
+            "好",
+            "自己",
+            "这",
+            "他",
+            "她",
+            "它",
+            "被",
+            "从",
+            "把",
+            "那",
+            "里",
+            "让",
+            "用",
+            "中",
+            "为",
+            "地",
+            "得",
+            "对",
+            "以",
+            "与",
         }
     )
-    content_words = [w.lower().strip(".,;:!?\"'()[]{}") for w in words if len(w) > 3]
-    content_words = [w for w in content_words if w and w not in stop]
+    content_words = [w for w in words if len(w) >= 2 and w not in stop_zh]
+    # Also include single-char content words that aren't stop words
+    content_words += [
+        w for w in words if len(w) == 1 and w not in stop_zh and re.match(r"[\u4e00-\u9fff]", w)
+    ]
 
     if not content_words:
         return (0.0, False)
@@ -297,11 +360,9 @@ def _compute_repetition(words: list[str]) -> tuple[float, bool]:
     if not repeated:
         return (0.0, False)
 
-    # Repetition freq = fraction of content words that are repeated
     repeated_tokens = sum(c for c in repeated.values())
     rep_freq = (repeated_tokens - len(repeated)) / len(content_words)
 
-    # Check if the first content word (likely the instruction verb) is repeated
     first_content = content_words[0] if content_words else ""
     instruction_repeated = first_content in repeated
 
@@ -309,25 +370,15 @@ def _compute_repetition(words: list[str]) -> tuple[float, bool]:
 
 
 def _find_instruction_position(segments: list[PromptSegment]) -> float:
-    """Find where the key instruction is positioned in the prompt.
-
-    Based on Lost in the Middle (arXiv:2307.03172):
-    - Position 0.0 = start (best attention ~75%)
-    - Position 0.5 = middle (worst attention ~45%)
-    - Position 1.0 = end (moderate attention ~65%)
-
-    Returns normalized position [0.0, 1.0].
-    """
+    """Find instruction position (reuses same logic as English)."""
     for seg in segments:
         if seg.segment_type == "instruction":
             return (seg.start_pos + seg.end_pos) / 2
-
-    # No instruction found -- default to start (assume the whole thing is instruction)
     return 0.0
 
 
 def _classify_distribution(segments: list[PromptSegment]) -> str:
-    """Classify how critical information is distributed across the prompt."""
+    """Classify critical info distribution (reuses same logic as English)."""
     if not segments:
         return "unknown"
 
@@ -350,97 +401,62 @@ def _classify_distribution(segments: list[PromptSegment]) -> str:
     return "middle-buried"
 
 
-def _score_opening(text: str, has_file_refs: bool, has_errors: bool) -> float:
-    """Score the quality of the prompt's opening.
-
-    Based on ICLR 2025 Attention Sink: first tokens get disproportionate
-    attention. A strong opening = better LLM comprehension.
-    """
+def _score_opening_zh(text: str, has_file_refs: bool, has_errors: bool) -> float:
+    """Score opening quality for Chinese prompts."""
     first_line = text.split("\n")[0].strip()
     if not first_line:
         return 0.0
 
     score = 0.0
-    first_lower = first_line.lower()
 
-    # Starts with action verb -> strong opening
-    action_verbs = {
-        "fix",
-        "add",
-        "create",
-        "implement",
-        "debug",
-        "explain",
-        "write",
-        "update",
-        "remove",
-        "refactor",
-        "build",
-        "test",
-        "review",
-        "deploy",
-        "migrate",
-        "optimize",
-        "delete",
-        "move",
-        "rename",
-        "install",
-        "configure",
-    }
-    first_word = first_lower.split()[0] if first_lower.split() else ""
-    if first_word in action_verbs:
-        score += 0.4
+    # Starts with Chinese action verb or keyword
+    for verb in _ACTION_VERBS_ZH:
+        if first_line.startswith(verb):
+            score += 0.4
+            break
 
-    # First line contains specifics
+    # First line contains file references
     if has_file_refs and _FILE_REF_RE.search(first_line):
         score += 0.3
     if has_errors and _ERROR_RE.search(first_line):
         score += 0.2
 
-    # Length penalty: too short = vague
-    if len(first_line.split()) >= 5:
+    # Length: Chinese chars are denser than English words
+    # 10 Chinese chars ~ 5 English words in information density
+    char_count = len(re.findall(r"[\u4e00-\u9fff]", first_line))
+    if char_count >= 8 or len(first_line) >= 15:
         score += 0.1
 
     return min(score, 1.0)
 
 
-def _compute_specificity(
+def _compute_specificity_zh(
     text: str,
     has_code: bool,
     has_files: bool,
     has_errors: bool,
     word_count: int,
 ) -> float:
-    """Compute context specificity score [0.0, 1.0].
-
-    Based on DETAIL paper (arXiv:2512.02246): more specific prompts produce
-    better outputs, especially for smaller models and procedural tasks.
-    """
+    """Compute context specificity for Chinese prompts."""
     if word_count == 0:
         return 0.0
 
     score = 0.0
 
-    # Code blocks = high specificity
     if has_code:
         score += 0.3
-
-    # File references = targeted
     if has_files:
         score += 0.25
-
-    # Error messages = concrete problem
     if has_errors:
         score += 0.25
 
-    # Numbers in text (line numbers, counts, versions)
     numbers = re.findall(r"\b\d+\b", text)
     if len(numbers) >= 2:
         score += 0.1
     elif len(numbers) >= 1:
         score += 0.05
 
-    # Proper nouns / identifiers (CamelCase, snake_case)
+    # CamelCase/snake_case identifiers (code identifiers in Chinese prompts)
     identifiers = re.findall(r"\b[A-Z][a-z]+[A-Z]\w*\b|\b\w+_\w+\b", text)
     if identifiers:
         score += 0.1
@@ -448,27 +464,25 @@ def _compute_specificity(
     return min(score, 1.0)
 
 
-def _compute_ambiguity(text: str, words: list[str], word_count: int) -> float:
-    """Compute ambiguity score [0.0, 1.0]. Higher = more ambiguous."""
+def _compute_ambiguity_zh(text: str, words: list[str], word_count: int) -> float:
+    """Compute ambiguity score for Chinese prompts."""
     if word_count == 0:
         return 1.0
 
-    lower_words = [w.lower().strip(".,;:!?\"'()[]{}") for w in words]
     score = 0.0
 
     # Vague words ratio
-    vague_count = sum(1 for w in lower_words if w in _VAGUE_WORDS)
+    vague_count = sum(1 for w in words if w in _VAGUE_WORDS_ZH)
     score += min(vague_count / max(word_count, 1) * 3, 0.4)
 
     # Hedge words
-    lower_text = text.lower()
-    hedge_count = sum(1 for h in _HEDGE_WORDS if h in lower_text)
+    hedge_count = sum(1 for h in _HEDGE_WORDS_ZH if h in text)
     score += min(hedge_count * 0.1, 0.3)
 
-    # Very short prompts are inherently ambiguous
-    if word_count < 5:
+    # Very short prompts (Chinese is denser, so lower thresholds)
+    if word_count < 3:
         score += 0.3
-    elif word_count < 10:
+    elif word_count < 6:
         score += 0.1
 
     return min(score, 1.0)
@@ -481,30 +495,25 @@ def _compute_complexity(
     constraints: int,
     sections: int,
 ) -> float:
-    """Estimate task complexity [0.0, 1.0]."""
+    """Estimate task complexity (adjusted thresholds for Chinese)."""
     score = 0.0
 
-    # Length contributes to complexity
-    if word_count > 200:
+    # Chinese word counts are different from English (jieba yields fewer tokens)
+    # Adjust thresholds: Chinese 100 words ~ English 200 words
+    if word_count > 100:
         score += 0.3
-    elif word_count > 100:
-        score += 0.2
     elif word_count > 50:
+        score += 0.2
+    elif word_count > 25:
         score += 0.1
 
-    # Multi-sentence = more complex
     if sentence_count > 5:
         score += 0.2
     elif sentence_count > 2:
         score += 0.1
 
-    # Code blocks = technical complexity
     score += min(code_blocks * 0.1, 0.2)
-
-    # Constraints = more requirements
     score += min(constraints * 0.05, 0.15)
-
-    # Sections = structured complex request
     score += min(sections * 0.05, 0.15)
 
     return min(score, 1.0)

@@ -1,6 +1,6 @@
 [project]
 name = "reprompt-cli"
-version = "0.9.0"
+version = "0.9.2"
 description = "Discover, analyze, and evolve your best prompts from AI coding sessions"
 readme = "README.md"
 license = { text = "MIT" }
@@ -31,6 +31,7 @@ ollama = ["requests>=2.31"]
 local = ["sentence-transformers>=2.0"]
 openai = ["openai>=1.0"]
 mcp = ["fastmcp>=2.0"]
+chinese = ["jieba>=0.42"]
 science = ["textstat>=0.7", "yake>=0.4", "spacy>=3.7"]
 dev = ["pytest>=8.0", "ruff>=0.4", "mypy>=1.0", "pytest-cov>=5.0"]
 

@@ -79,6 +79,7 @@ class PromptDNA:
 
     # ── Metadata ──
     extractor_tier: int = 1  # which tier of extractors was used
+    locale: str = "en"  # detected language: "en", "zh", "ja", "ko"
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to dict (for storage and transport)."""
