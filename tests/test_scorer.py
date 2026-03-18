@@ -81,6 +81,36 @@ class TestScorePrompt:
         )
         assert score_prompt(has_rep).repetition > score_prompt(no_rep).repetition
 
+    def test_instruction_repetition_bonus(self):
+        base = PromptDNA(
+            prompt_hash="h",
+            source="s",
+            task_type="debug",
+            word_count=50,
+            keyword_repetition_freq=0.3,
+            instruction_repetition=False,
+        )
+        with_instr = PromptDNA(
+            prompt_hash="h",
+            source="s",
+            task_type="debug",
+            word_count=50,
+            keyword_repetition_freq=0.3,
+            instruction_repetition=True,
+        )
+        assert score_prompt(with_instr).repetition > score_prompt(base).repetition
+
+    def test_instruction_repetition_capped_at_15(self):
+        dna = PromptDNA(
+            prompt_hash="h",
+            source="s",
+            task_type="debug",
+            word_count=50,
+            keyword_repetition_freq=1.0,
+            instruction_repetition=True,
+        )
+        assert score_prompt(dna).repetition <= 15.0
+
     def test_score_breakdown_categories(self):
         dna = PromptDNA(prompt_hash="h", source="s", task_type="debug", word_count=50)
         result = score_prompt(dna)

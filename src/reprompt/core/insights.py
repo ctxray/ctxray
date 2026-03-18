@@ -33,6 +33,7 @@ def compute_insights(features: list[dict[str, Any]]) -> dict[str, Any]:
             "best_task_type": {"type": "none", "avg_score": 0.0},
             "worst_task_type": {"type": "none", "avg_score": 0.0},
             "score_distribution": {},
+            "source_scores": {},
             "insights": [],
         }
 
@@ -145,6 +146,18 @@ def compute_insights(features: list[dict[str, Any]]) -> dict[str, Any]:
             }
         )
 
+    # -- Per-source breakdown --
+    by_source: dict[str, list[float]] = defaultdict(list)
+    for f in features:
+        src = f.get("source", "unknown")
+        by_source[src].append(f.get("overall_score", 0.0))
+
+    source_avgs = {
+        s: round(sum(scores_list) / len(scores_list), 1)
+        for s, scores_list in by_source.items()
+        if len(scores_list) >= 3
+    }
+
     return {
         "prompt_count": count,
         "avg_score": round(avg_score, 1),
@@ -157,5 +170,6 @@ def compute_insights(features: list[dict[str, Any]]) -> dict[str, Any]:
             "avg_score": round(type_avgs.get(worst_type, 0.0), 1),
         },
         "score_distribution": distribution,
+        "source_scores": source_avgs,
         "insights": insights,
     }

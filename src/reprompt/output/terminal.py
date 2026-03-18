@@ -363,6 +363,13 @@ def render_insights(data: dict[str, Any]) -> str:
             bar = "\u2588" * bar_len
             console.print(f"  {bucket:>6}  {bar} {cnt}")
 
+    # Per-source breakdown
+    source_scores = data.get("source_scores", {})
+    if source_scores:
+        console.print("\n[bold]Score by Source:[/bold]")
+        for src, avg in sorted(source_scores.items(), key=lambda x: x[1], reverse=True):
+            console.print(f"  {src:<20} {avg:.0f}/100")
+
     # Research-backed insights
     insights = data.get("insights", [])
     if insights:

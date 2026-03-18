@@ -165,7 +165,10 @@ def score_prompt(dna: PromptDNA) -> ScoreBreakdown:
 
     # ── Repetition (0-15) ──
     rep = min(dna.keyword_repetition_freq, 1.0)
-    repetition = 15.0 * rep
+    repetition = 13.0 * rep
+    if dna.instruction_repetition:
+        repetition += 2.0
+    repetition = min(repetition, 15.0)
 
     if rep < 0.1 and dna.word_count > 20:
         suggestions.append(
