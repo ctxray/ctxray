@@ -20,6 +20,7 @@ from reprompt.core.analyzer import cluster_prompts, compute_tfidf_stats
 from reprompt.core.dedup import DedupEngine
 from reprompt.core.library import categorize_prompt, extract_patterns
 from reprompt.core.models import Prompt
+from reprompt.core.privacy import compute_privacy_summary
 from reprompt.storage.db import PromptDB
 
 logger = logging.getLogger(__name__)
@@ -252,6 +253,13 @@ def build_report_data(
         cat = categorize_prompt(t)
         categories[cat] = categories.get(cat, 0) + 1
 
+    # Privacy exposure breakdown
+    source_counts: dict[str, int] = {}
+    for p in all_prompts:
+        src = p.get("source", "unknown")
+        source_counts[src] = source_counts.get(src, 0) + 1
+    privacy = compute_privacy_summary(source_counts)
+
     return {
         "overview": {
             "total_prompts": stats.get("total_prompts", len(all_prompts)),
@@ -272,4 +280,5 @@ def build_report_data(
         "categories": categories,
         "top_terms": top_terms[:10],
         "clusters": clusters_summary,
+        "privacy": privacy,
     }

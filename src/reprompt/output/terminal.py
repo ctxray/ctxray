@@ -80,6 +80,23 @@ def render_report(data: dict[str, Any]) -> str:
             sample = c["sample"][:80] + "..." if len(c["sample"]) > 80 else c["sample"]
             console.print(f'  Cluster {c["cluster_id"] + 1} ({c["size"]} prompts):  "{sample}"')
 
+    # Privacy exposure summary (compact in report)
+    if data.get("privacy") and data["privacy"]["total_prompts"] > 0:
+        priv = data["privacy"]
+        total = priv["total_prompts"]
+        cloud_pct = int(priv["cloud_prompts"] / total * 100) if total > 0 else 0
+        console.print("\n[bold]Privacy Exposure[/bold]")
+        console.print(
+            f"  Cloud: {priv['cloud_prompts']} ({cloud_pct}%)  |  "
+            f"Local: {priv['local_prompts']} ({100 - cloud_pct}%)"
+        )
+        if priv["training_exposed"] > 0:
+            console.print(
+                f"  [yellow]Training risk: {priv['training_exposed']} prompts "
+                f"(opt-out/unknown policy)[/yellow]"
+            )
+        console.print("  Run `reprompt privacy` for full breakdown")
+
     console.print("\nRun `reprompt library` to see your reusable prompt collection")
     console.print("Run `reprompt trends` to see your prompt evolution over time")
 

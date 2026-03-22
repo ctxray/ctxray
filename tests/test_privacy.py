@@ -216,3 +216,26 @@ class TestComputePrivacySummary:
         result = compute_privacy_summary(counts)
         assert result["training_safe"] == 18
         assert result["training_exposed"] == 0
+
+
+class TestPrivacyInReportData:
+    def test_report_data_includes_privacy(self, tmp_path, monkeypatch):
+        """build_report_data should include a 'privacy' key."""
+        from reprompt.config import Settings
+        from reprompt.core.pipeline import build_report_data
+        from reprompt.storage.db import PromptDB
+
+        db_path = tmp_path / "test.db"
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+        settings = Settings()
+        db = PromptDB(db_path)
+
+        # Insert prompts from different sources
+        db.insert_prompt("fix the bug", source="claude-code", project="proj", session_id="s1")
+        db.insert_prompt("add feature", source="aider", project="proj", session_id="s2")
+
+        data = build_report_data(settings=settings)
+        assert "privacy" in data
+        assert data["privacy"]["total_prompts"] == 2
+        assert data["privacy"]["cloud_prompts"] == 1  # claude-code
+        assert data["privacy"]["local_prompts"] == 1  # aider
