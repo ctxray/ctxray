@@ -960,6 +960,39 @@ def insights(
 
 
 @app.command()
+def privacy(
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+) -> None:
+    """Show where your prompts went and how they may be used."""
+    import json as json_mod
+
+    from reprompt.config import Settings
+    from reprompt.core.privacy import compute_privacy_summary
+    from reprompt.output.terminal import render_privacy
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    all_prompts = db.get_all_prompts()
+
+    source_counts: dict[str, int] = {}
+    for p in all_prompts:
+        src = p.get("source", "unknown")
+        source_counts[src] = source_counts.get(src, 0) + 1
+
+    summary = compute_privacy_summary(source_counts)
+
+    # render_privacy expects "name" key per source; compute_privacy_summary uses "source"
+    for src in summary.get("sources", []):
+        src["name"] = src.pop("source", "unknown")
+
+    if json_output:
+        typer.echo(json_mod.dumps(summary, indent=2))
+    else:
+        typer.echo(render_privacy(summary))
+
+
+@app.command()
 def digest(
     period: str = typer.Option("7d", help="Comparison window: 7d, 14d, 30d"),
     format: str = typer.Option("terminal", help="Output format: terminal, json"),
