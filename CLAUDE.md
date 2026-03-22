@@ -18,7 +18,7 @@ uv run python -m build                     # build wheel
 
 ```
 src/reprompt/
-├── cli.py              # Typer CLI (scan, import, report, search, library, recommend, demo, status, purge, install-hook, install-extension, extension-status, score, compare, insights, digest, style, use) + plugin loading
+├── cli.py              # Typer CLI (scan, import, report, search, library, recommend, demo, status, purge, install-hook, install-extension, extension-status, score, compare, insights, digest, style, use, privacy) + plugin loading
 ├── config.py           # pydantic-settings, env vars (REPROMPT_ prefix) + TOML config
 ├── demo.py             # Built-in demo data generator (no network required)
 ├── core/
@@ -38,7 +38,8 @@ src/reprompt/
 │   ├── lang_detect.py   # Language detection (zh/ja/ko/en) via Unicode ranges
 │   ├── extractors_zh.py # Chinese feature extraction (jieba + Chinese regex)
 │   ├── persona.py       # 6 prompt personas (Architect/Debugger/Explorer/Novelist/Sniper/Teacher)
-│   └── wrapped.py       # WrappedReport dataclass + build_wrapped(db) aggregation
+│   ├── wrapped.py       # WrappedReport dataclass + build_wrapped(db) aggregation
+│   └── privacy.py       # Privacy metadata registry + exposure summary per adapter
 ├── adapters/
 │   ├── base.py         # BaseAdapter ABC
 │   ├── claude_code.py  # Claude Code JSONL parser
@@ -117,7 +118,7 @@ reprompt-extension (private)   ← Browser extension: Chrome/Firefox prompt capt
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 923 tests, 95% coverage target
+- Tests: pytest, 1046 tests, 95% coverage target
 
 ## Prompt Science Engine
 
