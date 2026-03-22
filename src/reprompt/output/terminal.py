@@ -589,3 +589,66 @@ def render_style(data: dict[str, Any]) -> str:
     console.print()
 
     return buf.getvalue()
+
+
+def render_privacy(data: dict[str, Any]) -> str:
+    """Render privacy exposure summary."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    total = data["total_prompts"]
+    if total == 0:
+        console.print("\n[dim]No prompt data yet. Run 'reprompt scan' first.[/dim]")
+        return buf.getvalue()
+
+    cloud = data["cloud_prompts"]
+    local = data["local_prompts"]
+    cloud_pct = round(cloud / total * 100) if total > 0 else 0
+    local_pct = round(local / total * 100) if total > 0 else 0
+
+    console.print(f"\n[bold]Privacy Exposure[/bold] ({total} prompts)")
+    console.print("\u2500" * 40)
+
+    console.print(f"  Total prompts:   {total}")
+    console.print(f"  Cloud:           {cloud} ({cloud_pct}%)")
+    console.print(f"  Local:           {local} ({local_pct}%)")
+
+    # Training exposure warning
+    training_exposed = data.get("training_exposed", 0)
+    if training_exposed > 0:
+        console.print(
+            f"\n  [yellow]\u26a0 {training_exposed} prompts may train vendor models.[/yellow]"
+        )
+
+    # Per-tool breakdown table
+    sources = data.get("sources", [])
+    if sources:
+        console.print()
+        table = Table(show_header=True, header_style="bold", padding=(0, 1))
+        table.add_column("Tool", style="cyan", min_width=14)
+        table.add_column("Prompts", justify="right")
+        table.add_column("Cloud", justify="center")
+        table.add_column("Retention")
+        table.add_column("Training")
+
+        for src in sources:
+            cloud_icon = "\u2601\ufe0f" if src["cloud"] else "\U0001f3e0"
+            training_val = src.get("training", "unknown")
+            if training_val in ("opt-out", "opt-in"):
+                training_display = f"[yellow]{training_val}[/yellow]"
+            else:
+                training_display = f"[dim]{training_val}[/dim]"
+
+            table.add_row(
+                src["name"],
+                str(src["count"]),
+                cloud_icon,
+                src.get("retention", "unknown"),
+                training_display,
+            )
+
+        console.print(table)
+
+    console.print("\n[dim]Data policies as of March 2026. Check vendor docs for latest.[/dim]")
+
+    return buf.getvalue()
