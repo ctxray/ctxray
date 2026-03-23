@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from reprompt.core.conversation import ConversationTurn
 from reprompt.core.models import Prompt
 
 
@@ -23,3 +24,20 @@ class BaseAdapter(ABC):
     def detect_installed(self) -> bool:
         """Check if the tool's session directory exists."""
         ...
+
+    def parse_conversation(self, path: Path) -> list[ConversationTurn]:
+        """Parse full conversation with both roles.
+
+        Default implementation wraps parse_session() results as user-only turns.
+        Override in adapters that can extract assistant turns.
+        """
+        prompts = self.parse_session(path)
+        return [
+            ConversationTurn(
+                role="user",
+                text=p.text,
+                timestamp=p.timestamp,
+                turn_index=i,
+            )
+            for i, p in enumerate(prompts)
+        ]
