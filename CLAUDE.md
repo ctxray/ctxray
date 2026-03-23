@@ -39,7 +39,8 @@ src/reprompt/
 │   ├── extractors_zh.py # Chinese feature extraction (jieba + Chinese regex)
 │   ├── persona.py       # 6 prompt personas (Architect/Debugger/Explorer/Novelist/Sniper/Teacher)
 │   ├── wrapped.py       # WrappedReport dataclass + build_wrapped(db) aggregation
-│   └── privacy.py       # Privacy metadata registry + exposure summary per adapter
+│   ├── privacy.py       # Privacy metadata registry + exposure summary per adapter
+│   └── compress.py      # 4-layer prompt compression (char norm + phrase simplify + filler delete + structure cleanup)
 ├── adapters/
 │   ├── base.py         # BaseAdapter ABC
 │   ├── claude_code.py  # Claude Code JSONL parser
@@ -119,7 +120,7 @@ reprompt-extension (private)   ← Browser extension: Chrome/Firefox prompt capt
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 1046 tests, 95% coverage target
+- Tests: pytest, 1153 tests, 95% coverage target
 
 ## Prompt Science Engine
 
@@ -130,3 +131,16 @@ Research-backed prompt analysis (added v0.6.0):
 
 Papers: Google 2512.14982 (repetition), Stanford 2307.03172 (position),
 SPELL EMNLP 2023 (perplexity), Prompt Report 2406.06608 (taxonomy).
+
+## Prompt Compression Engine
+
+Rule-based prompt optimization (added v1.2.0):
+- `reprompt compress "prompt"` — 4-layer compression with token savings display
+  - Layer 0: Character normalization (curly quotes, zero-width chars, NFKC)
+  - Layer 2: Phrase simplification (40+ zh, 50+ en rules)
+  - Layer 1: Filler word deletion (50+ zh, 40+ en phrases, jieba-aware)
+  - Layer 3: Structure cleanup (markdown strip, emoji, LLM output artifacts)
+- `--json` for pipeline integration, `--copy` to clipboard
+- `compressibility` field in PromptDNA, visible in insights + HTML dashboard
+
+Sources: LLMLingua (Microsoft), CompactPrompt, TSC, stopwords-iso/zh, Prompt Report 2406.06608.
