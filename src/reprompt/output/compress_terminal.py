@@ -9,7 +9,8 @@ from reprompt.core.compress import CompressResult
 
 def render_compress(result: CompressResult) -> str:
     """Render a compress result as formatted terminal output."""
-    console = Console(record=True, width=100)
+    from io import StringIO
+    console = Console(record=True, width=100, file=StringIO())
 
     console.print()
 
@@ -23,7 +24,7 @@ def render_compress(result: CompressResult) -> str:
 
     # Token savings
     if result.original_tokens > 0:
-        pct = f"{result.savings_pct:.0%}"
+        pct = f"{result.savings_pct:.0f}%"
         console.print(
             f"  [dim]Tokens:[/dim]  {result.original_tokens} → {result.compressed_tokens}  "
             f"[bold cyan]({pct} saved)[/bold cyan]"

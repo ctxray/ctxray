@@ -48,7 +48,7 @@ def test_render_compress_basic():
         compressed="check the logs",
         original_tokens=4,
         compressed_tokens=3,
-        savings_pct=0.25,
+        savings_pct=25.0,
         changes=["layer1: filler deletion"],
         language="en",
     )
