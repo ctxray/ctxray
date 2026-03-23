@@ -286,3 +286,83 @@ class TestGenerateSummary:
         )
         summary = generate_summary(result)
         assert isinstance(summary, str)
+
+
+class TestDistillEdgeCases:
+    def test_conversation_only_assistant_turns(self):
+        """Conversation with no user turns should produce empty result."""
+        from reprompt.core.distill import distill_conversation
+
+        turns = [
+            ConversationTurn(role="assistant", text="hello", timestamp="", turn_index=0),
+        ]
+        conv = Conversation(
+            session_id="test", source="test", project=None, turns=turns
+        )
+        result = distill_conversation(conv, threshold=0.3)
+        assert result.stats.kept_turns == 0
+
+    def test_very_long_conversation(self):
+        """50+ turns should not crash or take too long."""
+        from reprompt.core.distill import distill_conversation
+
+        turns = []
+        for i in range(100):
+            turns.append(
+                ConversationTurn(
+                    role="user",
+                    text=f"Task {i}: implement feature number {i} with tests",
+                    timestamp="",
+                    turn_index=i * 2,
+                )
+            )
+            turns.append(
+                ConversationTurn(
+                    role="assistant",
+                    text=f"Implementing feature {i}...",
+                    timestamp="",
+                    turn_index=i * 2 + 1,
+                    tool_calls=i % 5,
+                )
+            )
+        conv = Conversation(
+            session_id="long", source="test", project=None, turns=turns
+        )
+        result = distill_conversation(conv, threshold=0.3)
+        assert result.stats.total_turns == 200
+        assert result.stats.kept_turns > 0
+
+    def test_identical_user_turns(self):
+        """All identical turns — uniqueness signal should differentiate."""
+        from reprompt.core.distill import distill_conversation
+
+        conv = _make_conv(["fix the bug"] * 5)
+        result = distill_conversation(conv, threshold=0.0)
+        user_turns = [t for t in result.conversation.turns if t.role == "user"]
+        # First turn should have highest importance (position + uniqueness)
+        assert user_turns[0].importance >= user_turns[-1].importance
+
+    def test_duration_computed(self):
+        """Verify duration_seconds works in generate_summary."""
+        from reprompt.core.distill import distill_conversation, generate_summary
+
+        conv = _make_conv(["implement auth"])
+        conv.duration_seconds = 3600
+        result = distill_conversation(conv, threshold=0.0)
+        result.summary = generate_summary(result)
+        assert "60min" in result.summary
+
+    def test_threshold_zero_keeps_all(self):
+        from reprompt.core.distill import distill_conversation
+
+        conv = _make_conv(["a", "b", "c"])
+        result = distill_conversation(conv, threshold=0.0)
+        user_kept = [t for t in result.filtered_turns if t.role == "user"]
+        assert len(user_kept) == 3
+
+    def test_threshold_one_keeps_none(self):
+        from reprompt.core.distill import distill_conversation
+
+        conv = _make_conv(["short", "tiny", "ok"])
+        result = distill_conversation(conv, threshold=1.0)
+        assert result.stats.kept_turns == 0
