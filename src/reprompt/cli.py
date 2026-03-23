@@ -955,6 +955,7 @@ def distill(
         return
 
     results = []
+    target = last if not session_id else 1
     for file_path, adapter_source, resolved_sid in sessions:
         conv = _load_conversation(file_path, adapter_source, db, resolved_sid)
         if conv is None:
@@ -963,6 +964,8 @@ def distill(
         if summary:
             result.summary = generate_summary(result)
         results.append(result)
+        if len(results) >= target:
+            break
 
     if not results:
         if json_output:
@@ -1039,8 +1042,7 @@ def _resolve_distill_sessions(
             if source:
                 query += " WHERE source = ?"
                 params.append(source)
-            query += " ORDER BY processed_at DESC LIMIT ?"
-            params.append(str(last))
+            query += " ORDER BY processed_at DESC"
             rows = conn.execute(query, params).fetchall()
             return [(r["file_path"], r["source"], None) for r in rows]
     finally:
