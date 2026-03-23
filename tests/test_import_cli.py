@@ -5,11 +5,18 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from reprompt.cli import app
 
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def _isolate_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Use a temp DB so import tests don't pollute the user's real database."""
+    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
 
 
 def test_import_chatgpt(fixtures_path: Path) -> None:
