@@ -64,6 +64,22 @@ def render_html_dashboard(
     sessions = overview.get("sessions_scanned", 0)
     sources = overview.get("sources", [])
     date_range = overview.get("date_range", ("", ""))
+    avg_compressibility = overview.get("avg_compressibility", 0.0)
+
+    # Build compressibility card (only when > 0)
+    compress_card = ""
+    if avg_compressibility > 0:
+        pct = round(avg_compressibility * 100)
+        compress_card = (
+            f'  <div class="stat-card">\n'
+            f'    <div class="value">{pct}%</div>\n'
+            f'    <div class="compress-bar">'
+            f'<div class="compress-fill" style="width:{pct}%"></div></div>\n'
+            f'    <div class="label">Compressibility</div>\n'
+            f'    <div class="label" style="font-size:0.75rem;color:#777">'
+            f"avg compressible content &mdash; lower is better</div>\n"
+            f"  </div>\n"
+        )
 
     # Build patterns table rows
     patterns_rows = ""
@@ -291,6 +307,14 @@ li {{ margin-bottom: 6px; }}
   text-align: center; color: #666; font-size: 0.8rem; margin-top: 40px;
   padding-top: 16px; border-top: 1px solid #2a2a4a;
 }}
+.compress-bar {{
+  width: 80%; height: 6px; background: #2a2a4a; border-radius: 3px;
+  margin: 8px auto 4px; overflow: hidden;
+}}
+.compress-fill {{
+  height: 100%; background: #e94560; border-radius: 3px;
+  transition: width 0.3s ease;
+}}
 .delta-up {{ color: #4caf50; }}
 .delta-down {{ color: #e94560; }}
 .delta-neutral {{ color: #aaa; }}
@@ -322,7 +346,7 @@ li {{ margin-bottom: 6px; }}
     <div class="value">{len(sources)}</div>
     <div class="label">Sources</div>
   </div>
-</div>
+{compress_card}</div>
 
 {digest_html}
 <!-- Charts 2x2 -->
