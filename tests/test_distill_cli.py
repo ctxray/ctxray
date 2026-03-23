@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+import json
+import tempfile
+
+from typer.testing import CliRunner
+
+from reprompt.cli import app
 from reprompt.core.conversation import (
     Conversation,
     ConversationTurn,
@@ -107,3 +113,32 @@ class TestRenderDistill:
         )
         output = render_distill_summary(result)
         assert "Fix the auth" in output or "JWT" in output
+
+
+runner = CliRunner()
+
+
+class TestDistillCLI:
+    def test_distill_no_sessions(self):
+        """When no sessions exist, should show helpful message."""
+        with tempfile.NamedTemporaryFile(suffix=".db") as f:
+            result = runner.invoke(app, ["distill"], env={"REPROMPT_DB_PATH": f.name})
+        assert result.exit_code == 0
+        assert "No sessions found" in result.output or "scan" in result.output.lower()
+
+    def test_distill_json_flag(self):
+        """--json flag should produce valid JSON even if empty."""
+        with tempfile.NamedTemporaryFile(suffix=".db") as f:
+            result = runner.invoke(app, ["distill", "--json"], env={"REPROMPT_DB_PATH": f.name})
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert isinstance(data, (dict, list))
+
+    def test_distill_help(self):
+        result = runner.invoke(app, ["distill", "--help"])
+        assert result.exit_code == 0
+        assert "--last" in result.output
+        assert "--summary" in result.output
+        assert "--threshold" in result.output
+        assert "--copy" in result.output
+        assert "--json" in result.output
