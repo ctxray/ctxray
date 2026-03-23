@@ -382,7 +382,7 @@ text = re.sub(r'\n{3,}', '\n\n', text)  # Final pass
 ## Language Handling
 
 - `lang_detect()` from `core/lang_detect.py` returns `LanguageInfo` with a single `lang` value (zh/en/ja/ko)
-- **Mixed detection:** `compress.py` computes `zh_ratio` from `LanguageInfo.script_ratios["han"]`. If zh_ratio is between 0.2 and 0.8, treat as "mixed" for `CompressResult.language`. `lang_detect` itself never returns "mixed".
+- **Mixed detection:** `compress.py` computes `zh_ratio` from `LanguageInfo.script_ratios["cjk"]`. If zh_ratio is between 0.2 and 0.8, treat as "mixed" for `CompressResult.language`. `lang_detect` itself never returns "mixed".
 - Chinese (zh_ratio > 0.5): jieba segmentation → word-level matching → phrase replacement
 - English (zh_ratio <= 0.2): whitespace tokenization → phrase replacement
 - Mixed (0.2 < zh_ratio <= 0.5): segment by sentence, apply Chinese rules to Chinese sentences and English rules to English sentences
