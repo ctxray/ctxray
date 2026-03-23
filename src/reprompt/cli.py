@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 from rich.console import Console
 
 from reprompt import __version__
+
+if TYPE_CHECKING:
+    from reprompt.core.conversation import Conversation
+    from reprompt.storage.db import PromptDB
 
 app = typer.Typer(
     name="reprompt",
@@ -919,6 +924,217 @@ def compress(
                 typer.echo("  Copied to clipboard!")
         else:
             typer.echo("  Could not copy to clipboard (xclip/xsel not found)", err=True)
+
+
+@app.command()
+def distill(
+    session_id: str = typer.Argument(None, help="Session ID to distill"),
+    last: int = typer.Option(1, "--last", help="Distill the N most recent sessions"),
+    source: str = typer.Option(None, "--source", help="Filter by adapter name"),
+    summary: bool = typer.Option(False, "--summary", help="Show compressed summary"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
+    threshold: float = typer.Option(0.3, "--threshold", help="Importance cutoff (0.0-1.0)"),
+) -> None:
+    """Distill a conversation to its most important turns."""
+    from reprompt.config import Settings
+    from reprompt.core.distill import distill_conversation, generate_summary
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+
+    # Resolve sessions
+    sessions = _resolve_distill_sessions(db, session_id, last, source)
+
+    if not sessions:
+        if json_output:
+            typer.echo("[]")
+        else:
+            typer.echo("No sessions found. Run `reprompt scan` first to import sessions.")
+        return
+
+    results = []
+    for file_path, adapter_source, resolved_sid in sessions:
+        conv = _load_conversation(file_path, adapter_source, db, resolved_sid)
+        if conv is None:
+            continue
+        result = distill_conversation(conv, threshold=threshold)
+        if summary:
+            result.summary = generate_summary(result)
+        results.append(result)
+
+    if not results:
+        if json_output:
+            typer.echo("[]")
+        else:
+            typer.echo("Could not load any sessions.")
+        return
+
+    # Output
+    if json_output:
+        import json as json_mod
+        from dataclasses import asdict
+
+        output_data = [asdict(r) for r in results] if len(results) > 1 else asdict(results[0])
+        typer.echo(json_mod.dumps(output_data, indent=2, ensure_ascii=False, default=str))
+    else:
+        from reprompt.output.distill_terminal import render_distill, render_distill_summary
+
+        parts = []
+        for result in results:
+            if summary:
+                parts.append(render_distill_summary(result))
+            else:
+                parts.append(render_distill(result))
+        typer.echo("\n---\n".join(parts) if len(parts) > 1 else parts[0])
+
+    if copy:
+        from reprompt.sharing.clipboard import copy_to_clipboard
+
+        if summary:
+            copy_text = "\n---\n".join(r.summary or "" for r in results)
+        else:
+            copy_parts = []
+            for result in results:
+                for turn in result.filtered_turns:
+                    prefix = "User" if turn.role == "user" else "Assistant"
+                    copy_parts.append(f"[{prefix}] {turn.text}")
+            copy_text = "\n\n".join(copy_parts)
+
+        if copy_to_clipboard(copy_text):
+            if not json_output:
+                typer.echo("  Copied to clipboard!")
+        else:
+            typer.echo("  Could not copy to clipboard (xclip/xsel not found)", err=True)
+
+
+def _resolve_distill_sessions(
+    db: PromptDB, session_id: str | None, last: int, source: str | None
+) -> list[tuple[str, str, str | None]]:
+    """Resolve session file paths and sources for distill.
+
+    Returns list of (file_path, adapter_source, resolved_session_id) tuples.
+    """
+    conn = db._conn()
+    try:
+        if session_id:
+            row = conn.execute(
+                "SELECT DISTINCT source FROM prompts WHERE session_id = ? LIMIT 1",
+                (session_id,),
+            ).fetchone()
+            if not row:
+                return []
+            found_source = row["source"]
+            file_row = conn.execute(
+                "SELECT file_path FROM processed_sessions WHERE file_path LIKE ? AND source = ?",
+                (f"%{session_id}%", found_source),
+            ).fetchone()
+            if file_row:
+                return [(file_row["file_path"], found_source, session_id)]
+            return [("", found_source, session_id)]
+        else:
+            query = "SELECT file_path, source FROM processed_sessions"
+            params: list[str] = []
+            if source:
+                query += " WHERE source = ?"
+                params.append(source)
+            query += " ORDER BY processed_at DESC LIMIT ?"
+            params.append(str(last))
+            rows = conn.execute(query, params).fetchall()
+            return [(r["file_path"], r["source"], None) for r in rows]
+    finally:
+        conn.close()
+
+
+def _load_conversation(
+    file_path: str, adapter_source: str, db: PromptDB,
+    resolved_session_id: str | None = None,
+) -> Conversation | None:
+    """Load a conversation from a session file via the appropriate adapter."""
+    from datetime import datetime
+    from pathlib import Path as PathLib
+
+    from reprompt.core.conversation import Conversation, ConversationTurn
+    from reprompt.core.pipeline import get_adapters
+
+    path = PathLib(file_path) if file_path else PathLib("")
+
+    adapters = get_adapters()
+    adapter = None
+    for a in adapters:
+        if a.name == adapter_source:
+            adapter = a
+            break
+
+    if adapter is None:
+        return None
+
+    if not file_path or not path.exists():
+        # Fallback: DB-only mode
+        lookup_id = resolved_session_id or path.stem
+        conn = db._conn()
+        try:
+            rows = conn.execute(
+                "SELECT * FROM prompts WHERE session_id = ? ORDER BY id",
+                (lookup_id,),
+            ).fetchall()
+            session_prompts = [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+        if not session_prompts:
+            return None
+
+        turns = [
+            ConversationTurn(
+                role="user",
+                text=r["text"],
+                timestamp=r.get("timestamp", ""),
+                turn_index=i,
+            )
+            for i, r in enumerate(session_prompts)
+        ]
+        return Conversation(
+            session_id=lookup_id,
+            source=adapter_source,
+            project=session_prompts[0].get("project"),
+            turns=turns,
+        )
+
+    # Normal: parse from file
+    turns = adapter.parse_conversation(path)
+    if not turns:
+        return None
+
+    # Compute duration from timestamps
+    duration = None
+    start_time = None
+    end_time = None
+    timestamps = [t.timestamp for t in turns if t.timestamp]
+    if len(timestamps) >= 2:
+        start_time = timestamps[0]
+        end_time = timestamps[-1]
+        try:
+            start_dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+            end_dt = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
+            duration = int((end_dt - start_dt).total_seconds())
+        except (ValueError, TypeError):
+            pass
+
+    project = None
+    if hasattr(adapter, "_project_from_path"):
+        project = adapter._project_from_path(file_path)
+
+    return Conversation(
+        session_id=path.stem,
+        source=adapter_source,
+        project=project,
+        turns=turns,
+        start_time=start_time,
+        end_time=end_time,
+        duration_seconds=duration,
+    )
 
 
 @app.command()
