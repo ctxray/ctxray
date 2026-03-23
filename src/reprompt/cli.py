@@ -112,6 +112,12 @@ def scan(
         console.print('  reprompt score [dim]"your prompt"[/dim]   — instant quality score')
         console.print("  reprompt library              — see your prompt patterns")
         console.print("  reprompt insights             — personal analysis")
+    else:
+        from reprompt.core.suggestions import get_suggestion
+
+        hint = get_suggestion("scan")
+        if hint and result.unique_after_dedup > 0:
+            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
 
 
 def _hook_registered() -> bool:
@@ -308,9 +314,13 @@ def report(
 
         print(format_json_report(data))
     else:
+        from reprompt.core.suggestions import get_suggestion
         from reprompt.output.terminal import render_report
 
         print(render_report(data), end="")
+        hint = get_suggestion("report")
+        if hint:
+            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
 
 
 @app.command()
@@ -410,6 +420,9 @@ def trends(
     period: str = typer.Option("7d", help="Time bucket size: 7d, 14d, 30d, 1m"),
     windows: int = typer.Option(4, help="Number of periods to compare"),
     format: str = typer.Option("terminal", help="Output format: terminal, json"),
+    source: str | None = typer.Option(
+        None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor, aider)"
+    ),
 ) -> None:
     """Show how your prompting evolves over time."""
     import json as json_mod
@@ -421,7 +434,7 @@ def trends(
 
     settings = Settings()
     db = PromptDB(settings.db_path)
-    data = compute_trends(db, period=period, n_windows=windows)
+    data = compute_trends(db, period=period, n_windows=windows, source=source)
 
     if format == "json":
         print(json_mod.dumps(data, indent=2, default=str))
@@ -681,6 +694,9 @@ def templates(
 @app.command()
 def style(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    source: str | None = typer.Option(
+        None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor, aider)"
+    ),
 ) -> None:
     """Show your personal prompting style fingerprint."""
     import json as json_mod
@@ -693,7 +709,7 @@ def style(
 
     settings = Settings()
     db = PromptDB(settings.db_path)
-    rows = db.get_all_prompts()
+    rows = db.get_all_prompts(source=source)
     prompts = [
         {
             "text": r["text"],
@@ -893,6 +909,11 @@ def score(
             ],
         }
         typer.echo(render_score(data))
+        from reprompt.core.suggestions import get_suggestion
+
+        hint = get_suggestion("score")
+        if hint:
+            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
 
 
 @app.command()
@@ -991,6 +1012,11 @@ def distill(
             else:
                 parts.append(render_distill(result))
         typer.echo("\n---\n".join(parts) if len(parts) > 1 else parts[0])
+        from reprompt.core.suggestions import get_suggestion
+
+        hint = get_suggestion("distill")
+        if hint:
+            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
 
     if copy:
         from reprompt.sharing.clipboard import copy_to_clipboard
@@ -1189,6 +1215,9 @@ def compare(
 @app.command()
 def insights(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    source: str | None = typer.Option(
+        None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor, aider)"
+    ),
 ) -> None:
     """Show research-backed insights about your prompting patterns."""
     from reprompt.config import Settings
@@ -1197,7 +1226,7 @@ def insights(
 
     settings = Settings()
     db = PromptDB(settings.db_path)
-    all_features = db.get_all_features()
+    all_features = db.get_all_features(source=source)
     result = compute_insights(all_features)
 
     if json_output:
@@ -1205,9 +1234,13 @@ def insights(
 
         typer.echo(json_mod.dumps(result, indent=2))
     else:
+        from reprompt.core.suggestions import get_suggestion
         from reprompt.output.terminal import render_insights
 
         typer.echo(render_insights(result))
+        hint = get_suggestion("insights")
+        if hint:
+            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
 
 
 @app.command()
@@ -1249,6 +1282,9 @@ def digest(
     format: str = typer.Option("terminal", help="Output format: terminal, json"),
     quiet: bool = typer.Option(False, "--quiet", help="One-line summary (for hooks/cron)"),
     history: bool = typer.Option(False, "--history", help="Show past digest log entries"),
+    source: str | None = typer.Option(
+        None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor, aider)"
+    ),
 ) -> None:
     """Show a weekly summary comparing current vs previous period."""
     import json as json_mod
@@ -1284,7 +1320,7 @@ def digest(
             )
         return
 
-    data = build_digest(db, period=period)
+    data = build_digest(db, period=period, source=source)
 
     if quiet:
         print(data["summary"])
@@ -1293,9 +1329,13 @@ def digest(
     if format == "json":
         print(json_mod.dumps(data, indent=2, default=str))
     else:
+        from reprompt.core.suggestions import get_suggestion
         from reprompt.output.terminal import render_digest
 
         print(render_digest(data), end="")
+        hint = get_suggestion("digest")
+        if hint:
+            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
 
 
 @app.command()

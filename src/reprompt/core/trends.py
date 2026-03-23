@@ -17,12 +17,13 @@ def compute_window_snapshot(
     db: PromptDB,
     window: TimeWindow,
     period: str,
+    source: str | None = None,
 ) -> dict[str, Any]:
     """Query prompts in a time window and compute aggregate metrics."""
     start_iso = window.start.isoformat()
     end_iso = window.end.isoformat()
 
-    prompts = db.get_prompts_in_range(start_iso, end_iso)
+    prompts = db.get_prompts_in_range(start_iso, end_iso, source=source)
 
     prompt_count = len(prompts)
     if prompt_count == 0:
@@ -110,6 +111,7 @@ def compute_trends(
     db: PromptDB,
     period: str = "7d",
     n_windows: int = 4,
+    source: str | None = None,
 ) -> dict[str, Any]:
     """Compute snapshots for N consecutive windows and annotate deltas.
 
@@ -119,7 +121,7 @@ def compute_trends(
     snapshots: list[dict[str, Any]] = []
 
     for w in windows:
-        snap = compute_window_snapshot(db, w, period)
+        snap = compute_window_snapshot(db, w, period, source=source)
         snapshots.append(snap)
 
     # Annotate deltas between consecutive windows

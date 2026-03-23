@@ -9,7 +9,9 @@ from reprompt.core.trends import compute_window_snapshot
 from reprompt.storage.db import PromptDB
 
 
-def build_digest(db: PromptDB, period: str = "7d") -> dict[str, Any]:
+def build_digest(
+    db: PromptDB, period: str = "7d", source: str | None = None
+) -> dict[str, Any]:
     """Compare current period vs previous period.
 
     Returns dict with:
@@ -21,8 +23,8 @@ def build_digest(db: PromptDB, period: str = "7d") -> dict[str, Any]:
     prev_window = windows[0]
     curr_window = windows[1]
 
-    current = compute_window_snapshot(db, curr_window, period)
-    previous = compute_window_snapshot(db, prev_window, period)
+    current = compute_window_snapshot(db, curr_window, period, source=source)
+    previous = compute_window_snapshot(db, prev_window, period, source=source)
 
     count_delta = current["prompt_count"] - previous["prompt_count"]
     spec_delta = round(current["specificity_score"] - previous["specificity_score"], 2)
@@ -42,13 +44,14 @@ def build_digest(db: PromptDB, period: str = "7d") -> dict[str, Any]:
     if eff_avg is not None:
         summary += f", quality {eff_avg:.2f}"
 
-    # Log this digest run
-    db.log_digest(
-        period=period,
-        window_start=curr_window.start.isoformat(),
-        window_end=curr_window.end.isoformat(),
-        summary=summary,
-    )
+    # Log this digest run (skip for source-filtered runs to preserve unfiltered history)
+    if not source:
+        db.log_digest(
+            period=period,
+            window_start=curr_window.start.isoformat(),
+            window_end=curr_window.end.isoformat(),
+            summary=summary,
+        )
 
     return {
         "period": period,

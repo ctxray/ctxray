@@ -531,20 +531,30 @@ class PromptDB:
             conn.close()
 
     def get_prompts_in_range(
-        self, start: str, end: str, *, unique_only: bool = True
+        self,
+        start: str,
+        end: str,
+        *,
+        unique_only: bool = True,
+        source: str | None = None,
     ) -> list[dict[str, Any]]:
         """Return prompts with timestamp >= start AND < end (ISO-8601 strings).
 
         If unique_only is True (default), excludes duplicates.
+        If source is given, filters by adapter source.
         """
         conn = self._conn()
         try:
             where = "timestamp >= ? AND timestamp < ? AND timestamp != ''"
+            params: list[str] = [start, end]
             if unique_only:
                 where += " AND duplicate_of IS NULL"
+            if source:
+                where += " AND source = ?"
+                params.append(source)
             rows = conn.execute(
                 f"SELECT * FROM prompts WHERE {where} ORDER BY timestamp",
-                (start, end),
+                params,
             ).fetchall()
             return [dict(r) for r in rows]
         finally:
@@ -816,13 +826,22 @@ class PromptDB:
         finally:
             conn.close()
 
-    def get_all_features(self) -> list[dict[str, Any]]:
-        """Return all stored feature vectors."""
+    def get_all_features(self, source: str | None = None) -> list[dict[str, Any]]:
+        """Return all stored feature vectors, optionally filtered by source."""
         conn = self._conn()
         try:
-            rows = conn.execute(
-                "SELECT features_json FROM prompt_features ORDER BY overall_score DESC"
-            ).fetchall()
+            if source:
+                rows = conn.execute(
+                    """SELECT pf.features_json FROM prompt_features pf
+                       JOIN prompts p ON pf.prompt_hash = p.hash
+                       WHERE p.source = ?
+                       ORDER BY pf.overall_score DESC""",
+                    (source,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT features_json FROM prompt_features ORDER BY overall_score DESC"
+                ).fetchall()
             return [json.loads(r["features_json"]) for r in rows]
         finally:
             conn.close()
