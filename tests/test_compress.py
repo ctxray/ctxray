@@ -422,7 +422,10 @@ class TestCompressIntegration:
     """Full pipeline integration tests combining all layers."""
 
     def test_full_pipeline_zh(self):
-        text = "嗯，帮我看看这个文件的时候，我们需要检查一下错误处理的部分，然后呢看看是否有什么问题"
+        text = (
+            "嗯，帮我看看这个文件的时候，"
+            "我们需要检查一下错误处理的部分，然后呢看看是否有什么问题"
+        )
         result = compress_text(text)
         assert result.savings_pct > 15  # at least 15% compression
         assert len(result.changes) > 0
