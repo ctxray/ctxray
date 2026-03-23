@@ -413,3 +413,76 @@ class TestLayer3StructureCleanup:
         text = "**bold** text\n```python\n**not_bold**\n```\nmore **bold**"
         result = compress_text(text)
         assert "**not_bold**" in result.compressed
+
+
+# ===== Integration Tests: Full Pipeline + Edge Cases =====
+
+
+class TestCompressIntegration:
+    """Full pipeline integration tests combining all layers."""
+
+    def test_full_pipeline_zh(self):
+        text = "嗯，帮我看看这个文件的时候，我们需要检查一下错误处理的部分，然后呢看看是否有什么问题"
+        result = compress_text(text)
+        assert result.savings_pct > 15  # at least 15% compression
+        assert len(result.changes) > 0
+        assert result.language in ("zh", "mixed")
+
+    def test_full_pipeline_en(self):
+        text = (
+            "Could you please take into consideration the fact that basically "
+            "the function is not working in order to fix the bug"
+        )
+        result = compress_text(text)
+        assert result.savings_pct > 15
+        assert "Could you please" not in result.compressed
+        assert "in order to" not in result.compressed
+
+    def test_full_pipeline_mixed(self):
+        text = "Could you please 帮我看看 this error 的时候 check the logs"
+        result = compress_text(text)
+        assert result.savings_pct > 0.0
+
+    def test_token_count_zh_dominant(self):
+        text = "帮我检查一下这个文件的错误处理"
+        result = compress_text(text)
+        assert result.original_tokens > 0
+        assert result.compressed_tokens <= result.original_tokens
+
+    def test_token_count_en_dominant(self):
+        text = "Could you please check the error handling in this file"
+        result = compress_text(text)
+        assert result.original_tokens > 0
+        assert result.compressed_tokens <= result.original_tokens
+
+    def test_savings_pct_correct(self):
+        text = "basically basically the function is broken"
+        result = compress_text(text)
+        if result.original_tokens > 0:
+            expected = round((1 - result.compressed_tokens / result.original_tokens) * 100, 1)
+            assert abs(result.savings_pct - expected) < 2.0
+
+    def test_changes_list_format(self):
+        text = "嗯，帮我看看这个文件的时候检查错误"
+        result = compress_text(text)
+        for change in result.changes:
+            assert isinstance(change, str)
+
+    def test_no_compression_on_clean_input(self):
+        text = "Check error handling in compress.py"
+        result = compress_text(text)
+        assert result.savings_pct < 30
+
+    def test_llm_output_cleanup(self):
+        text = "**Step 1:** Check the code\n\n\n\n**Step 2:** Fix the bug\n---\n✓ Done"
+        result = compress_text(text)
+        assert "**" not in result.compressed
+        assert "---" not in result.compressed
+        assert "✓" not in result.compressed
+        assert "\n\n\n" not in result.compressed
+
+    def test_protected_zones_survive_full_pipeline(self):
+        text = "嗯，帮我看看 `compress.py` 的时候，检查 https://example.com 的错误"
+        result = compress_text(text)
+        assert "`compress.py`" in result.compressed
+        assert "https://example.com" in result.compressed
