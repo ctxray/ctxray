@@ -20,8 +20,14 @@ class StubAdapter(BaseAdapter):
 
     def parse_session(self, path: Path) -> list[Prompt]:
         return [
-            Prompt(text="first prompt", source="stub", session_id="s1", timestamp="2026-01-01T00:00:00Z"),
-            Prompt(text="second prompt", source="stub", session_id="s1", timestamp="2026-01-01T00:01:00Z"),
+            Prompt(
+                text="first prompt", source="stub",
+                session_id="s1", timestamp="2026-01-01T00:00:00Z",
+            ),
+            Prompt(
+                text="second prompt", source="stub",
+                session_id="s1", timestamp="2026-01-01T00:01:00Z",
+            ),
         ]
 
 
