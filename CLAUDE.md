@@ -18,7 +18,7 @@ uv run python -m build                     # build wheel
 
 ```
 src/reprompt/
-├── cli.py              # Typer CLI (scan, import, report, search, library, recommend, demo, status, purge, install-hook, install-extension, extension-status, score, compare, insights, digest, style, use, privacy, compress) + plugin loading
+├── cli.py              # Typer CLI (scan, import, report, search, library, recommend, demo, status, purge, install-hook, install-extension, extension-status, score, compare, insights, digest, style, use, privacy, compress, distill) + plugin loading
 ├── config.py           # pydantic-settings, env vars (REPROMPT_ prefix) + TOML config
 ├── demo.py             # Built-in demo data generator (no network required)
 ├── core/
@@ -40,9 +40,11 @@ src/reprompt/
 │   ├── persona.py       # 6 prompt personas (Architect/Debugger/Explorer/Novelist/Sniper/Teacher)
 │   ├── wrapped.py       # WrappedReport dataclass + build_wrapped(db) aggregation
 │   ├── privacy.py       # Privacy metadata registry + exposure summary per adapter
-│   └── compress.py      # 4-layer prompt compression (char norm + phrase simplify + filler delete + structure cleanup)
+│   ├── compress.py      # 4-layer prompt compression (char norm + phrase simplify + filler delete + structure cleanup)
+│   ├── conversation.py  # ConversationTurn, Conversation, DistillResult dataclasses
+│   └── distill.py       # 6-signal importance scoring + filtering + summary generation
 ├── adapters/
-│   ├── base.py         # BaseAdapter ABC
+│   ├── base.py         # BaseAdapter ABC + parse_conversation() default
 │   ├── claude_code.py  # Claude Code JSONL parser
 │   ├── openclaw.py     # OpenClaw JSON parser (supports ~/.openclaw/ + legacy ~/.opencode/)
 │   ├── cursor.py       # Cursor IDE .vscdb parser (cursorDiskKV + legacy ItemTable)
@@ -83,7 +85,8 @@ src/reprompt/
     ├── markdown.py         # Markdown export
     ├── wrapped_terminal.py # Rich Prompt Wrapped report rendering
     ├── wrapped_html.py     # Self-contained HTML share card (dark theme)
-    └── compress_terminal.py # Rich output for compress command
+    ├── compress_terminal.py # Rich output for compress command
+    └── distill_terminal.py  # Rich output for distill command
 ```
 
 ## Data Flow
@@ -120,7 +123,7 @@ reprompt-extension (private)   ← Browser extension: Chrome/Firefox prompt capt
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 1153 tests, 95% coverage target
+- Tests: pytest, 1217 tests, 95% coverage target
 
 ## Prompt Science Engine
 
@@ -144,3 +147,15 @@ Rule-based prompt optimization (added v1.2.0):
 - `compressibility` field in PromptDNA, visible in insights + HTML dashboard
 
 Sources: LLMLingua (Microsoft), CompactPrompt, TSC, stopwords-iso/zh, Prompt Report 2406.06608.
+
+## Conversation Distillation Engine
+
+Conversation-level analysis (added v1.3.0):
+- `reprompt distill` — extract important turns from AI conversations
+  - 6-signal importance scoring: position, length, tool_trigger, error_recovery, semantic_shift, uniqueness
+  - Hybrid data source: raw session files (full conversation) + DB enrichment
+  - `parse_conversation()` on adapters returns both user and assistant turns
+  - Claude Code and ChatGPT adapters have full implementations; others fall back to user-only
+- `--last N` for recent sessions, `--summary` for compressed output, `--json`, `--copy`
+- `--threshold` to control importance cutoff (default 0.3)
+- Pro plugin interface: `reprompt.distill_backends` entry point for LLM summarization (future)
