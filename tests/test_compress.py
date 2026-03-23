@@ -153,3 +153,263 @@ class TestTokenCounting:
         result = compress_text("just a simple test prompt")
         assert result.savings_pct >= 0.0
         assert result.savings_pct <= 100.0
+
+
+# ===== Layer 0: Character Normalization =====
+
+
+class TestLayer0CharNormalization:
+    """Layer 0 normalizes Unicode characters to ASCII equivalents."""
+
+    def test_curly_quotes_normalized(self):
+        result = compress_text("\u201cHello\u201d")
+        assert '"Hello"' in result.compressed
+
+    def test_em_dash_normalized(self):
+        result = compress_text("foo\u2014bar")
+        assert "foo-bar" in result.compressed
+
+    def test_en_dash_normalized(self):
+        result = compress_text("foo\u2013bar")
+        assert "foo-bar" in result.compressed
+
+    def test_zero_width_chars_removed(self):
+        result = compress_text("he\u200bllo")
+        assert "hello" in result.compressed
+
+    def test_zero_width_non_joiner_removed(self):
+        result = compress_text("he\u200cllo")
+        assert "hello" in result.compressed
+
+    def test_zero_width_joiner_removed(self):
+        result = compress_text("he\u200dllo")
+        assert "hello" in result.compressed
+
+    def test_bom_removed(self):
+        result = compress_text("\ufeffhello")
+        assert result.compressed.strip() == "hello"
+
+    def test_soft_hyphen_removed(self):
+        result = compress_text("hel\u00adlo")
+        assert "hello" in result.compressed
+
+    def test_nfkc_fullwidth(self):
+        result = compress_text("\uff21\uff22\uff23")
+        assert "ABC" in result.compressed
+
+    def test_non_breaking_space(self):
+        result = compress_text("hello\u00a0world")
+        assert "hello world" in result.compressed
+
+    def test_curly_single_quotes_normalized(self):
+        result = compress_text("\u2018it\u2019s\u2019")
+        assert "'" in result.compressed
+
+    def test_multiple_normalizations_combined(self):
+        result = compress_text("\u201cHello\u201d \u2014 \u200bworld")
+        assert '"Hello"' in result.compressed
+        assert "-" in result.compressed
+        assert "world" in result.compressed
+
+    def test_code_block_not_normalized(self):
+        text = "```python\n\u201chello\u201d\n```"
+        result = compress_text(text)
+        assert "\u201chello\u201d" in result.compressed
+
+
+# ===== Layer 2: Phrase Simplification =====
+
+
+class TestLayer2PhraseSimplification:
+    """Layer 2 simplifies verbose phrases to shorter equivalents."""
+
+    def test_zh_verbose_action_simplified(self):
+        result = compress_text("\u5e2e\u6211\u770b\u770b\u8fd9\u4e2a\u6587\u4ef6")
+        assert "\u68c0\u67e5" in result.compressed
+        assert "\u5e2e\u6211\u770b\u770b" not in result.compressed
+
+    def test_zh_polite_prefix_removed(self):
+        result = compress_text("\u80fd\u4e0d\u80fd\u5e2e\u6211\u4fee\u590d\u8fd9\u4e2abug")
+        assert "\u80fd\u4e0d\u80fd\u5e2e\u6211" not in result.compressed
+
+    def test_zh_verbose_expression(self):
+        result = compress_text(
+            "\u6709\u6ca1\u6709\u4ec0\u4e48\u529e\u6cd5\u89e3\u51b3\u8fd9\u4e2a\u95ee\u9898"
+        )
+        assert "\u5982\u4f55" in result.compressed
+
+    def test_zh_redundant_intensifier(self):
+        result = compress_text("\u8fd9\u4e2a\u975e\u5e38\u975e\u5e38\u91cd\u8981")
+        assert "\u975e\u5e38\u975e\u5e38" not in result.compressed
+        assert "\u975e\u5e38" in result.compressed
+
+    def test_zh_polite_long_prefix_removed(self):
+        result = compress_text(
+            "\u4e0d\u597d\u610f\u601d\u6253\u6270\u4e00\u4e0b\u8bf7\u95ee\u8fd9\u4e2a\u600e\u4e48\u505a"
+        )
+        assert "\u4e0d\u597d\u610f\u601d\u6253\u6270\u4e00\u4e0b" not in result.compressed
+
+    def test_en_polite_request_removed(self):
+        result = compress_text("Could you please check this file")
+        assert "Could you please" not in result.compressed
+
+    def test_en_verbose_phrasing(self):
+        result = compress_text("in order to fix this bug")
+        assert "in order to" not in result.compressed
+
+    def test_en_periphrastic_verb(self):
+        result = compress_text("take into consideration the edge cases")
+        assert "consider" in result.compressed
+
+    def test_en_preamble_removed(self):
+        result = compress_text("I'm working on a project and I need help with auth")
+        assert "I'm working on a project and" not in result.compressed
+
+    def test_en_ability_simplified(self):
+        result = compress_text("this function is able to process data")
+        assert "is able to" not in result.compressed
+        assert "can" in result.compressed
+
+    def test_en_wordiness_simplified(self):
+        result = compress_text("due to the fact that the test failed")
+        assert "due to the fact that" not in result.compressed
+        assert "because" in result.compressed
+
+    def test_longer_patterns_matched_first(self):
+        result = compress_text("\u5e2e\u6211\u68c0\u67e5\u4e00\u4e0b\u8fd9\u4e2a\u9519\u8bef")
+        assert "\u68c0\u67e5" in result.compressed
+
+
+# ===== Layer 1: Filler Word Deletion =====
+
+
+class TestLayer1FillerDeletion:
+    """Layer 1 removes filler words and hedging phrases."""
+
+    def test_zh_discourse_filler_removed(self):
+        result = compress_text(
+            "\u55ef\uff0c\u6211\u89c9\u5f97\u8fd9\u4e2a\u65b9\u6848\u57fa\u672c\u4e0a\u53ef\u4ee5"
+        )
+        assert "\u55ef" not in result.compressed
+        assert "\u57fa\u672c\u4e0a" not in result.compressed
+
+    def test_zh_tag_question_removed(self):
+        result = compress_text("\u8fd9\u6837\u505a\u5bf9\u5427")
+        assert "\u5bf9\u5427" not in result.compressed
+
+    def test_zh_vague_enumerator_removed(self):
+        result = compress_text("\u68c0\u67e5\u9519\u8bef\u4ec0\u4e48\u7684")
+        assert "\u4ec0\u4e48\u7684" not in result.compressed
+
+    def test_zh_temporal_filler_removed(self):
+        result = compress_text("\u68c0\u67e5\u4ee3\u7801\u7684\u65f6\u5019\u6ce8\u610f\u9519\u8bef")
+        assert "\u7684\u65f6\u5019" not in result.compressed
+
+    def test_zh_hedging_phrase_removed(self):
+        result = compress_text("\u5176\u5b9e\u8fd9\u4e2a\u95ee\u9898\u5f88\u7b80\u5355")
+        assert "\u5176\u5b9e" not in result.compressed
+
+    def test_en_discourse_filler_removed(self):
+        result = compress_text("basically the function is broken")
+        assert "basically" not in result.compressed.lower()
+
+    def test_en_hedge_removed(self):
+        result = compress_text("it seems like the test is failing")
+        assert "it seems like" not in result.compressed.lower()
+
+    def test_en_politeness_removed(self):
+        result = compress_text("please check the logs thank you")
+        assert "please" not in result.compressed.lower()
+        assert "thank you" not in result.compressed.lower()
+
+    def test_en_filler_well_not_partial_match(self):
+        """'well' should not match inside 'dwelling' or 'well-known'."""
+        result = compress_text("the dwelling is well-known")
+        assert "dwelling" in result.compressed
+
+    def test_en_hedge_i_believe(self):
+        result = compress_text("I believe we should refactor this module")
+        assert "I believe" not in result.compressed
+
+    def test_en_appreciation_removed(self):
+        result = compress_text("thanks in advance for your help with the API")
+        assert "thanks in advance" not in result.compressed.lower()
+
+
+# ===== Layer 3: Structure Cleanup =====
+
+
+class TestLayer3StructureCleanup:
+    """Layer 3 cleans up whitespace, markdown, and punctuation."""
+
+    def test_excessive_newlines_collapsed(self):
+        result = compress_text("line1\n\n\n\n\nline2")
+        assert "\n\n\n" not in result.compressed
+
+    def test_bold_stripped(self):
+        result = compress_text("this is **important** text")
+        assert "**" not in result.compressed
+        assert "important" in result.compressed
+
+    def test_italic_stripped(self):
+        result = compress_text("this is *emphasized* text")
+        assert result.compressed.count("*") == 0
+        assert "emphasized" in result.compressed
+
+    def test_triple_bold_italic_stripped(self):
+        result = compress_text("this is ***critical*** text")
+        assert "***" not in result.compressed
+        assert "critical" in result.compressed
+
+    def test_horizontal_rule_removed(self):
+        result = compress_text("above\n---\nbelow")
+        assert "---" not in result.compressed
+
+    def test_long_horizontal_rule_removed(self):
+        result = compress_text("above\n=======\nbelow")
+        assert "=======" not in result.compressed
+
+    def test_deep_headers_capped(self):
+        result = compress_text("##### Deep Header")
+        assert "#####" not in result.compressed
+        assert "#### " in result.compressed
+
+    def test_decorative_emoji_removed(self):
+        result = compress_text("\U0001f600 Check this file")
+        assert "\U0001f600" not in result.compressed
+
+    def test_decorative_symbols_removed(self):
+        result = compress_text("\u2713 Done \u2717 Failed")
+        assert "\u2713" not in result.compressed
+
+    def test_duplicate_chinese_punctuation(self):
+        result = compress_text("\u68c0\u67e5\u4ee3\u7801\uff0c\uff0c\u4fee\u590d\u9519\u8bef")
+        assert "\uff0c\uff0c" not in result.compressed
+
+    def test_duplicate_english_commas(self):
+        result = compress_text("check this,, fix that")
+        assert ",," not in result.compressed
+
+    def test_excessive_dots_collapsed(self):
+        result = compress_text("wait...... for it")
+        assert "......" not in result.compressed
+        assert "..." in result.compressed
+
+    def test_trailing_whitespace_on_lines(self):
+        result = compress_text("line1   \nline2")
+        assert "   \n" not in result.compressed
+
+    def test_blank_lines_with_spaces(self):
+        result = compress_text("line1\n   \nline2")
+        # Blank line with spaces should become empty blank line
+        assert "\n   \n" not in result.compressed
+
+    def test_multiple_spaces_collapsed(self):
+        result = compress_text("hello     world")
+        assert "     " not in result.compressed
+        assert "hello world" in result.compressed
+
+    def test_code_block_formatting_preserved(self):
+        text = "**bold** text\n```python\n**not_bold**\n```\nmore **bold**"
+        result = compress_text(text)
+        assert "**not_bold**" in result.compressed
