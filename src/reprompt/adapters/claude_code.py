@@ -131,7 +131,7 @@ class ClaudeCodeAdapter(BaseAdapter):
 
                 if role == "user":
                     text = _extract_text(message)
-                    if not text.strip():
+                    if not should_keep_prompt(text):
                         continue
                     turns.append(
                         ConversationTurn(
