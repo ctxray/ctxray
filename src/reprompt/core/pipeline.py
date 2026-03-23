@@ -260,6 +260,13 @@ def build_report_data(
         source_counts[src] = source_counts.get(src, 0) + 1
     privacy = compute_privacy_summary(source_counts)
 
+    # Compute avg compressibility from stored features
+    all_features = db.get_all_features()
+    avg_compressibility = 0.0
+    if all_features:
+        compress_vals = [f.get("compressibility", 0.0) for f in all_features]
+        avg_compressibility = sum(compress_vals) / len(compress_vals) if compress_vals else 0.0
+
     return {
         "overview": {
             "total_prompts": stats.get("total_prompts", len(all_prompts)),
@@ -267,6 +274,7 @@ def build_report_data(
             "sessions_scanned": stats.get("sessions_processed", 0),
             "sources": list({p.get("source", "") for p in all_prompts}),
             "date_range": (stats.get("earliest", ""), stats.get("latest", "")),
+            "avg_compressibility": round(avg_compressibility, 3),
         },
         "top_patterns": [
             {

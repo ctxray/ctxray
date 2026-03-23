@@ -21,12 +21,15 @@ def render_report(data: dict[str, Any]) -> str:
 
     # Overview panel
     ov = data["overview"]
+    avg_compress = ov.get("avg_compressibility", 0)
+    compress_line = f"\nCompressibility:   {avg_compress:.0%}" if avg_compress > 0 else ""
     overview_text = (
         f"Total prompts:     {ov['total_prompts']}\n"
         f"Unique (deduped):  {ov['unique_prompts']}\n"
         f"Sessions scanned:  {ov['sessions_scanned']}\n"
         f"Sources:           {', '.join(ov['sources']) or 'none'}\n"
         f"Date range:        {ov['date_range'][0]} → {ov['date_range'][1]}"
+        f"{compress_line}"
     )
     console.print(Panel(overview_text, title="Overview"))
 

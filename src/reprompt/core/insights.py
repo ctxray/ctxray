@@ -17,6 +17,7 @@ OPTIMAL = {
     "context_specificity": 0.6,  # high specificity (DETAIL)
     "constraint_pct": 0.67,  # 67% of prompts should have constraints
     "ambiguity_score": 0.2,  # low ambiguity
+    "compressibility": 0.15,  # <15% is optimal (low filler content)
 }
 
 
@@ -142,6 +143,20 @@ def compute_insights(features: list[dict[str, Any]]) -> dict[str, Any]:
                 "finding": f"You: {avg_ambiguity:.2f} avg ambiguity score",
                 "optimal": f"Research optimal: <{OPTIMAL['ambiguity_score']}",
                 "action": 'Replace vague words ("it", "this", "something") with specific names',
+                "impact": "medium",
+            }
+        )
+
+    # Insight 6: Compressibility (verbosity)
+    compress_vals = [f.get("compressibility", 0.0) for f in features]
+    avg_compress = sum(compress_vals) / count if count > 0 else 0.0
+    if avg_compress > OPTIMAL["compressibility"] and count >= 5:
+        insights.append(
+            {
+                "category": "verbosity",
+                "finding": f"You: {avg_compress:.0%} avg compressible content",
+                "optimal": f"Research-optimal: <{OPTIMAL['compressibility']:.0%}",
+                "action": "Remove filler phrases, be more direct with instructions",
                 "impact": "medium",
             }
         )

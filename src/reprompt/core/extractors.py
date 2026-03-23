@@ -113,7 +113,8 @@ def extract_features(
         # Lazy import to avoid loading jieba for English-only users
         from reprompt.core.extractors_zh import extract_features_zh
 
-        return extract_features_zh(text, source=source, session_id=session_id, project=project)
+        dna = extract_features_zh(text, source=source, session_id=session_id, project=project)
+        return _attach_compressibility(dna, text)
 
     # -- English extraction (default path) --
 
@@ -177,7 +178,7 @@ def extract_features(
         word_count, sentence_count, code_block_count, constraint_count, section_count
     )
 
-    return PromptDNA(
+    dna = PromptDNA(
         prompt_hash=prompt_hash,
         source=source,
         task_type=task_type,
@@ -210,9 +211,20 @@ def extract_features(
         extractor_tier=1,
         locale="en",
     )
+    return _attach_compressibility(dna, text)
 
 
 # -- Internal helpers --
+
+
+def _attach_compressibility(dna: PromptDNA, text: str) -> PromptDNA:
+    """Compute and attach compressibility score (0.0-1.0)."""
+    from reprompt.core.compress import compress_text
+
+    cr = compress_text(text)
+    # savings_pct is 0-100 (percentage), normalize to 0.0-1.0
+    dna.compressibility = round(cr.savings_pct / 100.0, 4)
+    return dna
 
 
 def _count_examples(text: str) -> int:

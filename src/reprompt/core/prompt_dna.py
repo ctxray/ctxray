@@ -76,6 +76,7 @@ class PromptDNA:
     # ── Computed Scores ──
     predicted_effectiveness: float = 0.0
     overall_score: float = 0.0
+    compressibility: float = 0.0  # 0.0-1.0: how much filler can be removed
 
     # ── Metadata ──
     extractor_tier: int = 1  # which tier of extractors was used
