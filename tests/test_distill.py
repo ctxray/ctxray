@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.core.conversation import Conversation, ConversationTurn
+from reprompt.core.conversation import Conversation, ConversationTurn, DistillResult, DistillStats
 
 
 def _make_conv(user_texts: list[str], assistant_texts: list[str] | None = None) -> Conversation:
@@ -206,3 +206,83 @@ class TestFilesChanged:
     def test_empty_turns(self):
         from reprompt.core.distill import _extract_files_changed
         assert _extract_files_changed([]) == []
+
+
+class TestGenerateSummary:
+    def test_summary_basic(self):
+        from reprompt.core.distill import generate_summary
+
+        turns = [
+            ConversationTurn(
+                role="user",
+                text="Implement the authentication system with JWT",
+                timestamp="",
+                turn_index=0,
+                importance=0.9,
+            ),
+            ConversationTurn(
+                role="assistant",
+                text="I'll implement JWT auth...",
+                timestamp="",
+                turn_index=1,
+                tool_use_paths=["src/auth.py"],
+            ),
+            ConversationTurn(
+                role="user",
+                text="Add refresh token rotation",
+                timestamp="",
+                turn_index=2,
+                importance=0.7,
+            ),
+        ]
+        conv = Conversation(
+            session_id="test",
+            source="claude-code",
+            project="myproject",
+            turns=turns,
+            duration_seconds=1800,
+        )
+        result = DistillResult(
+            conversation=conv,
+            filtered_turns=turns,
+            threshold=0.3,
+            files_changed=["src/auth.py"],
+            stats=DistillStats(
+                total_turns=3, kept_turns=3, retention_ratio=1.0, total_duration_seconds=1800
+            ),
+        )
+        summary = generate_summary(result)
+        assert isinstance(summary, str)
+        assert len(summary) > 0
+
+    def test_summary_includes_files(self):
+        from reprompt.core.distill import generate_summary
+
+        turns = [
+            ConversationTurn(
+                role="user", text="Fix the bug", timestamp="", turn_index=0, importance=0.9
+            ),
+        ]
+        conv = Conversation(session_id="t", source="test", project=None, turns=turns)
+        result = DistillResult(
+            conversation=conv,
+            filtered_turns=turns,
+            threshold=0.3,
+            files_changed=["src/auth.py", "src/db.py"],
+            stats=DistillStats(total_turns=1, kept_turns=1),
+        )
+        summary = generate_summary(result)
+        assert "src/auth.py" in summary
+
+    def test_summary_empty_conversation(self):
+        from reprompt.core.distill import generate_summary
+
+        conv = Conversation(session_id="t", source="test", project=None, turns=[])
+        result = DistillResult(
+            conversation=conv,
+            filtered_turns=[],
+            threshold=0.3,
+            stats=DistillStats(),
+        )
+        summary = generate_summary(result)
+        assert isinstance(summary, str)

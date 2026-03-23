@@ -260,3 +260,58 @@ def distill_conversation(
         files_changed=files_changed,
         stats=stats,
     )
+
+
+def generate_summary(result: DistillResult) -> str:
+    """Generate a rule-based text summary of the distilled conversation.
+
+    Structure:
+      1. Description (first user turn, compressed)
+      2. Key decisions (top 5 user turns by importance, compressed)
+      3. Files changed
+      4. Stats line
+    """
+    from reprompt.core.compress import compress_text
+
+    lines: list[str] = []
+    conv = result.conversation
+    user_turns = [t for t in conv.turns if t.role == "user"]
+
+    # Description
+    if user_turns:
+        first_text = compress_text(user_turns[0].text).compressed
+        project_str = f" ({conv.project})" if conv.project else ""
+        lines.append(f"Session{project_str}: {first_text}")
+    else:
+        lines.append("Empty session.")
+
+    lines.append("")
+
+    # Key decisions (top 5 by importance)
+    if user_turns:
+        sorted_turns = sorted(user_turns, key=lambda t: t.importance, reverse=True)
+        top_turns = sorted_turns[:5]
+        lines.append("Key decisions:")
+        for turn in top_turns:
+            compressed = compress_text(turn.text).compressed
+            truncated = compressed[:120] + "..." if len(compressed) > 120 else compressed
+            lines.append(f"  - {truncated}")
+        lines.append("")
+
+    # Files changed
+    if result.files_changed:
+        files_str = ", ".join(result.files_changed[:10])
+        lines.append(f"Files changed: {files_str}")
+        lines.append("")
+
+    # Stats
+    duration_str = ""
+    if result.stats.total_duration_seconds > 0:
+        mins = result.stats.total_duration_seconds // 60
+        duration_str = f" | {mins}min"
+    lines.append(
+        f"{result.stats.total_turns} turns → {result.stats.kept_turns} key turns"
+        f"{duration_str} | {conv.source}"
+    )
+
+    return "\n".join(lines)
