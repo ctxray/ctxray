@@ -16,6 +16,7 @@ from pathlib import Path
 
 from reprompt.adapters.base import BaseAdapter
 from reprompt.adapters.filters import should_keep_prompt
+from reprompt.core.conversation import ConversationTurn
 from reprompt.core.models import Prompt
 
 
@@ -73,6 +74,68 @@ class ChatGPTAdapter(BaseAdapter):
                 )
 
         return prompts
+
+    def parse_conversation(
+        self, path: Path, conv_id: str | None = None
+    ) -> list[ConversationTurn]:
+        """Parse a single conversation with both user and assistant turns.
+
+        Args:
+            path: Path to conversations.json file.
+            conv_id: If given, select the conversation matching this ID.
+                     If None, parse the first conversation in the file.
+        """
+        try:
+            data = json.loads(Path(path).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            return []
+
+        if not isinstance(data, list) or not data:
+            return []
+
+        # Select conversation
+        conversation = None
+        if conv_id:
+            for conv in data:
+                if _make_session_id(conv) == conv_id:
+                    conversation = conv
+                    break
+            if conversation is None:
+                return []
+        else:
+            conversation = data[0]
+
+        mapping = conversation.get("mapping", {})
+
+        # Collect all messages (user + assistant) sorted by create_time
+        all_nodes = []
+        for node in mapping.values():
+            msg = node.get("message")
+            if msg is None:
+                continue
+            author = msg.get("author", {})
+            role = author.get("role", "")
+            if role not in ("user", "assistant"):
+                continue
+            all_nodes.append((role, msg))
+
+        all_nodes.sort(key=lambda x: x[1].get("create_time") or 0)
+
+        turns: list[ConversationTurn] = []
+        for i, (role, msg) in enumerate(all_nodes):
+            text = _extract_content(msg)
+            if not text.strip():
+                continue
+            turns.append(
+                ConversationTurn(
+                    role=role,
+                    text=text,
+                    timestamp=_format_timestamp(msg.get("create_time")),
+                    turn_index=i,
+                )
+            )
+
+        return turns
 
 
 def _make_session_id(conversation: dict) -> str:
