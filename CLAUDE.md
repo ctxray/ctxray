@@ -18,7 +18,7 @@ uv run python -m build                     # build wheel
 
 ```
 src/reprompt/
-├── cli.py              # Typer CLI (scan, import, report, search, library, recommend, demo, status, purge, install-hook, install-extension, extension-status, score, compare, insights, digest, style, use, privacy) + plugin loading
+├── cli.py              # Typer CLI (scan, import, report, search, library, recommend, demo, status, purge, install-hook, install-extension, extension-status, score, compare, insights, digest, style, use, privacy, compress) + plugin loading
 ├── config.py           # pydantic-settings, env vars (REPROMPT_ prefix) + TOML config
 ├── demo.py             # Built-in demo data generator (no network required)
 ├── core/
@@ -81,7 +81,8 @@ src/reprompt/
     ├── json_out.py         # JSON for pipelines
     ├── markdown.py         # Markdown export
     ├── wrapped_terminal.py # Rich Prompt Wrapped report rendering
-    └── wrapped_html.py     # Self-contained HTML share card (dark theme)
+    ├── wrapped_html.py     # Self-contained HTML share card (dark theme)
+    └── compress_terminal.py # Rich output for compress command
 ```
 
 ## Data Flow

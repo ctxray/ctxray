@@ -891,6 +891,37 @@ def score(
 
 
 @app.command()
+def compress(
+    text: str = typer.Argument(..., help="Prompt text to compress"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    copy: bool = typer.Option(False, "--copy", help="Copy compressed text to clipboard"),
+) -> None:
+    """Compress a prompt by removing filler words and simplifying phrases."""
+    from reprompt.core.compress import compress_text
+
+    result = compress_text(text)
+
+    if json_output:
+        import json as json_mod
+        from dataclasses import asdict
+
+        typer.echo(json_mod.dumps(asdict(result), indent=2, ensure_ascii=False))
+    else:
+        from reprompt.output.compress_terminal import render_compress
+
+        typer.echo(render_compress(result))
+
+    if copy:
+        from reprompt.sharing.clipboard import copy_to_clipboard
+
+        if copy_to_clipboard(result.compressed):
+            if not json_output:
+                typer.echo("  Copied to clipboard!")
+        else:
+            typer.echo("  Could not copy to clipboard (xclip/xsel not found)", err=True)
+
+
+@app.command()
 def compare(
     prompt_a: str = typer.Argument(..., help="First prompt"),
     prompt_b: str = typer.Argument(..., help="Second prompt"),
