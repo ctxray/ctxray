@@ -6,11 +6,15 @@ import json
 import os
 import re
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from reprompt.adapters.base import BaseAdapter
 from reprompt.adapters.filters import should_keep_prompt  # noqa: F401 — re-exported
 from reprompt.core.models import Prompt
 from reprompt.core.session_meta import SessionMeta
+
+if TYPE_CHECKING:
+    from reprompt.core.conversation import ConversationTurn
 
 # Regex patterns for IDE-injected prefixes that wrap real user prompts.
 # We strip these prefixes and keep the actual question after the closing tag.
@@ -94,6 +98,105 @@ class ClaudeCodeAdapter(BaseAdapter):
                 )
 
         return prompts
+
+    def parse_conversation(self, path: Path) -> list[ConversationTurn]:
+        """Parse full conversation including assistant turns from JSONL."""
+        from reprompt.core.conversation import ConversationTurn
+
+        turns: list[ConversationTurn] = []
+        turn_index = 0
+
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+
+                entry_type = entry.get("type")
+                if entry_type not in ("user", "assistant"):
+                    continue
+
+                message = entry.get("message", {})
+                if not isinstance(message, dict):
+                    continue
+                role = message.get("role", "")
+                if role not in ("user", "assistant"):
+                    continue
+
+                timestamp = str(entry.get("timestamp", ""))
+
+                if role == "user":
+                    text = _extract_text(message)
+                    if not text.strip():
+                        continue
+                    turns.append(
+                        ConversationTurn(
+                            role="user",
+                            text=text,
+                            timestamp=timestamp,
+                            turn_index=turn_index,
+                        )
+                    )
+                    turn_index += 1
+
+                elif role == "assistant":
+                    content = message.get("content", "")
+                    text_parts: list[str] = []
+                    tool_call_count = 0
+                    tool_paths: list[str] = []
+                    has_error = False
+
+                    if isinstance(content, list):
+                        for block in content:
+                            if not isinstance(block, dict):
+                                continue
+                            block_type = block.get("type", "")
+                            if block_type == "text":
+                                t = str(block.get("text", ""))
+                                text_parts.append(t)
+                                if any(
+                                    kw in t
+                                    for kw in ("Error", "error", "traceback", "Traceback")
+                                ):
+                                    has_error = True
+                            elif block_type == "tool_use":
+                                tool_call_count += 1
+                                name = block.get("name", "")
+                                inp = block.get("input", {})
+                                if isinstance(inp, dict) and name in ("Edit", "Write"):
+                                    fp = inp.get("file_path", "")
+                                    if fp:
+                                        tool_paths.append(fp)
+                    elif isinstance(content, str):
+                        text_parts.append(content)
+                        if any(
+                            kw in content
+                            for kw in ("Error", "error", "traceback", "Traceback")
+                        ):
+                            has_error = True
+
+                    text = " ".join(text_parts).strip()
+                    if not text and tool_call_count == 0:
+                        continue
+
+                    turns.append(
+                        ConversationTurn(
+                            role="assistant",
+                            text=text,
+                            timestamp=timestamp,
+                            turn_index=turn_index,
+                            tool_calls=tool_call_count,
+                            has_error=has_error,
+                            tool_use_paths=tool_paths,
+                        )
+                    )
+                    turn_index += 1
+
+        return turns
 
     def parse_session_meta(self, path: Path) -> SessionMeta | None:
         """Extract session metadata from JSONL by reading all entries."""
