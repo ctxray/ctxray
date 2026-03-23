@@ -39,6 +39,7 @@ def test_compress_command_chinese():
 
 # --- Terminal output tests ---
 
+
 def test_render_compress_basic():
     from reprompt.core.compress import CompressResult
     from reprompt.output.compress_terminal import render_compress

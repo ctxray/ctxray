@@ -159,8 +159,7 @@ class ClaudeCodeAdapter(BaseAdapter):
                                 t = str(block.get("text", ""))
                                 text_parts.append(t)
                                 if any(
-                                    kw in t
-                                    for kw in ("Error", "error", "traceback", "Traceback")
+                                    kw in t for kw in ("Error", "error", "traceback", "Traceback")
                                 ):
                                     has_error = True
                             elif block_type == "tool_use":
@@ -174,8 +173,7 @@ class ClaudeCodeAdapter(BaseAdapter):
                     elif isinstance(content, str):
                         text_parts.append(content)
                         if any(
-                            kw in content
-                            for kw in ("Error", "error", "traceback", "Traceback")
+                            kw in content for kw in ("Error", "error", "traceback", "Traceback")
                         ):
                             has_error = True
 

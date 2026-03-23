@@ -1050,7 +1050,9 @@ def _resolve_distill_sessions(
 
 
 def _load_conversation(
-    file_path: str, adapter_source: str, db: PromptDB,
+    file_path: str,
+    adapter_source: str,
+    db: PromptDB,
     resolved_session_id: str | None = None,
 ) -> Conversation | None:
     """Load a conversation from a session file via the appropriate adapter."""

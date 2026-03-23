@@ -191,9 +191,7 @@ def distill_conversation(
         error_score = _score_error_recovery(prev_asst.has_error if prev_asst else False)
 
         shift_score = shifts[user_idx] if user_idx < len(shifts) else 0.5
-        unique_score = (
-            uniqueness_scores[user_idx] if user_idx < len(uniqueness_scores) else 1.0
-        )
+        unique_score = uniqueness_scores[user_idx] if user_idx < len(uniqueness_scores) else 1.0
 
         importance = (
             W_POSITION * pos_score
@@ -225,9 +223,7 @@ def distill_conversation(
             if t.turn_index > turn.turn_index and t.role == "user":
                 adjacent_scores.append(t.importance)
                 break
-        turn.importance = (
-            sum(adjacent_scores) / len(adjacent_scores) if adjacent_scores else 0.0
-        )
+        turn.importance = sum(adjacent_scores) / len(adjacent_scores) if adjacent_scores else 0.0
 
     # Filter: keep user turns above threshold + their paired assistant turns
     filtered: list[ConversationTurn] = []
@@ -241,9 +237,7 @@ def distill_conversation(
     filtered.sort(key=lambda t: t.turn_index)
 
     # Extract files changed from assistant turns
-    files_changed = _extract_files_changed(
-        [t for t in turns if t.role == "assistant"]
-    )
+    files_changed = _extract_files_changed([t for t in turns if t.role == "assistant"])
 
     # Build stats
     stats = DistillStats(

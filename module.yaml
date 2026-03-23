@@ -1,0 +1,12 @@
+apiVersion: claude.local/v1
+kind: Service
+metadata:
+  name: reprompt
+  description: Migrated project: reprompt
+spec:
+  commands:
+    test:
+      run: "cd ~/projects/reprompt && uv run pytest tests/ -v"
+      host: local
+      description: Run unit tests
+      timeout: 120

@@ -10,6 +10,7 @@ from reprompt.core.compress import CompressResult
 def render_compress(result: CompressResult) -> str:
     """Render a compress result as formatted terminal output."""
     from io import StringIO
+
     console = Console(record=True, width=100, file=StringIO())
 
     console.print()

@@ -107,9 +107,7 @@ class TestDistillStats:
 
 class TestDistillResult:
     def test_basic_result(self):
-        conv = Conversation(
-            session_id="abc", source="claude-code", project=None, turns=[]
-        )
+        conv = Conversation(session_id="abc", source="claude-code", project=None, turns=[])
         result = DistillResult(
             conversation=conv,
             filtered_turns=[],

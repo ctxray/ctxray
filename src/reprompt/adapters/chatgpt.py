@@ -75,9 +75,7 @@ class ChatGPTAdapter(BaseAdapter):
 
         return prompts
 
-    def parse_conversation(
-        self, path: Path, conv_id: str | None = None
-    ) -> list[ConversationTurn]:
+    def parse_conversation(self, path: Path, conv_id: str | None = None) -> list[ConversationTurn]:
         """Parse a single conversation with both user and assistant turns.
 
         Args:
