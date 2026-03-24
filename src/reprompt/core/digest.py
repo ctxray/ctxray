@@ -9,9 +9,7 @@ from reprompt.core.trends import compute_window_snapshot
 from reprompt.storage.db import PromptDB
 
 
-def build_digest(
-    db: PromptDB, period: str = "7d", source: str | None = None
-) -> dict[str, Any]:
+def build_digest(db: PromptDB, period: str = "7d", source: str | None = None) -> dict[str, Any]:
     """Compare current period vs previous period.
 
     Returns dict with:

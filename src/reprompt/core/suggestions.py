@@ -8,7 +8,7 @@ SUGGESTIONS: dict[str, str] = {
     "score": 'reprompt compress "..." (optimize) · reprompt insights (all patterns)',
     "insights": 'reprompt compress "..." (verbose prompts) · reprompt distill --last (sessions)',
     "distill": (
-        'reprompt distill --export --copy (context recovery)'
+        "reprompt distill --export --copy (context recovery)"
         ' · reprompt compress "..." (shorten turns)'
     ),
 }
