@@ -1,22 +1,22 @@
 # reprompt Roadmap
 
-> Last updated: 2026-03-16 · Current version: v1.0.0
+> Last updated: 2026-03-23 · Current version: v1.3.1
 
 ## Vision
 
-reprompt is the **prompt analytics** tool for AI sessions — understand your patterns, improve your prompting, track your progress. Zero-config, privacy-first, CLI-first.
+reprompt is the **prompt intelligence** tool for AI sessions — distill your conversations, compress your prompts, score them against research, and track your progress. Zero-config, privacy-first, CLI-first.
 
 **Category definition:** reprompt analyzes *human inputs* (how you prompt), not *LLM outputs* (how models respond). Every other tool in the eval/observability space — Promptfoo, Braintrust, DeepEval, Langfuse — answers "did my AI system answer correctly?" reprompt answers "am I asking well?" This is an unoccupied category.
 
 ---
 
-## Current State (v1.0.0) — Production Stable
+## Current State (v1.3.1) — Production Stable
 
 ### Adapters (8)
 Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT · Claude.ai
 
-### Commands (23)
-`scan` · `import` · `report` · `library` · `trends` · `recommend` · `effectiveness` · `merge-view` · `save` · `templates` · `use` · `lint` · `search` · `demo` · `status` · `purge` · `install-hook` · `install-extension` · `extension-status` · `score` · `compare` · `insights` · `digest` · `style` · `wrapped` · `telemetry` · `mcp-serve`
+### Commands (27)
+`scan` · `import` · `report` · `library` · `trends` · `recommend` · `effectiveness` · `merge-view` · `save` · `templates` · `use` · `lint` · `search` · `demo` · `status` · `purge` · `install-hook` · `install-extension` · `extension-status` · `score` · `compare` · `insights` · `digest` · `style` · `wrapped` · `telemetry` · `mcp-serve` · `compress` · `distill` · `privacy`
 
 ### Integrations
 - MCP server (`reprompt mcp-serve`) for IDE integration
@@ -25,31 +25,52 @@ Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT
 - Browser extension (Chrome/Firefox) via Native Messaging bridge
 - JSON output on all commands for pipeline integration
 
-### v1.0.0 Hardening (this release)
-- Empty-state UX guidance for `report` and `digest`
-- Scan "Try next" onboarding hints for new users
-- Feature extraction errors logged (no more silent swallowing)
-- DB schema versioning via `PRAGMA user_version`
-- CI: ≥90% coverage gate, pre-publish test step
+### Key Features by Version
+
+| Version | Feature | Description |
+|---------|---------|-------------|
+| v1.0.0 | Core platform | Scoring, dedup, report, trends, digest, style, effectiveness, templates, MCP, HTML dashboard |
+| v1.1.0 | Privacy exposure | `reprompt privacy` — where your prompts went, training risk analysis |
+| v1.2.0 | Prompt compression | `reprompt compress` — 4-layer rule-based compression (43 zh + 51 en rules) |
+| v1.3.0 | Conversation distillation | `reprompt distill` — 6-signal importance scoring for conversation turns |
+| v1.3.1 | UX polish | Actionable suggestions on 5 commands, `--source` filter on all data commands |
+| v1.4.0 | Context recovery | `distill --export` markdown context document, `--show-weights`/`--weights` signal transparency |
+
+### Quality
+- 1271 tests, ≥90% coverage
+- Strict mypy, ruff lint/format
+- CI: coverage gate + pre-publish test step
 - Stable public API (`score_prompt`, `compare_prompts`, `extract_features`)
-- 935+ tests, ≥90% coverage
 
 ---
 
-## v1.1+ — Future Work
+## v1.4 — Context Recovery + Command Consolidation
+
+| Priority | Item | Rationale |
+|----------|------|-----------|
+| P1 | `distill --export` context recovery | Community signal: resume sessions after compaction/timeout |
+| P2 | Command consolidation: `save`/`templates`/`use` → `template [save\|list\|use]` | 3 commands doing 1 thing = cognitive overload |
+| P2 | Command consolidation: `effectiveness`/`merge-view` → `insights` sub-insights | Concepts unclear to users |
+| P3 | `style` shows change trends | "specificity +12% this week" drives revisits |
+| P4 | `distill --show-weights` / `--weights` signal transparency | Community request for weight visibility |
+| P5 | `compare --best-worst` auto-pick | Auto-pick best/worst from DB |
+| P5 | `--copy` as standard option on remaining commands | Consistency |
+
+**Target: 27 → ~21 commands after consolidation. Context recovery via `--export` flag, not new command.**
+
+---
+
+## v1.5+ — Future Work
 
 | Feature | Description |
 |---------|-------------|
-| `reprompt consolidate` | Automated prompt merging (currently read-only `merge-view` is sufficient) |
-| Homebrew formula | `brew install reprompt` via `homebrew-reprompt` tap |
-| SSE transport for MCP | Alternative to stdio for remote IDE setups |
+| Sensitive content detection | Privacy narrative; PII in prompts |
+| Agent workflow analysis | Multi-step agent session patterns |
+| `.reprompt.yml` configurable lint | Team/Pro direction |
+| `reprompt suggest` (Ollama rewrite) | LLM-powered prompt improvement |
+| Homebrew formula | `brew install reprompt` |
 | More adapters | Perplexity, Mistral, Grok, Gemini Takeout |
-| `reprompt suggest` | Ollama-powered prompt improvement suggestions |
-| `.repromptignore` | Per-project filtering rules |
-| Team features | Anonymized pattern sharing, CI lint standards |
 | Windows Native Messaging | Extension support on Windows |
-
-Nothing beyond v1.1 is formally scheduled.
 
 ---
 
