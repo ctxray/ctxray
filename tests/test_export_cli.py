@@ -79,9 +79,7 @@ class TestExportFlag:
         mock_resolve.return_value = [("/fake/path", "claude-code", "test-abc")]
         mock_load.return_value = mock_result.conversation
 
-        with patch(
-            "reprompt.core.distill.distill_conversation", return_value=mock_result
-        ):
+        with patch("reprompt.core.distill.distill_conversation", return_value=mock_result):
             result = runner.invoke(app, ["distill", "--last", "1", "--export"])
         assert result.exit_code == 0
         assert "# Session Context: myproject" in result.output
@@ -93,9 +91,7 @@ class TestExportFlag:
         mock_resolve.return_value = [("/fake/path", "claude-code", "test-abc")]
         mock_load.return_value = mock_result.conversation
 
-        with patch(
-            "reprompt.core.distill.distill_conversation", return_value=mock_result
-        ):
+        with patch("reprompt.core.distill.distill_conversation", return_value=mock_result):
             result = runner.invoke(app, ["distill", "--last", "1", "--export", "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output)

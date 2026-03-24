@@ -1002,8 +1002,7 @@ def distill(
             key = key.strip()
             if key not in DEFAULT_WEIGHTS:
                 typer.echo(
-                    f"Unknown weight key: '{key}'. "
-                    f"Valid keys: {', '.join(DEFAULT_WEIGHTS.keys())}"
+                    f"Unknown weight key: '{key}'. Valid keys: {', '.join(DEFAULT_WEIGHTS.keys())}"
                 )
                 raise typer.Exit(code=1)
             weights_dict[key] = float(val)
@@ -1073,9 +1072,7 @@ def distill(
                 if not json_output:
                     typer.echo("  Copied to clipboard!")
             else:
-                typer.echo(
-                    "  Could not copy to clipboard (xclip/xsel not found)", err=True
-                )
+                typer.echo("  Could not copy to clipboard (xclip/xsel not found)", err=True)
         return
 
     # Output

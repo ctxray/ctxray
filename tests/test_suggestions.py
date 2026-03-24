@@ -41,11 +41,14 @@ class TestGetSuggestion:
 
     def test_suggestions_contain_valid_command_names(self):
         valid_commands = {
-            "reprompt report", "reprompt insights", "reprompt distill",
-            "reprompt compress", "reprompt score",
+            "reprompt report",
+            "reprompt insights",
+            "reprompt distill",
+            "reprompt compress",
+            "reprompt score",
         }
         for cmd, hint in SUGGESTIONS.items():
             # Each suggestion should reference at least one valid command
-            assert any(
-                vc in hint for vc in valid_commands
-            ), f"Suggestion for '{cmd}' lacks valid command reference: {hint}"
+            assert any(vc in hint for vc in valid_commands), (
+                f"Suggestion for '{cmd}' lacks valid command reference: {hint}"
+            )

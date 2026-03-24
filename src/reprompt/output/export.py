@@ -161,8 +161,7 @@ def generate_export(result: DistillResult, *, full: bool = False) -> str:
             lines.append(_truncate(all_user_turns[-1].text, 200))
             lines.append("")
         lines.append(
-            f"*(No turns above threshold {result.threshold}. "
-            f"Showing first and last turns.)*"
+            f"*(No turns above threshold {result.threshold}. Showing first and last turns.)*"
         )
         lines.append("")
         output = "\n".join(lines)
