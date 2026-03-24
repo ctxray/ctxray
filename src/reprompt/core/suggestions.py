@@ -7,7 +7,10 @@ SUGGESTIONS: dict[str, str] = {
     "report": "reprompt insights (patterns) · reprompt distill --last (session review)",
     "score": 'reprompt compress "..." (optimize) · reprompt insights (all patterns)',
     "insights": 'reprompt compress "..." (verbose prompts) · reprompt distill --last (sessions)',
-    "distill": 'reprompt compress "..." (shorten turns) · reprompt report (full analytics)',
+    "distill": (
+        'reprompt distill --export --copy (context recovery)'
+        ' · reprompt compress "..." (shorten turns)'
+    ),
 }
 
 

@@ -33,7 +33,7 @@ class TestGetSuggestion:
     def test_distill_returns_suggestion(self):
         hint = get_suggestion("distill")
         assert hint is not None
-        assert "reprompt report" in hint
+        assert "reprompt distill --export" in hint
 
     def test_unknown_command_returns_none(self):
         assert get_suggestion("nonexistent") is None
