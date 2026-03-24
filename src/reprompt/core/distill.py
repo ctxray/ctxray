@@ -26,12 +26,22 @@ from reprompt.core.conversation import (
 )
 
 # Signal weights
-W_POSITION = 0.15
-W_LENGTH = 0.15
-W_TOOL_TRIGGER = 0.20
-W_ERROR_RECOVERY = 0.15
-W_SEMANTIC_SHIFT = 0.20
-W_UNIQUENESS = 0.15
+DEFAULT_WEIGHTS: dict[str, float] = {
+    "position": 0.15,
+    "length": 0.15,
+    "tool_trigger": 0.20,
+    "error_recovery": 0.15,
+    "semantic_shift": 0.20,
+    "uniqueness": 0.15,
+}
+
+# Keep module-level aliases for backward compatibility with internal references
+W_POSITION = DEFAULT_WEIGHTS["position"]
+W_LENGTH = DEFAULT_WEIGHTS["length"]
+W_TOOL_TRIGGER = DEFAULT_WEIGHTS["tool_trigger"]
+W_ERROR_RECOVERY = DEFAULT_WEIGHTS["error_recovery"]
+W_SEMANTIC_SHIFT = DEFAULT_WEIGHTS["semantic_shift"]
+W_UNIQUENESS = DEFAULT_WEIGHTS["uniqueness"]
 
 
 def _score_position(turn_idx: int, total_user_turns: int) -> float:
@@ -139,6 +149,7 @@ def _extract_files_changed(turns: list[ConversationTurn]) -> list[str]:
 def distill_conversation(
     conversation: Conversation,
     threshold: float = 0.3,
+    weights: dict[str, float] | None = None,
 ) -> DistillResult:
     """Score and filter conversation turns by importance.
 
@@ -149,6 +160,9 @@ def distill_conversation(
     Args:
         conversation: The conversation to distill.
         threshold: Minimum importance score to keep a turn (0.0 - 1.0).
+        weights: Optional signal weight overrides. Keys must be signal names
+            (position, length, tool_trigger, error_recovery, semantic_shift,
+            uniqueness). Missing keys fall back to DEFAULT_WEIGHTS.
 
     Returns:
         DistillResult with scored turns, filtered turns, and statistics.
@@ -173,6 +187,9 @@ def distill_conversation(
             stats=DistillStats(total_turns=len(turns)),
         )
 
+    # Resolve effective weights
+    effective_weights = {**DEFAULT_WEIGHTS, **(weights or {})}
+
     # Precompute median length and semantic signals
     lengths = [len(t.text) for t in user_turns]
     median_length = float(statistics.median(lengths)) if lengths else 0.0
@@ -193,13 +210,23 @@ def distill_conversation(
         shift_score = shifts[user_idx] if user_idx < len(shifts) else 0.5
         unique_score = uniqueness_scores[user_idx] if user_idx < len(uniqueness_scores) else 1.0
 
+        # Store per-signal scores for export classification
+        user_turn.signal_scores = {
+            "position": pos_score,
+            "length": len_score,
+            "tool_trigger": tool_score,
+            "error_recovery": error_score,
+            "semantic_shift": shift_score,
+            "uniqueness": unique_score,
+        }
+
         importance = (
-            W_POSITION * pos_score
-            + W_LENGTH * len_score
-            + W_TOOL_TRIGGER * tool_score
-            + W_ERROR_RECOVERY * error_score
-            + W_SEMANTIC_SHIFT * shift_score
-            + W_UNIQUENESS * unique_score
+            effective_weights["position"] * pos_score
+            + effective_weights["length"] * len_score
+            + effective_weights["tool_trigger"] * tool_score
+            + effective_weights["error_recovery"] * error_score
+            + effective_weights["semantic_shift"] * shift_score
+            + effective_weights["uniqueness"] * unique_score
         )
 
         # Single-turn guarantee: sole user turn always gets max importance
