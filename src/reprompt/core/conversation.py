@@ -23,6 +23,7 @@ class ConversationTurn:
     score: float | None = None  # Display-only, from prompt_features
     is_duplicate: bool = False
     importance: float = 0.0  # Computed by 6-signal scoring
+    signal_scores: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
