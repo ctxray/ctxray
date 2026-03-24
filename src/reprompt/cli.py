@@ -956,8 +956,61 @@ def distill(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
     threshold: float = typer.Option(0.3, "--threshold", help="Importance cutoff (0.0-1.0)"),
+    export: bool = typer.Option(False, "--export", help="Output as context recovery document"),
+    full: bool = typer.Option(False, "--full", help="Include assistant responses (with --export)"),
+    show_weights: bool = typer.Option(
+        False, "--show-weights", help="Print signal weights and exit"
+    ),
+    weights: str = typer.Option(
+        None, "--weights", help="Override weights, e.g. 'semantic_shift=0.4'"
+    ),
 ) -> None:
     """Distill a conversation to its most important turns."""
+    # --show-weights: print and exit
+    if show_weights:
+        from reprompt.core.distill import DEFAULT_WEIGHTS
+
+        for k, v in DEFAULT_WEIGHTS.items():
+            typer.echo(f"  {k}={v}")
+        return
+
+    # --full without --export: warn
+    if full and not export:
+        typer.echo("--full has no effect without --export", err=True)
+
+    # --export with --last > 1: error
+    if export and not session_id and last > 1:
+        typer.echo("--export works with a single session. Use --last 1 or specify a session ID.")
+        raise typer.Exit(code=1)
+
+    # --export and --summary are mutually exclusive
+    if export and summary:
+        typer.echo("--export and --summary are mutually exclusive.")
+        raise typer.Exit(code=1)
+
+    # Parse --weights override
+    weights_dict: dict[str, float] | None = None
+    if weights:
+        from reprompt.core.distill import DEFAULT_WEIGHTS
+
+        weights_dict = {}
+        for pair in weights.split(","):
+            pair = pair.strip()
+            if "=" not in pair:
+                continue
+            key, val = pair.split("=", 1)
+            key = key.strip()
+            if key not in DEFAULT_WEIGHTS:
+                typer.echo(
+                    f"Unknown weight key: '{key}'. "
+                    f"Valid keys: {', '.join(DEFAULT_WEIGHTS.keys())}"
+                )
+                raise typer.Exit(code=1)
+            weights_dict[key] = float(val)
+        total = sum({**DEFAULT_WEIGHTS, **weights_dict}.values())
+        if abs(total - 1.0) > 0.05:
+            typer.echo(f"Warning: weights sum to {total:.2f}, not 1.0", err=True)
+
     from reprompt.config import Settings
     from reprompt.core.distill import distill_conversation, generate_summary
     from reprompt.storage.db import PromptDB
@@ -981,7 +1034,7 @@ def distill(
         conv = _load_conversation(file_path, adapter_source, db, resolved_sid)
         if conv is None:
             continue
-        result = distill_conversation(conv, threshold=threshold)
+        result = distill_conversation(conv, threshold=threshold, weights=weights_dict)
         if summary:
             result.summary = generate_summary(result)
         results.append(result)
@@ -993,6 +1046,36 @@ def distill(
             typer.echo("[]")
         else:
             typer.echo("Could not load any sessions.")
+        return
+
+    # Export mode
+    if export:
+        from reprompt.output.export import generate_export
+
+        export_text = generate_export(results[0], full=full)
+        if json_output:
+            import json as json_mod
+
+            envelope = {
+                "export": export_text,
+                "session_id": results[0].conversation.session_id,
+                "source": results[0].conversation.source,
+                "tokens": len(export_text) // 4,
+            }
+            typer.echo(json_mod.dumps(envelope, indent=2, ensure_ascii=False))
+        else:
+            typer.echo(export_text)
+
+        if copy:
+            from reprompt.sharing.clipboard import copy_to_clipboard
+
+            if copy_to_clipboard(export_text):
+                if not json_output:
+                    typer.echo("  Copied to clipboard!")
+            else:
+                typer.echo(
+                    "  Could not copy to clipboard (xclip/xsel not found)", err=True
+                )
         return
 
     # Output
