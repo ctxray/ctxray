@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import tempfile
 
 from typer.testing import CliRunner
@@ -14,6 +15,11 @@ from reprompt.core.conversation import (
     DistillResult,
     DistillStats,
 )
+
+
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI escape codes from text (Rich color output on CI)."""
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 
 class TestRenderDistill:
@@ -137,8 +143,9 @@ class TestDistillCLI:
     def test_distill_help(self):
         result = runner.invoke(app, ["distill", "--help"])
         assert result.exit_code == 0
-        assert "--last" in result.output
-        assert "--summary" in result.output
-        assert "--threshold" in result.output
-        assert "--copy" in result.output
-        assert "--json" in result.output
+        output = _strip_ansi(result.output)
+        assert "--last" in output
+        assert "--summary" in output
+        assert "--threshold" in output
+        assert "--copy" in output
+        assert "--json" in output

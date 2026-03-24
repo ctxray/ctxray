@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -9,6 +10,11 @@ import pytest
 from reprompt.core.digest import build_digest
 from reprompt.core.trends import compute_trends
 from reprompt.storage.db import PromptDB
+
+
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI escape codes from text (Rich color output on CI)."""
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 
 @pytest.fixture
@@ -140,7 +146,7 @@ class TestCLISourceFlag:
 
         runner = CliRunner()
         result = runner.invoke(app, ["insights", "--help"])
-        assert "--source" in result.output
+        assert "--source" in _strip_ansi(result.output)
 
     def test_trends_has_source_flag(self):
         from typer.testing import CliRunner
@@ -149,7 +155,7 @@ class TestCLISourceFlag:
 
         runner = CliRunner()
         result = runner.invoke(app, ["trends", "--help"])
-        assert "--source" in result.output
+        assert "--source" in _strip_ansi(result.output)
 
     def test_digest_has_source_flag(self):
         from typer.testing import CliRunner
@@ -158,7 +164,7 @@ class TestCLISourceFlag:
 
         runner = CliRunner()
         result = runner.invoke(app, ["digest", "--help"])
-        assert "--source" in result.output
+        assert "--source" in _strip_ansi(result.output)
 
     def test_style_has_source_flag(self):
         from typer.testing import CliRunner
@@ -167,4 +173,4 @@ class TestCLISourceFlag:
 
         runner = CliRunner()
         result = runner.invoke(app, ["style", "--help"])
-        assert "--source" in result.output
+        assert "--source" in _strip_ansi(result.output)
