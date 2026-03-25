@@ -669,6 +669,84 @@ def render_style(data: dict[str, Any]) -> str:
     return buf.getvalue()
 
 
+def render_style_trends(data: dict[str, Any]) -> str:
+    """Render style trends comparison between two periods."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    curr = data["current"]
+    prev = data["previous"]
+    deltas = data["deltas"]
+
+    # Handle empty data
+    if curr["prompt_count"] == 0 and prev["prompt_count"] == 0:
+        console.print(
+            "\n[dim]Not enough data for trends. Keep prompting and check back next week.[/dim]"
+        )
+        return buf.getvalue()
+
+    if prev["prompt_count"] == 0:
+        console.print(f"\n[bold]Style Trends ({data['period']})[/bold]")
+        console.print("\u2500" * 40)
+        console.print("  [dim]New! No previous data to compare.[/dim]")
+        console.print(
+            f"  Current: {curr['prompt_count']} prompts,"
+            f" specificity {curr['specificity']:.2f},"
+            f" avg {curr['avg_length']:.0f} chars"
+        )
+        return buf.getvalue()
+
+    console.print(f"\n[bold]Style Trends ({data['period']})[/bold]")
+    console.print("\u2500" * 40)
+
+    # Specificity (green = improvement)
+    spec_delta = deltas["specificity"]
+    spec_sign = "+" if spec_delta > 0 else ""
+    spec_pct = (
+        f" ({spec_sign}{spec_delta / prev['specificity'] * 100:.0f}%)"
+        if prev["specificity"] > 0
+        else ""
+    )
+    spec_color = "green" if spec_delta > 0 else "red" if spec_delta < 0 else "dim"
+    console.print(
+        f"  Specificity   {prev['specificity']:.2f}"
+        f" \u2192 {curr['specificity']:.2f}"
+        f"  [{spec_color}]{spec_sign}{spec_delta:.2f}"
+        f"{spec_pct}[/{spec_color}]"
+    )
+
+    # Avg Length (neutral, always dim)
+    len_delta = deltas["avg_length"]
+    len_sign = "+" if len_delta > 0 else ""
+    console.print(
+        f"  Avg Length    {prev['avg_length']:.0f}"
+        f" \u2192 {curr['avg_length']:.0f} chars"
+        f"  [dim]{len_sign}{len_delta:.0f} chars[/dim]"
+    )
+
+    # Prompt count (green = more activity)
+    count_delta = deltas["prompt_count"]
+    count_sign = "+" if count_delta > 0 else ""
+    count_color = "green" if count_delta > 0 else "dim"
+    console.print(
+        f"  Prompts       {prev['prompt_count']}"
+        f" \u2192 {curr['prompt_count']}"
+        f"  [{count_color}]{count_sign}{count_delta}[/{count_color}]"
+    )
+
+    # Top category shift
+    if deltas["top_category_changed"]:
+        console.print(
+            f"  Top Category  {deltas['top_category_previous']}"
+            f" \u2192 {deltas['top_category_current']}"
+        )
+    else:
+        console.print(f"  Top Category  {deltas['top_category_current']} (unchanged)")
+
+    console.print()
+    return buf.getvalue()
+
+
 def render_privacy(data: dict[str, Any]) -> str:
     """Render privacy exposure summary."""
     buf = StringIO()

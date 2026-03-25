@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+from typer.testing import CliRunner
 
 from reprompt.storage.db import PromptDB
 
@@ -154,3 +158,99 @@ class TestComputeStyleTrends:
         assert "top_category_changed" in result["deltas"]
         assert "top_category_current" in result["deltas"]
         assert "top_category_previous" in result["deltas"]
+
+
+runner = CliRunner()
+
+
+def _strip_ansi(text: str) -> str:
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
+
+class TestStyleTrendsCLI:
+    """CLI integration tests for style --trends."""
+
+    def _make_db_with_data(self, tmp_path: Path):
+        from reprompt.storage.db import PromptDB
+
+        db = PromptDB(tmp_path / "test.db")
+        now = datetime.now(timezone.utc)
+
+        # Previous window
+        prev_time = now - timedelta(days=10)
+        seed = TestComputeStyleTrends()._seed_prompts_in_window
+        seed(
+            db,
+            [
+                "explain how authentication works in this system",
+                "explain the database schema for user management",
+                "explain the API routing pattern here",
+            ],
+            prev_time,
+        )
+
+        # Current window
+        curr_time = now - timedelta(hours=1)
+        seed(
+            db,
+            [
+                "refactor the authentication module to use JWT tokens properly",
+                "fix the TypeError in utils.parse_config() when config is None",
+                "add comprehensive error handling to the payment service",
+                "implement rate limiting with a sliding window algorithm",
+            ],
+            curr_time,
+        )
+
+        return tmp_path / "test.db"
+
+    def test_trends_flag(self, tmp_path: Path, monkeypatch):
+        db_path = self._make_db_with_data(tmp_path)
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+        from reprompt.cli import app
+
+        result = runner.invoke(app, ["style", "--trends"])
+        assert result.exit_code == 0
+        text = _strip_ansi(result.output)
+        assert "Style Trends" in text
+
+    def test_trends_json(self, tmp_path: Path, monkeypatch):
+        db_path = self._make_db_with_data(tmp_path)
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+        from reprompt.cli import app
+
+        result = runner.invoke(app, ["style", "--trends", "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert "period" in data
+        assert "deltas" in data
+        assert "current" in data
+        assert "previous" in data
+
+    def test_trends_with_period(self, tmp_path: Path, monkeypatch):
+        db_path = self._make_db_with_data(tmp_path)
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+        from reprompt.cli import app
+
+        result = runner.invoke(app, ["style", "--trends", "--period", "30d"])
+        assert result.exit_code == 0
+
+    def test_trends_with_source(self, tmp_path: Path, monkeypatch):
+        db_path = self._make_db_with_data(tmp_path)
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+        from reprompt.cli import app
+
+        result = runner.invoke(app, ["style", "--trends", "--source", "claude-code"])
+        assert result.exit_code == 0
+
+    def test_trends_empty_db(self, tmp_path: Path, monkeypatch):
+        from reprompt.storage.db import PromptDB
+
+        PromptDB(tmp_path / "empty.db")
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "empty.db"))
+        from reprompt.cli import app
+
+        result = runner.invoke(app, ["style", "--trends"])
+        assert result.exit_code == 0
+        text = _strip_ansi(result.output)
+        assert "not enough data" in text.lower()
