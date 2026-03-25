@@ -15,8 +15,8 @@ reprompt is the **prompt intelligence** tool for AI sessions — distill your co
 ### Adapters (8)
 Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT · Claude.ai
 
-### Commands (27)
-`scan` · `import` · `report` · `library` · `trends` · `recommend` · `effectiveness` · `merge-view` · `save` · `templates` · `use` · `lint` · `search` · `demo` · `status` · `purge` · `install-hook` · `install-extension` · `extension-status` · `score` · `compare` · `insights` · `digest` · `style` · `wrapped` · `telemetry` · `mcp-serve` · `compress` · `distill` · `privacy`
+### Commands (23 visible, 5 deprecated)
+`scan` · `import` · `report` · `library` · `trends` · `recommend` · `template [save|list|use]` · `lint` · `search` · `demo` · `status` · `purge` · `install-hook` · `install-extension` · `extension-status` · `score` · `compare` · `insights` · `digest` · `style` · `wrapped` · `telemetry` · `mcp-serve` · `compress` · `distill` · `privacy`
 
 ### Integrations
 - MCP server (`reprompt mcp-serve`) for IDE integration
@@ -34,7 +34,7 @@ Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT
 | v1.2.0 | Prompt compression | `reprompt compress` — 4-layer rule-based compression (43 zh + 51 en rules) |
 | v1.3.0 | Conversation distillation | `reprompt distill` — 6-signal importance scoring for conversation turns |
 | v1.3.1 | UX polish | Actionable suggestions on 5 commands, `--source` filter on all data commands |
-| v1.4.0 | Context recovery | `distill --export` markdown context document, `--show-weights`/`--weights` signal transparency |
+| v1.4.0 | Context recovery + consolidation | `distill --export` context document, signal transparency, command consolidation (27→23) |
 
 ### Quality
 - 1271 tests, ≥90% coverage
@@ -48,15 +48,15 @@ Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT
 
 | Priority | Item | Rationale |
 |----------|------|-----------|
-| P1 | `distill --export` context recovery | Community signal: resume sessions after compaction/timeout |
-| P2 | Command consolidation: `save`/`templates`/`use` → `template [save\|list\|use]` | 3 commands doing 1 thing = cognitive overload |
-| P2 | Command consolidation: `effectiveness`/`merge-view` → `insights` sub-insights | Concepts unclear to users |
+| P1 | `distill --export` context recovery | **DONE** — community signal: resume sessions after compaction/timeout |
+| P2 | Command consolidation: `save`/`templates`/`use` → `template [save\|list\|use]` | **DONE** — 3 commands doing 1 thing = cognitive overload |
+| P2 | Command consolidation: `effectiveness`/`merge-view` → `insights` sub-insights | **DONE** — concepts unclear to users |
 | P3 | `style` shows change trends | "specificity +12% this week" drives revisits |
 | P4 | `distill --show-weights` / `--weights` signal transparency | Community request for weight visibility |
 | P5 | `compare --best-worst` auto-pick | Auto-pick best/worst from DB |
 | P5 | `--copy` as standard option on remaining commands | Consistency |
 
-**Target: 27 → ~21 commands after consolidation. Context recovery via `--export` flag, not new command.**
+**Status: 27 → 23 visible commands. P1+P2 shipped. Context recovery + consolidation done.**
 
 ---
 

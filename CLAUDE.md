@@ -18,7 +18,7 @@ uv run python -m build                     # build wheel
 
 ```
 src/reprompt/
-├── cli.py              # Typer CLI (scan, import, report, search, library, recommend, demo, status, purge, install-hook, install-extension, extension-status, score, compare, insights, digest, style, use, privacy, compress, distill) + plugin loading
+├── cli.py              # Typer CLI (scan, import, report, search, library, recommend, demo, status, purge, install-hook, install-extension, extension-status, score, compare, insights, digest, style, template [save|list|use], privacy, compress, distill) + plugin loading
 ├── config.py           # pydantic-settings, env vars (REPROMPT_ prefix) + TOML config
 ├── demo.py             # Built-in demo data generator (no network required)
 ├── core/
@@ -41,6 +41,7 @@ src/reprompt/
 │   ├── wrapped.py       # WrappedReport dataclass + build_wrapped(db) aggregation
 │   ├── privacy.py       # Privacy metadata registry + exposure summary per adapter
 │   ├── compress.py      # 4-layer prompt compression (char norm + phrase simplify + filler delete + structure cleanup)
+│   ├── suggestions.py   # Command journey suggestions ("→ Try:" hints for 5 core commands)
 │   ├── conversation.py  # ConversationTurn, Conversation, DistillResult dataclasses
 │   └── distill.py       # 6-signal importance scoring + filtering + summary generation
 ├── adapters/
@@ -123,7 +124,7 @@ reprompt-extension (private)   ← Browser extension: Chrome/Firefox prompt capt
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 1217 tests, 95% coverage target
+- Tests: pytest, 1295 tests, 95% coverage target
 
 ## Prompt Science Engine
 
