@@ -709,18 +709,34 @@ def style(
     source: str | None = typer.Option(
         None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor, aider)"
     ),
+    trends: bool = typer.Option(False, "--trends", help="Show style change trends"),
+    period: str = typer.Option("7d", "--period", help="Comparison period (with --trends)"),
 ) -> None:
     """Show your personal prompting style fingerprint."""
     import json as json_mod
 
     from reprompt.config import Settings
-    from reprompt.core.library import categorize_prompt
-    from reprompt.core.style import compute_style
-    from reprompt.output.terminal import render_style
     from reprompt.storage.db import PromptDB
 
     settings = Settings()
     db = PromptDB(settings.db_path)
+
+    if trends:
+        from reprompt.core.style import compute_style_trends
+        from reprompt.output.terminal import render_style_trends
+
+        data = compute_style_trends(db, period=period, source=source)
+
+        if json_output:
+            print(json_mod.dumps(data, indent=2))
+        else:
+            print(render_style_trends(data), end="")
+        return
+
+    from reprompt.core.library import categorize_prompt
+    from reprompt.core.style import compute_style
+    from reprompt.output.terminal import render_style
+
     rows = db.get_all_prompts(source=source)
     prompts = [
         {
