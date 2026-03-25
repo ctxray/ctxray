@@ -1231,14 +1231,54 @@ def _load_conversation(
 
 @app.command()
 def compare(
-    prompt_a: str = typer.Argument(..., help="First prompt"),
-    prompt_b: str = typer.Argument(..., help="Second prompt"),
+    prompt_a: str | None = typer.Argument(None, help="First prompt"),
+    prompt_b: str | None = typer.Argument(None, help="Second prompt"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    best_worst: bool = typer.Option(
+        False, "--best-worst", help="Auto-select best and worst from DB"
+    ),
+    source: str | None = typer.Option(
+        None, "--source", "-s", help="Filter by source (with --best-worst)"
+    ),
 ) -> None:
     """Compare two prompts side by side using Prompt DNA analysis."""
+    from typing import Any
+
     from reprompt.core.extractors import extract_features
     from reprompt.core.prompt_dna import PromptDNA
     from reprompt.core.scorer import ScoreBreakdown, score_prompt
+
+    # Mutual exclusion guard
+    if best_worst and (prompt_a or prompt_b):
+        console.print("[red]--best-worst cannot be combined with prompt arguments[/red]")
+        raise typer.Exit(1)
+    if not best_worst and not (prompt_a and prompt_b):
+        console.print("[red]Provide two prompts or use --best-worst[/red]")
+        raise typer.Exit(1)
+
+    prompt_a_text: str | None = None
+    prompt_b_text: str | None = None
+
+    if best_worst:
+        from reprompt.config import Settings
+        from reprompt.storage.db import PromptDB
+
+        settings = Settings()
+        db = PromptDB(settings.db_path)
+        pair = db.get_best_worst_prompts(source=source)
+        if pair is None:
+            console.print(
+                "Not enough scored prompts. Run [bold]reprompt scan[/bold]"
+                " to build your score history."
+            )
+            raise typer.Exit(1)
+        prompt_a = pair[0]  # best
+        prompt_b = pair[1]  # worst
+        prompt_a_text = prompt_a
+        prompt_b_text = prompt_b
+
+    # Type narrowing for mypy strict (guards above guarantee non-None)
+    assert prompt_a is not None and prompt_b is not None
 
     dna_a = extract_features(prompt_a, source="manual", session_id="compare-a")
     dna_b = extract_features(prompt_b, source="manual", session_id="compare-b")
@@ -1259,10 +1299,15 @@ def compare(
             "ambiguity_score": dna.ambiguity_score,
         }
 
-    result = {
+    result: dict[str, Any] = {
         "prompt_a": _build_data(dna_a, score_a),
         "prompt_b": _build_data(dna_b, score_b),
     }
+
+    # Include prompt texts for --best-worst display
+    if prompt_a_text:
+        result["prompt_a_text"] = prompt_a_text
+        result["prompt_b_text"] = prompt_b_text
 
     if json_output:
         import json as json_mod

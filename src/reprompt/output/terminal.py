@@ -462,6 +462,18 @@ def render_compare(data: dict[str, Any]) -> str:
 
     console.print("\n[bold]Prompt Comparison[/bold]")
 
+    # Show prompt texts if provided (from --best-worst)
+    if "prompt_a_text" in data:
+        a_text = data["prompt_a_text"]
+        b_text = data["prompt_b_text"]
+
+        def _truncate(t: str) -> str:
+            return (t[:77] + "...") if len(t) > 80 else t
+
+        console.print(f"  [green]Best:[/green]  {_truncate(a_text)}")
+        console.print(f"  [red]Worst:[/red] {_truncate(b_text)}")
+        console.print()
+
     table = Table()
     table.add_column("Feature", style="dim", min_width=18)
     table.add_column("Prompt A", justify="right")

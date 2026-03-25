@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
+
+from typer.testing import CliRunner
 
 
 class TestGetBestWorstPrompts:
@@ -111,3 +114,120 @@ class TestGetBestWorstPrompts:
         best_text, worst_text = result
         assert "refactor" in best_text  # 90, claude-code
         assert "add error" in worst_text  # 60, claude-code
+
+
+runner = CliRunner()
+
+
+def _strip_ansi(text: str) -> str:
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
+
+class TestCompareBestWorstCLI:
+    """CLI integration tests for compare --best-worst."""
+
+    def _make_db_with_data(self, tmp_path: Path):
+        db = TestGetBestWorstPrompts()._make_db(tmp_path)
+        seed = TestGetBestWorstPrompts()._seed_prompt
+        seed(db, "fix the bug in the login handler code", 30.0)
+        seed(
+            db,
+            "refactor authentication module to use JWT tokens properly",
+            90.0,
+        )
+        seed(
+            db,
+            "add error handling to the payment processing service",
+            60.0,
+        )
+        return tmp_path / "test.db"
+
+    def test_best_worst_flag(self, tmp_path: Path, monkeypatch):
+        db_path = self._make_db_with_data(tmp_path)
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+        from reprompt.cli import app
+
+        result = runner.invoke(app, ["compare", "--best-worst"])
+        assert result.exit_code == 0
+        text = _strip_ansi(result.output)
+        assert "Prompt Comparison" in text
+
+    def test_best_worst_json(self, tmp_path: Path, monkeypatch):
+        db_path = self._make_db_with_data(tmp_path)
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+        from reprompt.cli import app
+
+        result = runner.invoke(app, ["compare", "--best-worst", "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert "prompt_a" in data
+        assert "prompt_b" in data
+
+    def test_best_worst_shows_prompt_texts(self, tmp_path: Path, monkeypatch):
+        db_path = self._make_db_with_data(tmp_path)
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+        from reprompt.cli import app
+
+        result = runner.invoke(app, ["compare", "--best-worst"])
+        text = _strip_ansi(result.output)
+        assert "Best:" in text or "refactor" in text.lower()
+
+    def test_mutual_exclusion_error(self, tmp_path: Path, monkeypatch):
+        db_path = self._make_db_with_data(tmp_path)
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+        from reprompt.cli import app
+
+        result = runner.invoke(app, ["compare", "prompt a", "prompt b", "--best-worst"])
+        assert result.exit_code == 1
+
+    def test_no_args_no_flag_error(self, tmp_path: Path, monkeypatch):
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "empty.db"))
+        from reprompt.cli import app
+
+        result = runner.invoke(app, ["compare"])
+        assert result.exit_code == 1
+
+    def test_best_worst_empty_db(self, tmp_path: Path, monkeypatch):
+        from reprompt.storage.db import PromptDB
+
+        PromptDB(tmp_path / "empty.db")
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "empty.db"))
+        from reprompt.cli import app
+
+        result = runner.invoke(app, ["compare", "--best-worst"])
+        text = _strip_ansi(result.output)
+        assert "scan" in text.lower() or "score" in text.lower()
+
+    def test_best_worst_with_source(self, tmp_path: Path, monkeypatch):
+        db = TestGetBestWorstPrompts()._make_db(tmp_path)
+        seed = TestGetBestWorstPrompts()._seed_prompt
+        seed(
+            db,
+            "fix the bug in the login handler code",
+            30.0,
+            source="cursor",
+        )
+        seed(
+            db,
+            "refactor authentication module to use JWT tokens properly",
+            90.0,
+            source="claude-code",
+        )
+        seed(
+            db,
+            "add error handling to the payment processing service",
+            60.0,
+            source="claude-code",
+        )
+        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        from reprompt.cli import app
+
+        result = runner.invoke(
+            app,
+            ["compare", "--best-worst", "--source", "claude-code", "--json"],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert "prompt_a" in data and "prompt_b" in data
+        assert isinstance(data["prompt_a"]["total"], (int, float))
+        assert isinstance(data["prompt_b"]["total"], (int, float))
