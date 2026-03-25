@@ -6,8 +6,8 @@ from reprompt.core.suggestions import SUGGESTIONS, get_suggestion
 
 
 class TestGetSuggestion:
-    def test_all_five_commands_have_suggestions(self):
-        expected = {"scan", "report", "score", "insights", "distill"}
+    def test_all_commands_have_suggestions(self):
+        expected = {"scan", "report", "score", "insights", "distill", "template"}
         assert set(SUGGESTIONS.keys()) == expected
 
     def test_scan_returns_suggestion(self):
@@ -28,7 +28,7 @@ class TestGetSuggestion:
     def test_insights_returns_suggestion(self):
         hint = get_suggestion("insights")
         assert hint is not None
-        assert "reprompt distill" in hint
+        assert "reprompt template save" in hint
 
     def test_distill_returns_suggestion(self):
         hint = get_suggestion("distill")
@@ -46,6 +46,7 @@ class TestGetSuggestion:
             "reprompt distill",
             "reprompt compress",
             "reprompt score",
+            "reprompt template",
         }
         for cmd, hint in SUGGESTIONS.items():
             # Each suggestion should reference at least one valid command

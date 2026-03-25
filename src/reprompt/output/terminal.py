@@ -239,7 +239,7 @@ def render_templates(templates: list[dict[str, Any]], category_filter: str | Non
     buf = StringIO()
     console = Console(file=buf, force_terminal=True, width=80)
 
-    title = "reprompt templates"
+    title = "reprompt template list"
     if category_filter:
         title += f" — {category_filter}"
     console.print(f"\n[bold]{title}[/bold]")
@@ -247,7 +247,7 @@ def render_templates(templates: list[dict[str, Any]], category_filter: str | Non
 
     if not templates:
         console.print("No templates saved yet.")
-        console.print('Run [bold]reprompt save "your prompt"[/bold] to save one.')
+        console.print('Run [bold]reprompt template save "your prompt"[/bold] to save one.')
         return buf.getvalue()
 
     console.print(f"Your Prompt Templates ({len(templates)} saved)\n")
@@ -309,7 +309,9 @@ def render_merge_view(data: dict[str, Any]) -> str:
 
     console.print(f"[bold]Summary:[/bold] {total} prompts could be reduced to {count} templates.")
     if count > 0:
-        console.print("Run [bold]reprompt save[/bold] to save ★ prompts as reusable templates.")
+        console.print(
+            "Run [bold]reprompt template save[/bold] to save ★ prompts as reusable templates."
+        )
 
     return buf.getvalue()
 

@@ -6,11 +6,15 @@ SUGGESTIONS: dict[str, str] = {
     "scan": "reprompt report (see results) · reprompt insights (personal patterns)",
     "report": "reprompt insights (patterns) · reprompt distill --last (session review)",
     "score": 'reprompt compress "..." (optimize) · reprompt insights (all patterns)',
-    "insights": 'reprompt compress "..." (verbose prompts) · reprompt distill --last (sessions)',
+    "insights": (
+        'reprompt template save "..." (reuse patterns)'
+        " · reprompt distill --last (sessions)"
+    ),
     "distill": (
         "reprompt distill --export --copy (context recovery)"
         ' · reprompt compress "..." (shorten turns)'
     ),
+    "template": "reprompt insights (see which patterns work best)",
 }
 
 
