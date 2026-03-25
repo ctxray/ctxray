@@ -13,7 +13,10 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from reprompt.storage.db import PromptDB
 
 # Patterns that indicate specificity
 _FILE_REF = re.compile(r"[\w/]+\.\w{1,5}")  # file.py, path/to/file.ts
@@ -104,4 +107,62 @@ def compute_style(prompts: list[dict[str, Any]]) -> dict[str, Any]:
         "opening_patterns": opening_patterns,
         "specificity": round(specificity, 2),
         "length_distribution": length_dist,
+    }
+
+
+def compute_style_trends(
+    db: PromptDB,
+    period: str = "7d",
+    source: str | None = None,
+) -> dict[str, Any]:
+    """Compare style between current and previous period.
+
+    Returns dict with:
+      period, current (style dict), previous (style dict),
+      deltas: {specificity, avg_length, prompt_count,
+               top_category_changed, top_category_current, top_category_previous}
+    """
+    from reprompt.core.library import categorize_prompt
+    from reprompt.core.timeutil import sliding_windows
+
+    windows = sliding_windows(period=period, count=2)
+    prev_window = windows[0]
+    curr_window = windows[1]
+
+    def _build_prompts(window):
+        rows = db.get_prompts_in_range(
+            window.start.isoformat(),
+            window.end.isoformat(),
+            source=source,
+        )
+        return [
+            {
+                "text": r["text"],
+                "category": categorize_prompt(r["text"]),
+                "char_count": r.get("char_count", len(r["text"])),
+            }
+            for r in rows
+            if r.get("duplicate_of") is None
+        ]
+
+    prev_prompts = _build_prompts(prev_window)
+    curr_prompts = _build_prompts(curr_window)
+
+    previous = compute_style(prev_prompts)
+    current = compute_style(curr_prompts)
+
+    deltas: dict[str, Any] = {
+        "specificity": round(current["specificity"] - previous["specificity"], 2),
+        "avg_length": round(current["avg_length"] - previous["avg_length"], 1),
+        "prompt_count": current["prompt_count"] - previous["prompt_count"],
+        "top_category_changed": current["top_category"] != previous["top_category"],
+        "top_category_current": current["top_category"],
+        "top_category_previous": previous["top_category"],
+    }
+
+    return {
+        "period": period,
+        "current": current,
+        "previous": previous,
+        "deltas": deltas,
     }
