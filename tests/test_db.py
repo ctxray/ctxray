@@ -284,3 +284,42 @@ class TestPromptFeaturesStorage:
         debug_features = db.get_features_by_task_type("debug")
         assert len(debug_features) == 1
         assert debug_features[0]["task_type"] == "debug"
+
+
+# -- Settings key-value store tests --
+
+
+class TestSettings:
+    """Tests for the _settings key-value store."""
+
+    def test_get_setting_returns_none_for_missing_key(self, tmp_path):
+        db = PromptDB(tmp_path / "test.db")
+        assert db.get_setting("nonexistent_key") is None
+
+    def test_set_and_get_setting_roundtrip(self, tmp_path):
+        db = PromptDB(tmp_path / "test.db")
+        db.set_setting("hook_suggestion_shown", "1")
+        assert db.get_setting("hook_suggestion_shown") == "1"
+
+    def test_set_setting_overwrites_previous_value(self, tmp_path):
+        db = PromptDB(tmp_path / "test.db")
+        db.set_setting("theme", "dark")
+        db.set_setting("theme", "light")
+        assert db.get_setting("theme") == "light"
+
+    def test_settings_table_created_in_schema(self, tmp_path):
+        db = PromptDB(tmp_path / "test.db")
+        conn = sqlite3.connect(str(db.path))
+        tables = [
+            r[0]
+            for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        ]
+        conn.close()
+        assert "_settings" in tables
+
+    def test_multiple_settings_independent(self, tmp_path):
+        db = PromptDB(tmp_path / "test.db")
+        db.set_setting("key_a", "value_a")
+        db.set_setting("key_b", "value_b")
+        assert db.get_setting("key_a") == "value_a"
+        assert db.get_setting("key_b") == "value_b"

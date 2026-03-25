@@ -128,6 +128,10 @@ class PromptDB:
                     generated_at TEXT NOT NULL,
                     summary TEXT
                 );
+                CREATE TABLE IF NOT EXISTS _settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                );
             """)
             conn.commit()
         finally:
@@ -1047,5 +1051,30 @@ class PromptDB:
                 (period, limit),
             ).fetchall()
             return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    # -- Settings key-value store --
+
+    def get_setting(self, key: str) -> str | None:
+        """Get a setting value by key."""
+        conn = self._conn()
+        try:
+            row = conn.execute("SELECT value FROM _settings WHERE key = ?", (key,)).fetchone()
+            return row["value"] if row else None
+        except sqlite3.OperationalError:
+            return None
+        finally:
+            conn.close()
+
+    def set_setting(self, key: str, value: str) -> None:
+        """Set a setting value."""
+        conn = self._conn()
+        try:
+            conn.execute(
+                "INSERT OR REPLACE INTO _settings (key, value) VALUES (?, ?)",
+                (key, value),
+            )
+            conn.commit()
         finally:
             conn.close()

@@ -253,16 +253,17 @@ def scan(
         data = build_report_data(settings=settings)
         print(render_report(data), end="")
 
-    # Suggest install-hook if not already set up
+    # Suggest install-hook if not already set up (show once)
     db = PromptDB(settings.db_path)
     stats = db.get_stats()
     if stats.get("total_prompts", 0) > 0:
         hook_installed = (Path.home() / ".claude" / "settings.json").exists() and _hook_registered()
-        if not hook_installed:
+        if not hook_installed and db.get_setting("hook_suggestion_shown") is None:
             console.print(
-                "\n[dim]Tip: Run [bold]reprompt install-hook[/bold] to auto-scan "
-                "after every Claude Code session.[/dim]"
+                "\n[dim]Tip: auto-run reprompt after each session "
+                "\u2192  reprompt install-hook claude-code[/dim]"
             )
+            db.set_setting("hook_suggestion_shown", "1")
 
     # Next steps for new users (show once, on first scan with data)
     if result.new_stored > 0 and stats.get("total_prompts", 0) <= result.new_stored + 10:
