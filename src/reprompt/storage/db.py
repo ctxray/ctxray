@@ -954,6 +954,46 @@ class PromptDB:
         finally:
             conn.close()
 
+    def get_best_worst_prompts(self, source: str | None = None) -> tuple[str, str] | None:
+        """Return (best_text, worst_text) from scored prompts.
+
+        Filters to prompts with >= 5 words to avoid noise.
+        Returns None if fewer than 2 qualifying prompts exist.
+        """
+        conn = self._conn()
+        try:
+            if source:
+                rows = conn.execute(
+                    """SELECT p.text, pf.overall_score
+                       FROM prompt_features pf
+                       JOIN prompts p ON pf.prompt_hash = p.hash
+                       WHERE pf.overall_score IS NOT NULL AND p.source = ?
+                       ORDER BY pf.overall_score DESC""",
+                    (source,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """SELECT p.text, pf.overall_score
+                       FROM prompt_features pf
+                       JOIN prompts p ON pf.prompt_hash = p.hash
+                       WHERE pf.overall_score IS NOT NULL
+                       ORDER BY pf.overall_score DESC""",
+                ).fetchall()
+
+            # Filter to prompts with >= 5 words
+            qualified = [
+                (row["text"], row["overall_score"]) for row in rows if len(row["text"].split()) >= 5
+            ]
+
+            if len(qualified) < 2:
+                return None
+
+            best_text = qualified[0][0]  # highest score (first in DESC order)
+            worst_text = qualified[-1][0]  # lowest score (last in DESC order)
+            return (best_text, worst_text)
+        finally:
+            conn.close()
+
     # -- digest_log ---------------------------------------------------------
 
     def log_digest(
