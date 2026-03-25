@@ -1,6 +1,6 @@
 # reprompt Roadmap
 
-> Last updated: 2026-03-23 · Current version: v1.3.1
+> Last updated: 2026-03-24 · Current version: v1.4.0
 
 ## Vision
 
@@ -10,7 +10,7 @@ reprompt is the **prompt intelligence** tool for AI sessions — distill your co
 
 ---
 
-## Current State (v1.3.1) — Production Stable
+## Current State (v1.4.0) — Production Stable
 
 ### Adapters (8)
 Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT · Claude.ai
@@ -37,7 +37,7 @@ Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT
 | v1.4.0 | Context recovery + consolidation | `distill --export` context document, signal transparency, command consolidation (27→23) |
 
 ### Quality
-- 1271 tests, ≥90% coverage
+- 1295 tests, ≥90% coverage
 - Strict mypy, ruff lint/format
 - CI: coverage gate + pre-publish test step
 - Stable public API (`score_prompt`, `compare_prompts`, `extract_features`)
