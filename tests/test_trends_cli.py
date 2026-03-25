@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
 from typer.testing import CliRunner
 
 from reprompt.cli import app
@@ -13,19 +11,19 @@ runner = CliRunner()
 
 
 def test_trends_command_empty(tmp_path, monkeypatch):
+    """Trends is deprecated; it now prints a deprecation notice."""
     monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["trends"])
     assert result.exit_code == 0
-    assert "Prompt Evolution" in result.output
+    assert "digest --trends" in result.output
 
 
 def test_trends_command_json(tmp_path, monkeypatch):
+    """Trends --format json is deprecated; it now prints a deprecation notice."""
     monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["trends", "--format", "json"])
     assert result.exit_code == 0
-    data = json.loads(result.output)
-    assert "windows" in data
-    assert "insights" in data
+    assert "digest --trends" in result.output
 
 
 def test_trends_command_custom_period(tmp_path, monkeypatch):
@@ -35,24 +33,11 @@ def test_trends_command_custom_period(tmp_path, monkeypatch):
 
 
 def test_trends_with_data(tmp_path, monkeypatch):
+    """Trends is deprecated; it prints deprecation notice even with data."""
     monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
-    from datetime import datetime, timedelta, timezone
-
-    from reprompt.storage.db import PromptDB
-
-    db = PromptDB(tmp_path / "test.db")
-    now = datetime.now(timezone.utc)
-    for i in range(10):
-        ts = (now - timedelta(days=i)).isoformat()
-        db.insert_prompt(
-            f"fix the authentication issue number {i} in the login module",
-            source="cc",
-            timestamp=ts,
-        )
-
     result = runner.invoke(app, ["trends", "--period", "7d", "--windows", "2"])
     assert result.exit_code == 0
-    assert "Prompts" in result.output
+    assert "digest --trends" in result.output
 
 
 def test_render_trends_empty():

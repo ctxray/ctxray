@@ -1,6 +1,6 @@
 # reprompt Roadmap
 
-> Last updated: 2026-03-25 · Current version: v1.4.1
+> Last updated: 2026-03-25 · Current version: v1.5.0
 
 ## Vision
 
@@ -10,18 +10,19 @@ reprompt is the **prompt intelligence** tool for AI sessions — distill your co
 
 ---
 
-## Current State (v1.4.0) — Production Stable
+## Current State (v1.5.0) — Production Stable
 
 ### Adapters (8)
 Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT · Claude.ai
 
-### Commands (23 visible, 5 deprecated)
-`scan` · `import` · `report` · `library` · `trends` · `recommend` · `template [save|list|use]` · `lint` · `search` · `demo` · `status` · `purge` · `install-hook` · `install-extension` · `extension-status` · `score` · `compare` · `insights` · `digest` · `style` · `wrapped` · `telemetry` · `mcp-serve` · `compress` · `distill` · `privacy`
+### Commands (23 visible, 8 deprecated)
+`scan` · `import` · `report` · `template [save|list|use]` · `lint` · `search` · `demo` · `status` · `purge` · `install-hook` · `install-extension` · `extension-status` · `score` · `compare` · `insights` · `digest` · `style` · `wrapped` · `telemetry` · `mcp-serve` · `compress` · `distill` · `privacy`
 
 ### Integrations
 - MCP server (`reprompt mcp-serve`) for IDE integration
 - GitHub Action (`action.yml`) for CI prompt quality checks
 - HTML dashboard (`reprompt report --html`)
+- Bare `reprompt` dashboard (zero-state + data-state)
 - Browser extension (Chrome/Firefox) via Native Messaging bridge
 - JSON output on all commands for pipeline integration
 
@@ -36,12 +37,27 @@ Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT
 | v1.3.1 | UX polish | Actionable suggestions on 5 commands, `--source` filter on all data commands |
 | v1.4.0 | Context recovery + consolidation | `distill --export` context document, signal transparency, command consolidation (27→23) |
 | v1.4.1 | Compare + style polish | `compare --best-worst` auto-pick, `style --trends` period-over-period deltas |
+| v1.5.0 | Dashboard + signal fixes | Bare `reprompt` dashboard, session type detection, distill signal quality fixes, scan hook shows once |
 
 ### Quality
-- 1316 tests, ≥90% coverage
+- 1397 tests, ≥90% coverage
 - Strict mypy, ruff lint/format
 - CI: coverage gate + pre-publish test step
 - Stable public API (`score_prompt`, `compare_prompts`, `extract_features`)
+
+---
+
+## v1.5.0 — Dashboard + Session Type Detection + Signal Fixes
+
+| Priority | Item | Rationale |
+|----------|------|-----------|
+| P1 | Bare `reprompt` dashboard | **DONE** — zero-state shows onboarding guide; data-state shows 7d summary (prompts, sessions, avg score, compressibility, long sessions) with score-by-task-type breakdown and contextual next-step suggestions |
+| P1 | Session type detection | **DONE** — auto-detects session type (debug, feature, refactor, explore, review, etc.) and adjusts distill signal weights per type |
+| P2 | Distill signal quality fixes | **DONE** — position signal no longer over-scores small-talk openers/closers; length signal penalizes error dumps; error_recovery signal filters "ok try again" noise |
+| P3 | Scan hook suggestion shows once | **DONE** — `install-hook` suggestion displays only on first scan, not every time |
+| P3 | `library`/`recommend`/`trends` deprecated | **DONE** — consolidated into `template list`, `template list --smart`, and `digest --trends` respectively |
+
+**Status: Dashboard, session-aware distill, and signal quality shipped.**
 
 ---
 
@@ -61,11 +77,10 @@ Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT
 
 ---
 
-## v1.5+ — Future Work
+## v1.6+ — Future Work
 
 | Feature | Description |
 |---------|-------------|
-| Distill false positive reduction | Position signal breaks on small-talk openers / "thanks bye" closers; long error dumps score high on length+uniqueness but aren't decision points; "ok try again" triggers error_recovery but is noise. Community feedback from r/LLMDevs. |
 | Sensitive content detection | Privacy narrative; PII in prompts |
 | Agent workflow analysis | Multi-step agent session patterns |
 | `.reprompt.yml` configurable lint | Team/Pro direction |

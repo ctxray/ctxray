@@ -149,3 +149,84 @@ class TestDistillCLI:
         assert "--threshold" in output
         assert "--copy" in output
         assert "--json" in output
+
+
+class TestDistillSessionType:
+    """Tests for session type display in distill output."""
+
+    def test_render_shows_detected_type(self):
+        """When conversation has _detected_type, it should appear in output."""
+        from reprompt.core.session_type import SessionType
+        from reprompt.output.distill_terminal import render_distill
+
+        turns = [
+            ConversationTurn(
+                role="user",
+                text="Fix the bug in auth.py",
+                timestamp="",
+                turn_index=0,
+                importance=0.8,
+            ),
+        ]
+        conv = Conversation(session_id="abc123", source="claude-code", project="test", turns=turns)
+        conv._detected_type = SessionType.DEBUGGING  # type: ignore[attr-defined]
+        result = DistillResult(
+            conversation=conv,
+            filtered_turns=turns,
+            threshold=0.3,
+            stats=DistillStats(total_turns=10, kept_turns=1),
+        )
+        output = _strip_ansi(render_distill(result))
+        assert "debugging" in output.lower()
+
+    def test_render_no_type_when_absent(self):
+        """When conversation has no _detected_type, no type line shown."""
+        from reprompt.output.distill_terminal import render_distill
+
+        turns = [
+            ConversationTurn(
+                role="user",
+                text="Hello world",
+                timestamp="",
+                turn_index=0,
+                importance=0.5,
+            ),
+        ]
+        conv = Conversation(session_id="xyz789", source="test", project=None, turns=turns)
+        result = DistillResult(
+            conversation=conv,
+            filtered_turns=turns,
+            threshold=0.3,
+            stats=DistillStats(total_turns=2, kept_turns=1),
+        )
+        output = _strip_ansi(render_distill(result))
+        # Should not contain session type labels
+        assert "debugging" not in output.lower()
+        assert "implementation" not in output.lower()
+        assert "exploratory" not in output.lower()
+        assert "review" not in output.lower()
+
+    def test_render_shows_implementation_type(self):
+        """Implementation type should show correctly."""
+        from reprompt.core.session_type import SessionType
+        from reprompt.output.distill_terminal import render_distill
+
+        turns = [
+            ConversationTurn(
+                role="user",
+                text="Add a new feature",
+                timestamp="",
+                turn_index=0,
+                importance=0.6,
+            ),
+        ]
+        conv = Conversation(session_id="impl01", source="cursor", project="proj", turns=turns)
+        conv._detected_type = SessionType.IMPLEMENTATION  # type: ignore[attr-defined]
+        result = DistillResult(
+            conversation=conv,
+            filtered_turns=turns,
+            threshold=0.3,
+            stats=DistillStats(total_turns=5, kept_turns=1),
+        )
+        output = _strip_ansi(render_distill(result))
+        assert "implementation" in output.lower()
