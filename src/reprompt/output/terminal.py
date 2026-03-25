@@ -409,6 +409,50 @@ def render_insights(data: dict[str, Any]) -> str:
     return buf.getvalue()
 
 
+def render_effectiveness_section(data: dict[str, Any]) -> str:
+    """Render effectiveness section for expanded insights."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    console.print("\n[bold]Effectiveness[/bold]")
+    console.print("\u2500" * 40)
+
+    top = data.get("top_patterns", [])
+    if top:
+        console.print("  Your top patterns:")
+        for p in top:
+            console.print(
+                f'    {p["stars"]} "{p["pattern"][:40]}" '
+                f"({p['frequency']} uses, avg {p['avg_score']})"
+            )
+
+    worst = data.get("worst_pattern")
+    if worst:
+        console.print(
+            f'  Weakest: "{worst["pattern"][:40]}" '
+            f"({worst['frequency']} uses, avg {worst['avg_score']})"
+        )
+
+    return buf.getvalue()
+
+
+def render_similar_prompts_section(data: dict[str, Any]) -> str:
+    """Render similar prompts section for expanded insights."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    console.print("\n[bold]Similar Prompts[/bold]")
+    console.print("\u2500" * 40)
+
+    clusters = data.get("clusters", [])
+    total = data.get("total_clusters", 0)
+    console.print(f"  {total} clusters of near-duplicate prompts found")
+    for c in clusters:
+        console.print(f'    "{c["canonical_text"][:50]}" \u2014 {c["size"]} variations')
+
+    return buf.getvalue()
+
+
 def render_compare(data: dict[str, Any]) -> str:
     """Render a side-by-side prompt comparison."""
     buf = StringIO()

@@ -8,7 +8,10 @@ insights about the user's prompting patterns.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from reprompt.storage.db import PromptDB
 
 # Research-optimal thresholds (from papers)
 OPTIMAL = {
@@ -154,6 +157,7 @@ def compute_insights(features: list[dict[str, Any]]) -> dict[str, Any]:
         insights.append(
             {
                 "category": "verbosity",
+                "paper": "LLMLingua arXiv:2310.05736",
                 "finding": f"You: {avg_compress:.0%} avg compressible content",
                 "optimal": f"Research-optimal: <{OPTIMAL['compressibility']:.0%}",
                 "action": "Remove filler phrases, be more direct with instructions",
@@ -187,4 +191,91 @@ def compute_insights(features: list[dict[str, Any]]) -> dict[str, Any]:
         "score_distribution": distribution,
         "source_scores": source_avgs,
         "insights": insights,
+    }
+
+
+def get_effectiveness_insight(
+    db: PromptDB,
+    source: str | None = None,  # noqa: ARG001 — patterns table has no source column
+) -> dict[str, Any] | None:
+    """Return top 3 + worst 1 effectiveness patterns, or None if insufficient data.
+
+    Uses db.get_patterns() sorted by effectiveness_avg.
+    Pass raw 0.0-1.0 float to effectiveness_stars(); display effectiveness_avg * 100
+    as integer.
+
+    Note: source parameter is accepted for API consistency but not applied —
+    prompt_patterns table stores aggregated data without source attribution.
+    """
+    from reprompt.core.effectiveness import effectiveness_stars
+
+    patterns = db.get_patterns()
+    scored = [p for p in patterns if p.get("effectiveness_avg") is not None]
+    if not scored:
+        return None
+
+    scored.sort(key=lambda p: p.get("effectiveness_avg", 0), reverse=True)
+
+    def _pattern_entry(p: dict[str, Any]) -> dict[str, Any]:
+        avg = p.get("effectiveness_avg", 0)
+        return {
+            "pattern": p.get("pattern_text", ""),
+            "frequency": p.get("frequency", 0),
+            "avg_score": round(avg * 100),
+            "stars": effectiveness_stars(avg),
+            "category": p.get("category", "other"),
+        }
+
+    top = [_pattern_entry(p) for p in scored[:3]]
+    worst = _pattern_entry(scored[-1]) if len(scored) > 3 else None
+
+    return {
+        "top_patterns": top,
+        "worst_pattern": worst,
+        "total_patterns": len(scored),
+    }
+
+
+def get_similar_prompts_insight(
+    db: PromptDB,
+    source: str | None = None,
+) -> dict[str, Any] | None:
+    """Return top 3 duplicate clusters, or None if insufficient data.
+
+    Source filtering is done upstream: db.get_all_prompts(source=source)
+    before passing texts to build_clusters().
+    """
+    from reprompt.core.merge_view import build_clusters
+
+    all_prompts = db.get_all_prompts(source=source)
+    unique = [p for p in all_prompts if p.get("duplicate_of") is None]
+
+    if len(unique) < 5:
+        return None
+
+    texts = [p["text"] for p in unique]
+    timestamps = [p.get("timestamp", "") for p in unique]
+
+    from reprompt.config import Settings
+
+    settings = Settings()
+    clusters = build_clusters(texts, timestamps, threshold=settings.dedup_threshold)
+
+    if not clusters:
+        return None
+
+    top = []
+    for c in clusters[:3]:
+        top.append(
+            {
+                "name": c["name"],
+                "size": c["size"],
+                "canonical_text": c["canonical"]["text"][:80],
+            }
+        )
+
+    return {
+        "clusters": top,
+        "total_clusters": len(clusters),
+        "total_clustered_prompts": sum(c["size"] for c in clusters),
     }

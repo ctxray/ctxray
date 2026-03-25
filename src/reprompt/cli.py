@@ -1428,7 +1428,11 @@ def insights(
 ) -> None:
     """Show research-backed insights about your prompting patterns."""
     from reprompt.config import Settings
-    from reprompt.core.insights import compute_insights
+    from reprompt.core.insights import (
+        compute_insights,
+        get_effectiveness_insight,
+        get_similar_prompts_insight,
+    )
     from reprompt.storage.db import PromptDB
 
     settings = Settings()
@@ -1436,15 +1440,38 @@ def insights(
     all_features = db.get_all_features(source=source)
     result = compute_insights(all_features)
 
+    # Expanded sections
+    eff_data = get_effectiveness_insight(db, source=source)
+    sim_data = get_similar_prompts_insight(db, source=source)
+
     if json_output:
         import json as json_mod
 
+        result["effectiveness"] = eff_data
+        result["similar_prompts"] = sim_data
         typer.echo(json_mod.dumps(result, indent=2))
     else:
         from reprompt.core.suggestions import get_suggestion
-        from reprompt.output.terminal import render_insights
+        from reprompt.output.terminal import (
+            render_effectiveness_section,
+            render_insights,
+            render_similar_prompts_section,
+        )
 
         typer.echo(render_insights(result))
+
+        if eff_data:
+            typer.echo(render_effectiveness_section(eff_data))
+            console.print(
+                '  [dim]\u2192 Try: reprompt score "prompt" (improve weak patterns)[/dim]'
+            )
+
+        if sim_data:
+            typer.echo(render_similar_prompts_section(sim_data))
+            console.print(
+                '  [dim]\u2192 Try: reprompt template save "..." (reuse instead of rewrite)[/dim]'
+            )
+
         hint = get_suggestion("insights")
         if hint:
             console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
