@@ -36,7 +36,16 @@ reprompt compare --best-worst --source claude-code
 - `prompt_a` and `prompt_b` become `Optional[str]` (default `None`)
 - Add `--best-worst` flag (bool, default `False`)
 - Add `--source` filter (str, optional) for consistency
-- Validation: `--best-worst` and manual prompts are mutually exclusive
+- Manual mutual-exclusion guard at top of function body (Typer has no built-in mechanism):
+  ```python
+  if best_worst and (prompt_a or prompt_b):
+      console.print("[red]--best-worst cannot be combined with prompt arguments[/red]")
+      raise typer.Exit(1)
+  if not best_worst and not (prompt_a and prompt_b):
+      console.print("[red]Provide two prompts or use --best-worst[/red]")
+      raise typer.Exit(1)
+  ```
+  Pattern matches existing `distill` command (cli.py:963–971).
 - When `--best-worst`: call `db.get_best_worst_prompts(source)` to get texts, then run existing scoring logic
 
 **DB method (`storage/db.py`):**
@@ -49,7 +58,7 @@ def get_best_worst_prompts(self, source: str | None = None) -> tuple[str, str] |
     """
 ```
 
-Query: JOIN `prompt_features` ON `prompts.hash = prompt_features.prompt_hash`, filter `overall_score IS NOT NULL`, order by score DESC for best and ASC for worst. Use `features_json` to check word_count >= 5 (parsed from JSON), or do a length check on `prompts.text` (word split, len >= 5).
+Query: JOIN `prompt_features` ON `prompts.hash = prompt_features.prompt_hash`, filter `overall_score IS NOT NULL`, order by score DESC for best and ASC for worst. Filter in Python after the JOIN: fetch all scored rows with their `prompts.text`, apply `len(text.split()) >= 5`, then take max/min `overall_score` rows from survivors. This avoids JSON parsing in the hot path and is straightforward to test.
 
 **Terminal output enhancement:**
 When using `--best-worst`, show the prompt texts (truncated to 80 chars) above the comparison table so the user knows what's being compared.
@@ -104,8 +113,8 @@ def compute_style_trends(
 ```
 
 Reuses:
-- `sliding_windows(period, count=2)` from `core/timeutil`
-- `db.get_prompts_in_range(start, end, source)` from existing DB
+- `sliding_windows(period, count=2)` from `core/timeutil` — returns `list[TimeWindow]` with `.start`/`.end` as `datetime` objects
+- `db.get_prompts_in_range(start, end, source=source)` — `source` is keyword-only; `start`/`end` must be ISO-8601 strings, so call `window.start.isoformat()` / `window.end.isoformat()` before passing
 - `compute_style(prompts)` applied to each window's prompts
 - `categorize_prompt()` from `core/library` to build prompt dicts
 
@@ -133,7 +142,11 @@ New `render_style_trends(data)` function. Output format:
   Top Category   debugging → refactoring
 ```
 
-Arrow notation with green for improvements, red for regressions (Rich markup). "Improvement" heuristic: higher specificity = good, but length is neutral (just show delta without color).
+Coloring rules:
+- `Specificity`: green if positive delta (higher = better), red if negative
+- `Prompts`: green if positive delta (more activity = good), dim if negative
+- `Avg Length`: always `[dim]` (neutral metric, no green/red — length is not inherently better or worse)
+- `Top Category`: no color, just show the shift
 
 **JSON output:** Return raw `{period, current, previous, deltas}` dict.
 
