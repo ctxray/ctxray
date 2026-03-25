@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 app = typer.Typer(
     name="reprompt",
     help="Discover, analyze, and evolve your best prompts from AI coding sessions.",
-    no_args_is_help=True,
+    no_args_is_help=False,
 )
 console = Console()
 
@@ -186,13 +186,36 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
     version: bool = typer.Option(
         False, "--version", "-V", callback=_version_callback, is_eager=True
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output dashboard as JSON"),
 ) -> None:
     """reprompt -- Discover, analyze, and evolve your best prompts from AI coding sessions."""
+    if ctx.invoked_subcommand is not None:
+        return
+
+    # Dashboard mode
+    from reprompt.config import Settings
+    from reprompt.core.dashboard import build_dashboard_data
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    data = build_dashboard_data(db)
+
+    if json_output:
+        import dataclasses
+        import json as json_mod
+
+        typer.echo(json_mod.dumps(dataclasses.asdict(data), indent=2, default=str))
+    else:
+        from reprompt.output.dashboard_terminal import render_dashboard
+
+        typer.echo(render_dashboard(data), nl=False)
 
 
 @app.command()

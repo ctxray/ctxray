@@ -35,10 +35,13 @@ def render_distill(result: DistillResult) -> str:
 
     project_str = f" | {conv.project}" if conv.project else ""
 
+    detected_type = getattr(conv, "_detected_type", None)
+    type_str = f" | {detected_type.value} session" if detected_type is not None else ""
+
     header = (
         f"session {conv.session_id[:12]} ({conv.source})\n"
         f"  {stats.total_turns} \u2192 {stats.kept_turns} turns"
-        f"{project_str}{duration_str}"
+        f"{project_str}{duration_str}{type_str}"
     )
     console.print(Panel(header, title="Distill", border_style="cyan"))
 
