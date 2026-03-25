@@ -2,6 +2,94 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2026-03-25
+
+### Added
+- **Instant dashboard** — bare `reprompt` now shows a health overview: total prompts, sessions, avg score, top categories, recent activity. Zero-state guides new users; data-state gives at-a-glance intelligence
+- **Session type detection** — `distill` auto-classifies sessions (debugging, feature-dev, exploration, refactoring, config, learning) and adapts signal weights per type
+- **Hook suggestion throttle** — `reprompt scan` suggests `install-hook` only once, not every run
+
+### Changed
+- **Command consolidation (23 → 20)** — deprecated `library`, `recommend`, `trends` as standalone commands; functionality absorbed into `report --smart` and `style --trends` flags
+- **Signal quality improvements** — reduced false positives in position, length, and error_recovery signals for more accurate distillation
+- Tests: 1350 → 1397
+
+### Deprecated
+- `reprompt library` → use `reprompt report --smart`
+- `reprompt recommend` → use `reprompt insights`
+- `reprompt trends` → use `reprompt style --trends`
+
+## [1.4.1] - 2026-03-25
+
+### Added
+- **`compare --best-worst`** — auto-selects your highest and lowest scoring prompts from the database for instant comparison
+- **`style --trends`** — period-over-period style fingerprint comparison showing how your prompting patterns evolve
+
+## [1.4.0] - 2026-03-24
+
+### Added
+- **Context recovery** — `distill --export` generates a markdown summary of conversation context, ready to paste into a new session when context is lost
+- **`--full` mode** — exports all turns (not just important ones) for complete session records
+- **`--show-weights` / `--weights`** — transparent signal weighting so you can see and tune how importance is scored
+- **Template sub-app** — `reprompt template save|list|use` for managing reusable prompts
+- **Enhanced insights** — effectiveness scoring and similar prompt suggestions
+
+### Changed
+- **Command consolidation (27 → 23)** — deprecated `save`, `templates`, `use`, `effectiveness`, `merge-view` in favor of unified `template` and `insights` commands
+- Tests: 1250 → 1350
+
+### Deprecated
+- `reprompt save` → use `reprompt template save`
+- `reprompt templates` → use `reprompt template list`
+- `reprompt use` → use `reprompt template use`
+- `reprompt effectiveness` → folded into `reprompt insights`
+- `reprompt merge-view` → use `reprompt report --smart`
+
+## [1.3.1] - 2026-03-23
+
+### Added
+- **Actionable suggestions** — 5 core commands now show contextual "→ Try:" hints guiding users to the next useful command
+- **`--source` consistency** — all data commands support `--source` filtering
+
+### Fixed
+- System-injected XML prompts (starting with `<`) filtered from distillation input
+
+## [1.3.0] - 2026-03-23
+
+### Added
+- **Conversation distillation** — `reprompt distill` extracts the most important turns from AI conversations using 6-signal importance scoring: position, length, tool trigger, error recovery, semantic shift, uniqueness
+- **Full conversation parsing** — adapters now return both user and assistant turns (Claude Code and ChatGPT have full implementations; others fall back to user-only)
+- **Rule-based summaries** — `--summary` generates compressed conversation overviews without requiring an LLM
+- **Flexible session selection** — `--last N` for recent sessions, `--threshold` to control importance cutoff
+- **Output options** — `--json`, `--copy` for pipeline integration
+
+### Changed
+- Tests: 1153 → 1217
+
+## [1.2.0] - 2026-03-23
+
+### Added
+- **4-layer prompt compression** — `reprompt compress` optimizes prompts through character normalization, phrase simplification (40+ zh / 50+ en rules), filler word deletion (jieba-aware), and structure cleanup
+- **Compressibility in PromptDNA** — every scanned prompt gets a compressibility score, visible in insights and HTML dashboard
+- **`--copy` flag** — compressed output copies to clipboard
+
+### Changed
+- Tests: 1046 → 1153
+
+### Research
+- Compression rules based on LLMLingua (Microsoft), CompactPrompt, TSC, stopwords-iso/zh, Prompt Report 2406.06608
+
+## [1.1.0] - 2026-03-22
+
+### Added
+- **Privacy exposure analysis** — `reprompt privacy` shows what data you've sent to which AI tools: file paths, error messages, code snippets, personal identifiers
+- **Per-adapter breakdown** — see privacy exposure grouped by source (Claude Code vs ChatGPT vs Cursor etc.)
+- **Instruction repetition scoring** — detects and scores redundant instructions within prompts
+- **Per-source insights** — `reprompt insights --source` shows patterns specific to each tool
+
+### Changed
+- Tests: 923 → 1046
+
 ## [1.0.0] - 2026-03-16
 
 ### Changed
