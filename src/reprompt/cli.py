@@ -21,6 +21,133 @@ app = typer.Typer(
 )
 console = Console()
 
+# --- Template sub-app ---
+template_app = typer.Typer(help="Manage prompt templates.", invoke_without_command=True)
+
+
+@template_app.callback()
+def template_default(ctx: typer.Context) -> None:
+    """Manage prompt templates."""
+    if ctx.invoked_subcommand is None:
+        ctx.invoke(template_list, category="", json_output=False)
+
+
+@template_app.command("save")
+def template_save(
+    text: str = typer.Argument(..., help="Prompt text to save as template"),
+    name: str = typer.Option("", "--name", "-n", help="Template name (auto-generated if omitted)"),
+    category: str = typer.Option(
+        "", "--category", "-c", help="Category (auto-detected if omitted)"
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+) -> None:
+    """Save a prompt as a reusable template."""
+    import json as json_mod
+
+    from reprompt.config import Settings
+    from reprompt.core.templates import save_template
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    result = save_template(
+        db,
+        text=text,
+        name=name or None,
+        category=category or None,
+    )
+    if json_output:
+        print(json_mod.dumps(result, indent=2, default=str))
+    else:
+        typer.echo(f"Saved template '{result['name']}' (category: {result['category']})")
+
+
+@template_app.command("list")
+def template_list(
+    category: str = typer.Option("", "--category", "-c", help="Filter by category"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+) -> None:
+    """List your saved prompt templates."""
+    import json as json_mod
+
+    from reprompt.config import Settings
+    from reprompt.output.terminal import render_templates
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    items = db.list_templates(category=category or None)
+
+    if json_output:
+        print(json_mod.dumps(items, indent=2, default=str))
+    else:
+        print(render_templates(items, category_filter=category or None), end="")
+
+
+@template_app.command("use")
+def template_use(
+    name: str = typer.Argument(..., help="Template name to use"),
+    variables: list[str] = typer.Argument(None, help="Variables as key=value pairs"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    copy: bool = typer.Option(False, "--copy", help="Copy rendered template to clipboard"),
+) -> None:
+    """Use a saved template with variable substitution."""
+    import json as json_mod
+
+    from reprompt.config import Settings
+    from reprompt.core.templates import extract_variables, render_template
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    template = db.get_template(name)
+
+    if template is None:
+        console.print(f"[red]Template '{name}' not found.[/red]")
+        console.print("Run [bold]reprompt template list[/bold] to see available templates.")
+        raise typer.Exit(1)
+
+    text = template["text"]
+
+    # Parse key=value pairs
+    var_dict: dict[str, str] = {}
+    for v in variables or []:
+        if "=" in v:
+            key, val = v.split("=", 1)
+            var_dict[key] = val
+
+    rendered = render_template(text, var_dict)
+
+    if json_output:
+        remaining = extract_variables(rendered)
+        print(
+            json_mod.dumps(
+                {
+                    "rendered": rendered,
+                    "template_name": name,
+                    "unfilled_variables": remaining,
+                },
+                indent=2,
+            )
+        )
+    else:
+        # Show unfilled variables as hint
+        remaining = extract_variables(rendered)
+        if remaining:
+            console.print(f"[dim]Unfilled variables: {', '.join(remaining)}[/dim]")
+        console.print(rendered)
+
+    if copy:
+        from reprompt.sharing.clipboard import copy_to_clipboard
+
+        copy_to_clipboard(rendered)
+        console.print("[dim]Copied to clipboard.[/dim]", err=True)
+
+    db.increment_template_usage(name)
+
+
+app.add_typer(template_app, name="template")
+
 
 def _register_free_tier_commands() -> None:
     """Register Free tier commands (wrapped + telemetry) directly."""
