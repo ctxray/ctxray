@@ -569,79 +569,18 @@ def trends(
         print(render_trends(data), end="")
 
 
-@app.command()
+@app.command(deprecated=True, hidden=True)
 def effectiveness(
     top: int = typer.Option(10, help="Show top N patterns by effectiveness"),
     worst: int = typer.Option(3, help="Show bottom N patterns"),
     format: str = typer.Option("terminal", help="Output format: terminal, json"),
 ) -> None:
-    """Show prompt pattern effectiveness scores."""
-    import json as json_mod
-
-    from reprompt.config import Settings
-    from reprompt.core.effectiveness import effectiveness_stars
-    from reprompt.storage.db import PromptDB
-
-    settings = Settings()
-    db = PromptDB(settings.db_path)
-    summary = db.get_effectiveness_summary()
-    sessions = db.get_session_meta(limit=100)
-
-    if format == "json":
-        print(json_mod.dumps({"summary": summary, "sessions": sessions}, indent=2, default=str))
-        return
-
-    if not sessions:
-        console.print("No effectiveness data yet. Run [bold]reprompt scan[/bold] first.")
-        return
-
-    from rich.table import Table
-
-    console.print("\n[bold]reprompt effectiveness — Session Quality[/bold]")
-    console.print("=" * 40)
-
-    avg = summary.get("avg_score", 0) or 0
-    console.print(
-        f"  Sessions analyzed: {summary.get('total', 0)}  |  "
-        f"Avg score: {avg:.2f} {effectiveness_stars(avg)}"
+    """Deprecated: use `reprompt insights` instead."""
+    typer.echo(
+        "Warning: 'effectiveness' is deprecated. Use 'reprompt insights' instead.",
+        err=True,
     )
-
-    table = Table(title=f"Top {top} Sessions by Effectiveness")
-    table.add_column("#", style="dim", width=4)
-    table.add_column("Session", max_width=30)
-    table.add_column("Project", max_width=15)
-    table.add_column("Score", justify="right")
-    table.add_column("Rating")
-    table.add_column("Status")
-
-    for i, s in enumerate(sessions[:top], 1):
-        score = s.get("effectiveness_score", 0) or 0
-        table.add_row(
-            str(i),
-            str(s.get("session_id", ""))[:30],
-            str(s.get("project", ""))[:15],
-            f"{score:.2f}",
-            effectiveness_stars(score),
-            str(s.get("final_status", "")),
-        )
-    console.print(table)
-
-    if worst > 0 and len(sessions) > top:
-        worst_sessions = sorted(sessions, key=lambda x: x.get("effectiveness_score", 0) or 0)
-        table2 = Table(title=f"Bottom {worst} (Patterns to Improve)")
-        table2.add_column("#", style="dim", width=4)
-        table2.add_column("Session", max_width=30)
-        table2.add_column("Score", justify="right")
-        table2.add_column("Status")
-        for i, s in enumerate(worst_sessions[:worst], 1):
-            score = s.get("effectiveness_score", 0) or 0
-            table2.add_row(
-                str(i),
-                str(s.get("session_id", ""))[:30],
-                f"{score:.2f}",
-                str(s.get("final_status", "")),
-            )
-        console.print(table2)
+    insights(json_output=(format == "json"), source=None)
 
 
 @app.command()
@@ -730,49 +669,20 @@ def recommend(
         print(render_recommendations(data), end="")
 
 
-@app.command("merge-view")
+@app.command("merge-view", deprecated=True, hidden=True)
 def merge_view(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     limit: int = typer.Option(0, "--limit", help="Max clusters to show (0 = all)"),
 ) -> None:
-    """Show clusters of similar prompts you keep rewriting."""
-    import json as json_mod
-
-    from reprompt.config import Settings
-    from reprompt.core.merge_view import build_clusters
-    from reprompt.output.terminal import render_merge_view
-    from reprompt.storage.db import PromptDB
-
-    settings = Settings()
-    db = PromptDB(settings.db_path)
-    all_prompts = db.get_all_prompts()
-
-    unique = [p for p in all_prompts if p.get("duplicate_of") is None]
-    texts = [p["text"] for p in unique]
-    timestamps = [p.get("timestamp", "") for p in unique]
-
-    clusters = build_clusters(texts, timestamps, threshold=settings.dedup_threshold)
-
-    if limit > 0:
-        clusters = clusters[:limit]
-
-    total_clustered = sum(c["size"] for c in clusters)
-    data = {
-        "clusters": clusters,
-        "summary": {
-            "total_clustered_prompts": total_clustered,
-            "cluster_count": len(clusters),
-            "reduction_potential": f"{total_clustered} → {len(clusters)}",
-        },
-    }
-
-    if json_output:
-        print(json_mod.dumps(data, indent=2, default=str))
-    else:
-        print(render_merge_view(data), end="")
+    """Deprecated: use `reprompt insights` instead."""
+    typer.echo(
+        "Warning: 'merge-view' is deprecated. Use 'reprompt insights' instead.",
+        err=True,
+    )
+    insights(json_output=json_output, source=None)
 
 
-@app.command()
+@app.command(deprecated=True, hidden=True)
 def save(
     text: str = typer.Argument(..., help="Prompt text to save as template"),
     name: str = typer.Option("", "--name", "-n", help="Template name (auto-generated if omitted)"),
@@ -780,42 +690,17 @@ def save(
         "", "--category", "-c", help="Category (auto-detected if omitted)"
     ),
 ) -> None:
-    """Save a prompt as a reusable template."""
-    from reprompt.config import Settings
-    from reprompt.core.templates import save_template
-    from reprompt.storage.db import PromptDB
-
-    settings = Settings()
-    db = PromptDB(settings.db_path)
-    result = save_template(
-        db,
-        text=text,
-        name=name or None,
-        category=category or None,
-    )
-    typer.echo(f"Saved template '{result['name']}' (category: {result['category']})")
+    """Deprecated: use `reprompt template save` instead."""
+    template_save(text=text, name=name, category=category, json_output=False)
 
 
-@app.command()
+@app.command(deprecated=True, hidden=True)
 def templates(
     category: str = typer.Option("", "--category", "-c", help="Filter by category"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
-    """List your saved prompt templates."""
-    import json as json_mod
-
-    from reprompt.config import Settings
-    from reprompt.output.terminal import render_templates
-    from reprompt.storage.db import PromptDB
-
-    settings = Settings()
-    db = PromptDB(settings.db_path)
-    items = db.list_templates(category=category or None)
-
-    if json_output:
-        print(json_mod.dumps(items, indent=2, default=str))
-    else:
-        print(render_templates(items, category_filter=category or None), end="")
+    """Deprecated: use `reprompt template list` instead."""
+    template_list(category=category, json_output=json_output)
 
 
 @app.command()
@@ -855,43 +740,13 @@ def style(
         print(render_style(data), end="")
 
 
-@app.command()
+@app.command(deprecated=True, hidden=True)
 def use(
     name: str = typer.Argument(..., help="Template name to use"),
     variables: list[str] = typer.Argument(None, help="Variables as key=value pairs"),
 ) -> None:
-    """Use a saved template with variable substitution."""
-    from reprompt.config import Settings
-    from reprompt.core.templates import extract_variables, render_template
-    from reprompt.storage.db import PromptDB
-
-    settings = Settings()
-    db = PromptDB(settings.db_path)
-    template = db.get_template(name)
-
-    if template is None:
-        console.print(f"[red]Template '{name}' not found.[/red]")
-        console.print("Run [bold]reprompt templates[/bold] to see available templates.")
-        raise typer.Exit(1)
-
-    text = template["text"]
-
-    # Parse key=value pairs
-    var_dict: dict[str, str] = {}
-    for v in variables or []:
-        if "=" in v:
-            key, val = v.split("=", 1)
-            var_dict[key] = val
-
-    rendered = render_template(text, var_dict)
-
-    # Show unfilled variables as hint
-    remaining = extract_variables(rendered)
-    if remaining:
-        console.print(f"[dim]Unfilled variables: {', '.join(remaining)}[/dim]")
-
-    console.print(rendered)
-    db.increment_template_usage(name)
+    """Deprecated: use `reprompt template use` instead."""
+    template_use(name=name, variables=variables, json_output=False, copy=False)
 
 
 @app.command()
