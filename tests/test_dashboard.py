@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+import json
+import tempfile
 from unittest.mock import MagicMock, patch
 
+from typer.testing import CliRunner
+
+from reprompt.cli import app
 from reprompt.core.dashboard import DashboardData, build_dashboard_data
+
+runner = CliRunner()
 
 
 class TestZeroState:
@@ -380,3 +387,37 @@ class TestDashboardDataclass:
         )
         assert data.has_data
         assert data.prompt_count == 50
+
+
+class TestBareRepromptCLI:
+    """Tests for bare `reprompt` (no subcommand) showing dashboard."""
+
+    def test_bare_reprompt_shows_dashboard(self):
+        """Bare `reprompt` should show dashboard output, not help text."""
+        with tempfile.NamedTemporaryFile(suffix=".db") as f:
+            result = runner.invoke(app, [], env={"REPROMPT_DB_PATH": f.name})
+        assert result.exit_code == 0
+        # Should NOT show help (which contains "Usage:")
+        assert "Usage:" not in result.output or "reprompt" in result.output.lower()
+        # Dashboard renders something (zero-state includes "reprompt")
+        assert "reprompt" in result.output.lower()
+
+    def test_bare_reprompt_json_flag(self):
+        """Bare `reprompt --json` should produce valid JSON dashboard."""
+        with tempfile.NamedTemporaryFile(suffix=".db") as f:
+            result = runner.invoke(app, ["--json"], env={"REPROMPT_DB_PATH": f.name})
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert "has_data" in data
+
+    def test_help_still_works(self):
+        """--help should still show help text."""
+        result = runner.invoke(app, ["--help"])
+        assert result.exit_code == 0
+        assert "Usage:" in result.output or "usage:" in result.output.lower()
+
+    def test_subcommands_still_work(self):
+        """Subcommands like `status` should still work."""
+        with tempfile.NamedTemporaryFile(suffix=".db") as f:
+            result = runner.invoke(app, ["status"], env={"REPROMPT_DB_PATH": f.name})
+        assert result.exit_code == 0

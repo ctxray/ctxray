@@ -228,33 +228,18 @@ def test_cli_scan_and_report(tmp_path, monkeypatch):
 
 
 def test_cli_library_export(tmp_path, monkeypatch):
-    """E2E: CLI library export to Markdown file."""
+    """E2E: CLI library command shows deprecation notice (consolidated into template list)."""
     from typer.testing import CliRunner
 
     from reprompt.cli import app
 
-    sessions_root = tmp_path / "sessions"
-    _create_claude_sessions(sessions_root)
-    db_path = tmp_path / "export_test.db"
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
 
     runner = CliRunner()
 
-    # Scan first
-    runner.invoke(app, ["scan", "--source", "claude-code", "--path", str(sessions_root)])
-
-    # Build report to populate patterns
-    from reprompt.core.pipeline import build_report_data
-
-    build_report_data(settings=Settings(db_path=db_path))
-
-    # Export library
-    export_path = str(tmp_path / "exported_library.md")
-    result = runner.invoke(app, ["library", export_path])
+    result = runner.invoke(app, ["library"])
     assert result.exit_code == 0
-    assert Path(export_path).exists()
-    content = Path(export_path).read_text()
-    assert "Prompt Library" in content or "reprompt" in content
+    assert "template list" in result.output
 
 
 class TestScienceE2E:

@@ -124,17 +124,15 @@ class TestRecommendCommand:
         assert result.exit_code == 0
 
     def test_recommend_json(self) -> None:
+        """Recommend is deprecated; it now prints a deprecation notice instead of JSON."""
         result = runner.invoke(app, ["recommend", "--format", "json"])
         assert result.exit_code == 0
-        import json
-
-        data = json.loads(result.output)
-        assert "best_prompts" in data
+        assert "template list" in result.output
 
     def test_recommend_shows_header(self) -> None:
         result = runner.invoke(app, ["recommend"])
         assert result.exit_code == 0
-        assert "recommend" in result.output.lower() or "Prompt" in result.output
+        assert "template list" in result.output
 
 
 def test_best_by_category(tmp_path):
