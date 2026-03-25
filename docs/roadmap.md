@@ -1,6 +1,6 @@
 # reprompt Roadmap
 
-> Last updated: 2026-03-24 · Current version: v1.4.0
+> Last updated: 2026-03-25 · Current version: v1.4.1
 
 ## Vision
 
@@ -35,9 +35,10 @@ Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT
 | v1.3.0 | Conversation distillation | `reprompt distill` — 6-signal importance scoring for conversation turns |
 | v1.3.1 | UX polish | Actionable suggestions on 5 commands, `--source` filter on all data commands |
 | v1.4.0 | Context recovery + consolidation | `distill --export` context document, signal transparency, command consolidation (27→23) |
+| v1.4.1 | Compare + style polish | `compare --best-worst` auto-pick, `style --trends` period-over-period deltas |
 
 ### Quality
-- 1295 tests, ≥90% coverage
+- 1316 tests, ≥90% coverage
 - Strict mypy, ruff lint/format
 - CI: coverage gate + pre-publish test step
 - Stable public API (`score_prompt`, `compare_prompts`, `extract_features`)
@@ -51,12 +52,12 @@ Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT
 | P1 | `distill --export` context recovery | **DONE** — community signal: resume sessions after compaction/timeout |
 | P2 | Command consolidation: `save`/`templates`/`use` → `template [save\|list\|use]` | **DONE** — 3 commands doing 1 thing = cognitive overload |
 | P2 | Command consolidation: `effectiveness`/`merge-view` → `insights` sub-insights | **DONE** — concepts unclear to users |
-| P3 | `style` shows change trends | "specificity +12% this week" drives revisits |
+| P3 | `style` shows change trends | **DONE** — `--trends` flag with period-over-period deltas |
 | P4 | `distill --show-weights` / `--weights` signal transparency | Community request for weight visibility |
-| P5 | `compare --best-worst` auto-pick | Auto-pick best/worst from DB |
-| P5 | `--copy` as standard option on remaining commands | Consistency |
+| P5 | `compare --best-worst` auto-pick | **DONE** — auto-selects from DB scores |
+| P5 | `--copy` as standard option on remaining commands | Decided against — no clear paste destination for analysis commands |
 
-**Status: 27 → 23 visible commands. P1+P2 shipped. Context recovery + consolidation done.**
+**Status: 27 → 23 visible commands. P1+P2+P3+P5 shipped.**
 
 ---
 
@@ -64,6 +65,7 @@ Claude Code · OpenClaw · Cursor IDE · Aider · Gemini CLI · Cline · ChatGPT
 
 | Feature | Description |
 |---------|-------------|
+| Distill false positive reduction | Position signal breaks on small-talk openers / "thanks bye" closers; long error dumps score high on length+uniqueness but aren't decision points; "ok try again" triggers error_recovery but is noise. Community feedback from r/LLMDevs. |
 | Sensitive content detection | Privacy narrative; PII in prompts |
 | Agent workflow analysis | Multi-step agent session patterns |
 | `.reprompt.yml` configurable lint | Team/Pro direction |
