@@ -16,6 +16,7 @@ Assistant turns get derived score = avg of adjacent user turns.
 
 from __future__ import annotations
 
+import re
 import statistics
 
 from reprompt.core.conversation import (
@@ -43,6 +44,29 @@ W_ERROR_RECOVERY = DEFAULT_WEIGHTS["error_recovery"]
 W_SEMANTIC_SHIFT = DEFAULT_WEIGHTS["semantic_shift"]
 W_UNIQUENESS = DEFAULT_WEIGHTS["uniqueness"]
 
+# Patterns for false-positive suppression in position and error_recovery signals
+GREETING_PATTERNS = re.compile(
+    r"^(hey|hi|hello|sup|yo)\b"
+    r"|^(你好|嗨|哈喽)"
+    r"|^(good morning|good afternoon|good evening)",
+    re.IGNORECASE,
+)
+
+SIGNOFF_PATTERNS = re.compile(
+    r"^(thanks|thank you|thx|ty)\b"
+    r"|^(bye|goodbye|see you|cya)\b"
+    r"|^(谢谢|拜拜|再见|辛苦了|收工)"
+    r"|^(lgtm|looks good|perfect|great)\s*[!.]*$",
+    re.IGNORECASE,
+)
+
+LOW_INFO_RECOVERY = re.compile(
+    r"^(ok|okay|sure|yes|yeah|yep|right)\b"
+    r"|^(try again|retry|再试|继续|好的|可以|行)\s*$"
+    r"|^(do it|go ahead|proceed)\s*$",
+    re.IGNORECASE,
+)
+
 
 def _score_position(turn_idx: int, total_user_turns: int) -> float:
     """Score based on position: first=1.0, last=0.8, middle=recency-based."""
@@ -57,8 +81,23 @@ def _score_position(turn_idx: int, total_user_turns: int) -> float:
     return 0.3 + 0.2 * recency
 
 
-def _score_length(char_count: int, median_length: float) -> float:
-    """Score based on length relative to median. Capped at 1.0."""
+def _score_position_with_text(turn_idx: int, total_user_turns: int, text: str) -> float:
+    """Position score that skips greetings (first turn) and sign-offs (last turn)."""
+    if total_user_turns <= 1:
+        return 1.0
+    last_idx = total_user_turns - 1
+    stripped = text.strip()
+    if turn_idx == 0 and GREETING_PATTERNS.match(stripped):
+        return 0.0
+    if turn_idx == last_idx and SIGNOFF_PATTERNS.match(stripped):
+        return 0.0
+    return _score_position(turn_idx, total_user_turns)
+
+
+def _score_length(char_count: int, median_length: float, role: str = "user") -> float:
+    """Score based on length relative to median. Only scores user turns."""
+    if role != "user":
+        return 0.0
     if median_length <= 0:
         return 1.0
     return min(char_count / median_length, 1.0)
@@ -72,6 +111,16 @@ def _score_tool_trigger(tool_calls: int) -> float:
 def _score_error_recovery(prev_assistant_has_error: bool) -> float:
     """1.0 if previous assistant turn had an error, else 0.0."""
     return 1.0 if prev_assistant_has_error else 0.0
+
+
+def _score_error_recovery_with_text(prev_assistant_has_error: bool, text: str) -> float:
+    """Error recovery score that filters low-information responses."""
+    if not prev_assistant_has_error:
+        return 0.0
+    stripped = text.strip()
+    if len(stripped) < 20 and LOW_INFO_RECOVERY.match(stripped):
+        return 0.0
+    return 1.0
 
 
 def _compute_semantic_signals(
@@ -190,6 +239,16 @@ def distill_conversation(
     # Resolve effective weights
     effective_weights = {**DEFAULT_WEIGHTS, **(weights or {})}
 
+    # Auto-detect session type and apply type-specific weights (only if no manual override)
+    from reprompt.core.session_type import detect_session_type, get_weights_for_type
+
+    detected_type = detect_session_type(conversation)
+    if weights is None and detected_type is not None:
+        effective_weights = get_weights_for_type(detected_type)
+
+    # Store detected type on conversation for display
+    conversation._detected_type = detected_type  # type: ignore[attr-defined]
+
     # Precompute median length and semantic signals
     lengths = [len(t.text) for t in user_turns]
     median_length = float(statistics.median(lengths)) if lengths else 0.0
@@ -198,14 +257,16 @@ def distill_conversation(
 
     # Score each user turn
     for user_idx, user_turn in enumerate(user_turns):
-        pos_score = _score_position(user_idx, n_users)
-        len_score = _score_length(len(user_turn.text), median_length)
+        pos_score = _score_position_with_text(user_idx, n_users, user_turn.text)
+        len_score = _score_length(len(user_turn.text), median_length, role="user")
 
         next_asst = _get_next_assistant_turn(turns, user_turn.turn_index)
         tool_score = _score_tool_trigger(next_asst.tool_calls if next_asst else 0)
 
         prev_asst = _get_prev_assistant_turn(turns, user_turn.turn_index)
-        error_score = _score_error_recovery(prev_asst.has_error if prev_asst else False)
+        error_score = _score_error_recovery_with_text(
+            prev_asst.has_error if prev_asst else False, user_turn.text
+        )
 
         shift_score = shifts[user_idx] if user_idx < len(shifts) else 0.5
         unique_score = uniqueness_scores[user_idx] if user_idx < len(uniqueness_scores) else 1.0

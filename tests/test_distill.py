@@ -412,3 +412,108 @@ class TestDistillEdgeCases:
         conv = _make_conv(["short", "tiny", "ok"])
         result = distill_conversation(conv, threshold=1.0)
         assert result.stats.kept_turns == 0
+
+
+# --- Signal Quality Fix Tests ---
+
+
+class TestPositionGreetingSkip:
+    """Position signal should not boost greeting/sign-off turns."""
+
+    def test_greeting_first_turn_no_boost(self):
+        """'hey' as first turn should get position=0.0."""
+        from reprompt.core.distill import _score_position_with_text
+
+        assert _score_position_with_text(0, 5, "hey there") == 0.0
+
+    def test_chinese_greeting_no_boost(self):
+        from reprompt.core.distill import _score_position_with_text
+
+        assert _score_position_with_text(0, 5, "你好") == 0.0
+
+    def test_signoff_last_turn_no_boost(self):
+        from reprompt.core.distill import _score_position_with_text
+
+        assert _score_position_with_text(4, 5, "thanks!") == 0.0
+
+    def test_chinese_signoff_no_boost(self):
+        from reprompt.core.distill import _score_position_with_text
+
+        assert _score_position_with_text(4, 5, "谢谢收工") == 0.0
+
+    def test_lgtm_signoff_no_boost(self):
+        from reprompt.core.distill import _score_position_with_text
+
+        assert _score_position_with_text(4, 5, "lgtm") == 0.0
+
+    def test_substantive_first_turn_keeps_boost(self):
+        from reprompt.core.distill import _score_position_with_text
+
+        score = _score_position_with_text(0, 5, "implement auth module with JWT")
+        assert score == 1.0
+
+    def test_substantive_last_turn_keeps_boost(self):
+        from reprompt.core.distill import _score_position_with_text
+
+        score = _score_position_with_text(4, 5, "commit the changes and run tests")
+        assert score == 0.8
+
+    def test_middle_turn_unaffected(self):
+        """Middle turns don't check greeting/signoff patterns."""
+        from reprompt.core.distill import _score_position_with_text
+
+        score_greeting = _score_position_with_text(2, 5, "hey")
+        score_normal = _score_position_with_text(2, 5, "fix the bug")
+        # Middle turns use recency formula regardless
+        assert score_greeting == score_normal
+
+
+class TestLengthUserOnly:
+    """Length signal should only score user turns."""
+
+    def test_user_turn_scored(self):
+        """User turn length is used for scoring."""
+        from reprompt.core.distill import _score_length
+
+        assert _score_length(200, 100.0, role="user") > 0
+
+    def test_assistant_turn_zero(self):
+        """Assistant turn always gets 0.0 length score."""
+        from reprompt.core.distill import _score_length
+
+        assert _score_length(5000, 100.0, role="assistant") == 0.0
+
+
+class TestErrorRecoveryFilter:
+    """Error recovery should filter low-information responses."""
+
+    def test_substantive_recovery_scores_high(self):
+        from reprompt.core.distill import _score_error_recovery_with_text
+
+        score = _score_error_recovery_with_text(True, "try using optional chaining on line 42")
+        assert score == 1.0
+
+    def test_ok_try_again_filtered(self):
+        from reprompt.core.distill import _score_error_recovery_with_text
+
+        assert _score_error_recovery_with_text(True, "ok try again") == 0.0
+
+    def test_chinese_continue_filtered(self):
+        from reprompt.core.distill import _score_error_recovery_with_text
+
+        assert _score_error_recovery_with_text(True, "继续") == 0.0
+
+    def test_retry_filtered(self):
+        from reprompt.core.distill import _score_error_recovery_with_text
+
+        assert _score_error_recovery_with_text(True, "retry") == 0.0
+
+    def test_short_yes_filtered(self):
+        from reprompt.core.distill import _score_error_recovery_with_text
+
+        assert _score_error_recovery_with_text(True, "yes") == 0.0
+
+    def test_no_error_still_zero(self):
+        from reprompt.core.distill import _score_error_recovery_with_text
+
+        assert _score_error_recovery_with_text(False, "try using optional chaining") == 0.0
