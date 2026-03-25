@@ -66,6 +66,7 @@ def template_save(
 def template_list(
     category: str = typer.Option("", "--category", "-c", help="Filter by category"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    smart: bool = typer.Option(False, "--smart", help="Sort by relevance score"),
 ) -> None:
     """List your saved prompt templates."""
     import json as json_mod
@@ -77,6 +78,13 @@ def template_list(
     settings = Settings()
     db = PromptDB(settings.db_path)
     items = db.list_templates(category=category or None)
+
+    if smart and items:
+        # Sort by effectiveness_score descending if available, else keep original order
+        items.sort(
+            key=lambda t: t.get("effectiveness_score", 0) or 0,
+            reverse=True,
+        )
 
     if json_output:
         print(json_mod.dumps(items, indent=2, default=str))
@@ -473,60 +481,15 @@ def report(
             console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
 
 
-@app.command()
+@app.command(deprecated=True, hidden=True)
 def library(
     category: str | None = typer.Option(None, help="Filter by category"),
     export: str | None = typer.Argument(None, help="Export to file path (Markdown)"),
 ) -> None:
-    """Show or export your prompt library."""
-    from reprompt.config import Settings
-    from reprompt.output.markdown import export_library_markdown
-    from reprompt.storage.db import PromptDB
-
-    settings = Settings()
-    db = PromptDB(settings.db_path)
-    patterns = db.get_patterns(category=category)
-
-    if export:
-        md = export_library_markdown(patterns)
-        Path(export).write_text(md)
-        console.print(f"Library exported to {export}")
-    else:
-        if not patterns:
-            console.print("No patterns yet. Run [bold]reprompt scan[/bold] first.")
-            return
-        from rich.table import Table
-
-        from reprompt.core.effectiveness import effectiveness_stars
-
-        # Determine if any pattern has effectiveness data
-        has_eff = any(p.get("effectiveness_avg") is not None for p in patterns)
-
-        table = Table(title="Prompt Library")
-        table.add_column("#", style="dim", width=4)
-        table.add_column("Pattern", max_width=50)
-        table.add_column("Uses", justify="right")
-        table.add_column("Category")
-        if has_eff:
-            table.add_column("Eff", justify="right")
-
-        for i, p in enumerate(patterns, 1):
-            pattern_text = str(p.get("pattern_text", ""))
-            display = (pattern_text[:50] + "...") if len(pattern_text) > 50 else pattern_text
-            row = [
-                str(i),
-                display,
-                str(p.get("frequency", 0)),
-                str(p.get("category", "")),
-            ]
-            if has_eff:
-                avg = p.get("effectiveness_avg")
-                if avg is not None:
-                    row.append(f"{avg:.2f} {effectiveness_stars(avg)}")
-                else:
-                    row.append("—")
-            table.add_row(*row)
-        console.print(table)
+    """Deprecated: use `reprompt template list` instead."""
+    console.print("[dim]library is now part of template list.[/dim]")
+    console.print("[dim]Run: reprompt template list[/dim]")
+    raise typer.Exit(0)
 
 
 @app.command()
@@ -565,7 +528,7 @@ def search(
     console.print(table)
 
 
-@app.command()
+@app.command(deprecated=True, hidden=True)
 def trends(
     period: str = typer.Option("7d", help="Time bucket size: 7d, 14d, 30d, 1m"),
     windows: int = typer.Option(4, help="Number of periods to compare"),
@@ -574,22 +537,10 @@ def trends(
         None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor, aider)"
     ),
 ) -> None:
-    """Show how your prompting evolves over time."""
-    import json as json_mod
-
-    from reprompt.config import Settings
-    from reprompt.core.trends import compute_trends
-    from reprompt.output.terminal import render_trends
-    from reprompt.storage.db import PromptDB
-
-    settings = Settings()
-    db = PromptDB(settings.db_path)
-    data = compute_trends(db, period=period, n_windows=windows, source=source)
-
-    if format == "json":
-        print(json_mod.dumps(data, indent=2, default=str))
-    else:
-        print(render_trends(data), end="")
+    """Deprecated: use `reprompt digest --trends` instead."""
+    console.print("[dim]trends is now part of digest --trends.[/dim]")
+    console.print("[dim]Run: reprompt digest --trends[/dim]")
+    raise typer.Exit(0)
 
 
 @app.command(deprecated=True, hidden=True)
@@ -670,26 +621,14 @@ def purge(
     console.print(f"Purged {deleted} prompts older than {days} days")
 
 
-@app.command()
+@app.command(deprecated=True, hidden=True)
 def recommend(
     format: str = typer.Option("terminal", help="Output format: terminal, json"),
 ) -> None:
-    """Suggest better prompts based on your history and effectiveness."""
-    from reprompt.config import Settings
-    from reprompt.core.recommend import compute_recommendations
-    from reprompt.output.terminal import render_recommendations
-    from reprompt.storage.db import PromptDB
-
-    settings = Settings()
-    db = PromptDB(settings.db_path)
-    data = compute_recommendations(db)
-
-    if format == "json":
-        import json as json_mod
-
-        print(json_mod.dumps(data, indent=2, default=str))
-    else:
-        print(render_recommendations(data), end="")
+    """Deprecated: use `reprompt template list --smart` instead."""
+    console.print("[dim]recommend is now part of template list --smart.[/dim]")
+    console.print("[dim]Run: reprompt template list --smart[/dim]")
+    raise typer.Exit(0)
 
 
 @app.command("merge-view", deprecated=True, hidden=True)
@@ -1458,6 +1397,7 @@ def digest(
     source: str | None = typer.Option(
         None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor, aider)"
     ),
+    trends_flag: bool = typer.Option(False, "--trends", help="Include period-over-period trends"),
 ) -> None:
     """Show a weekly summary comparing current vs previous period."""
     import json as json_mod
@@ -1509,6 +1449,16 @@ def digest(
         hint = get_suggestion("digest")
         if hint:
             console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
+
+    if trends_flag:
+        from reprompt.core.trends import compute_trends
+        from reprompt.output.terminal import render_trends
+
+        trends_data = compute_trends(db, period="7d", n_windows=4, source=source)
+        if format == "json":
+            print(json_mod.dumps(trends_data, indent=2, default=str))
+        else:
+            print(render_trends(trends_data), end="")
 
 
 @app.command()
