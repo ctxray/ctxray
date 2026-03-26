@@ -5,7 +5,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/reprompt-cli)](https://pypi.org/project/reprompt-cli/)
 [![Python 3.10+](https://img.shields.io/pypi/pyversions/reprompt-cli)](https://pypi.org/project/reprompt-cli/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-1397-brightgreen)](https://github.com/reprompt-dev/reprompt)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/reprompt-dev/reprompt/actions)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://github.com/reprompt-dev/reprompt)
 
 ---

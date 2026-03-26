@@ -162,19 +162,17 @@ def template_use(
     db.increment_template_usage(name)
 
 
-app.add_typer(template_app, name="template")
-
-
-def _register_free_tier_commands() -> None:
-    """Register Free tier commands (wrapped + telemetry) directly."""
+def _register_late_commands() -> None:
+    """Register commands after all @app.command() definitions to control help panel order."""
     from reprompt.commands.telemetry import telemetry_app
     from reprompt.commands.wrapped import wrapped
 
-    app.command()(wrapped)
-    app.add_typer(telemetry_app, name="telemetry", help="Manage anonymous telemetry")
-
-
-_register_free_tier_commands()
+    app.add_typer(template_app, name="template", rich_help_panel="Manage")
+    app.command(rich_help_panel="Manage")(wrapped)
+    app.add_typer(
+        telemetry_app, name="telemetry", help="Manage anonymous telemetry",
+        rich_help_panel="Setup",
+    )
 
 
 def _load_plugins() -> None:
@@ -234,7 +232,7 @@ def main(
         typer.echo(render_dashboard(data), nl=False)
 
 
-@app.command()
+@app.command(rich_help_panel="Analyze")
 def scan(
     source: str | None = typer.Option(None, help="Source adapter (claude-code, openclaw)"),
     path: str | None = typer.Option(None, help="Custom session path"),
@@ -330,7 +328,7 @@ def _detect_import_source(path: Path) -> str | None:
     return None
 
 
-@app.command(name="import")
+@app.command(name="import", rich_help_panel="Analyze")
 def import_file(
     file: str = typer.Argument(..., help="Path to export file (JSON or ZIP)"),
     source: str | None = typer.Option(
@@ -424,7 +422,7 @@ def import_file(
     console.print(f"  New stored:     {new_stored}")
 
 
-@app.command()
+@app.command(rich_help_panel="Analyze")
 def report(
     format: str = typer.Option("terminal", help="Output format: terminal, json"),
     html: bool = typer.Option(False, "--html", help="Generate interactive HTML dashboard"),
@@ -501,7 +499,7 @@ def library(
     raise typer.Exit(0)
 
 
-@app.command()
+@app.command(rich_help_panel="Analyze")
 def search(
     query: str = typer.Argument(..., help="Search term (case-insensitive)"),
     limit: int = typer.Option(20, help="Maximum results to show"),
@@ -571,7 +569,7 @@ def effectiveness(
     insights(json_output=(format == "json"), source=None)
 
 
-@app.command()
+@app.command(rich_help_panel="Manage")
 def status() -> None:
     """Show database statistics."""
     from reprompt.config import Settings
@@ -589,7 +587,7 @@ def status() -> None:
     console.print(f"  DB path:          {settings.db_path}")
 
 
-@app.command("mcp-serve")
+@app.command("mcp-serve", rich_help_panel="Setup")
 def mcp_serve() -> None:
     """Start MCP server (stdio transport) for Claude Code / Continue.dev / Zed."""
     try:
@@ -603,7 +601,7 @@ def mcp_serve() -> None:
     run_server()
 
 
-@app.command()
+@app.command(rich_help_panel="Manage")
 def purge(
     older_than: str = typer.Option("90d", help="Delete prompts older than (e.g. 90d)"),
     all_: bool = typer.Option(
@@ -679,7 +677,7 @@ def templates(
     template_list(category=category, json_output=json_output)
 
 
-@app.command()
+@app.command(rich_help_panel="Analyze")
 def style(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     source: str | None = typer.Option(
@@ -747,7 +745,7 @@ def use(
     template_use(name=name, variables=variables, json_output=False, copy=False)
 
 
-@app.command()
+@app.command(rich_help_panel="Optimize")
 def lint(
     source: str = typer.Option(None, help="Adapter to scan (claude-code, aider, gemini, etc.)"),
     path: str = typer.Option(None, help="Path to scan for session files"),
@@ -838,7 +836,7 @@ def lint(
         raise typer.Exit(1)
 
 
-@app.command()
+@app.command(rich_help_panel="Analyze")
 def score(
     text: str = typer.Argument(..., help="Prompt text to score"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
@@ -920,7 +918,7 @@ def score(
         _copy_to_clip(json_mod.dumps(copy_data, indent=2), quiet=json_output)
 
 
-@app.command()
+@app.command(rich_help_panel="Optimize")
 def compress(
     text: str = typer.Argument(..., help="Prompt text to compress"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
@@ -945,7 +943,7 @@ def compress(
         _copy_to_clip(result.compressed, quiet=json_output)
 
 
-@app.command()
+@app.command(rich_help_panel="Optimize")
 def distill(
     session_id: str = typer.Argument(None, help="Session ID to distill"),
     last: int = typer.Option(1, "--last", help="Distill the N most recent sessions"),
@@ -1232,7 +1230,7 @@ def _load_conversation(
     )
 
 
-@app.command()
+@app.command(rich_help_panel="Analyze")
 def compare(
     prompt_a: str | None = typer.Argument(None, help="First prompt"),
     prompt_b: str | None = typer.Argument(None, help="Second prompt"),
@@ -1328,7 +1326,7 @@ def compare(
         _copy_to_clip(json_mod.dumps(result, indent=2), quiet=json_output)
 
 
-@app.command()
+@app.command(rich_help_panel="Analyze")
 def insights(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     source: str | None = typer.Option(
@@ -1394,7 +1392,7 @@ def insights(
         _copy_to_clip(json_mod.dumps(result, indent=2), quiet=json_output)
 
 
-@app.command()
+@app.command(rich_help_panel="Manage")
 def privacy(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
@@ -1431,7 +1429,7 @@ def privacy(
         _copy_to_clip(json_mod.dumps(summary, indent=2), quiet=json_output)
 
 
-@app.command()
+@app.command(rich_help_panel="Manage")
 def digest(
     period: str = typer.Option("7d", help="Comparison window: 7d, 14d, 30d"),
     format: str = typer.Option("terminal", help="Output format: terminal, json"),
@@ -1510,7 +1508,7 @@ def digest(
         )
 
 
-@app.command()
+@app.command(rich_help_panel="Setup")
 def demo() -> None:
     """Run reprompt on demo data to see what it looks like."""
     import shutil
@@ -1545,7 +1543,7 @@ def demo() -> None:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-@app.command("install-hook")
+@app.command("install-hook", rich_help_panel="Setup")
 def install_hook(
     source: str = typer.Option("claude-code", help="AI tool to install hook for"),
     with_digest: bool = typer.Option(
@@ -1607,7 +1605,7 @@ def install_hook(
         console.print(f"[yellow]Hook installation for '{source}' not yet supported[/yellow]")
 
 
-@app.command("install-extension")
+@app.command("install-extension", rich_help_panel="Setup")
 def install_extension(
     browser: str = typer.Option("chrome", help="Browser: chrome, chromium, firefox"),
     extension_id: str = typer.Option(
@@ -1681,7 +1679,7 @@ def _create_host_wrapper() -> Path:
     return wrapper_path
 
 
-@app.command("extension-status")
+@app.command("extension-status", rich_help_panel="Setup")
 def extension_status() -> None:
     """Check browser extension connection status."""
     from reprompt.bridge.manifest import (
@@ -1732,3 +1730,8 @@ def extension_status() -> None:
         console.print(f"  Last sync:         {last_sync}")
     else:
         console.print("  Last sync:         never")
+
+
+# Register late commands (template, wrapped, telemetry) after all @app.command()
+# so help panels appear in order: Analyze → Optimize → Manage → Setup
+_register_late_commands()
