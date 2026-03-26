@@ -14,6 +14,17 @@ if TYPE_CHECKING:
     from reprompt.core.conversation import Conversation
     from reprompt.storage.db import PromptDB
 
+
+def _copy_to_clip(text: str, quiet: bool = False) -> None:
+    """Copy text to clipboard with user feedback."""
+    from reprompt.sharing.clipboard import copy_to_clipboard
+
+    if copy_to_clipboard(text):
+        if not quiet:
+            typer.echo("  Copied to clipboard!")
+    else:
+        typer.echo("  Could not copy to clipboard (xclip/xsel not found)", err=True)
+
 app = typer.Typer(
     name="reprompt",
     help="Discover, analyze, and evolve your best prompts from AI coding sessions.",
@@ -146,10 +157,7 @@ def template_use(
         console.print(rendered)
 
     if copy:
-        from reprompt.sharing.clipboard import copy_to_clipboard
-
-        copy_to_clipboard(rendered)
-        console.print("[dim]Copied to clipboard.[/dim]", err=True)
+        _copy_to_clip(rendered)
 
     db.increment_template_usage(name)
 
@@ -500,6 +508,7 @@ def search(
     source: str = typer.Option(
         "", "--source", "-s", help="Filter by source (e.g. chatgpt-ext, claude-ext, claude-code)"
     ),
+    copy: bool = typer.Option(False, "--copy", help="Copy results to clipboard"),
 ) -> None:
     """Search your prompt history by keyword."""
     from reprompt.config import Settings
@@ -527,6 +536,10 @@ def search(
         ts = p.get("timestamp", "")[:10]
         table.add_row(str(i), display, p.get("source", ""), ts)
     console.print(table)
+
+    if copy:
+        lines = [p.get("text", "") for p in results]
+        _copy_to_clip("\n\n".join(lines))
 
 
 @app.command(deprecated=True, hidden=True)
@@ -674,6 +687,7 @@ def style(
     ),
     trends: bool = typer.Option(False, "--trends", help="Show style change trends"),
     period: str = typer.Option("7d", "--period", help="Comparison period (with --trends)"),
+    copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
 ) -> None:
     """Show your personal prompting style fingerprint."""
     import json as json_mod
@@ -694,6 +708,8 @@ def style(
             print(json_mod.dumps(data, indent=2))
         else:
             print(render_style_trends(data), end="")
+        if copy:
+            _copy_to_clip(json_mod.dumps(data, indent=2), quiet=json_output)
         return
 
     from reprompt.core.library import categorize_prompt
@@ -718,6 +734,9 @@ def style(
     else:
         print(render_style(data), end="")
 
+    if copy:
+        _copy_to_clip(json_mod.dumps(data, indent=2), quiet=json_output)
+
 
 @app.command(deprecated=True, hidden=True)
 def use(
@@ -734,6 +753,7 @@ def lint(
     path: str = typer.Option(None, help="Path to scan for session files"),
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON"),
     fail_on_warning: bool = typer.Option(False, "--strict", help="Exit 1 on warnings too"),
+    copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
 ) -> None:
     """Check prompt quality against lint rules.
 
@@ -803,7 +823,14 @@ def lint(
         }
         print(json_mod.dumps(data, indent=2))
     else:
-        print(format_lint_results(violations, len(texts)))
+        lint_output = format_lint_results(violations, len(texts))
+        print(lint_output)
+
+    if copy:
+        if json_output:
+            _copy_to_clip(json_mod.dumps(data, indent=2), quiet=True)
+        else:
+            _copy_to_clip(lint_output)
 
     errors = [v for v in violations if v.severity == "error"]
     warnings = [v for v in violations if v.severity == "warning"]
@@ -815,6 +842,7 @@ def lint(
 def score(
     text: str = typer.Argument(..., help="Prompt text to score"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
 ) -> None:
     """Score a prompt using research-backed analysis."""
     from reprompt.core.extractors import extract_features
@@ -876,6 +904,21 @@ def score(
         if hint:
             console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
 
+    if copy:
+        import json as json_mod
+
+        copy_data = {
+            "total": breakdown.total,
+            "structure": breakdown.structure,
+            "context": breakdown.context,
+            "position": breakdown.position,
+            "repetition": breakdown.repetition,
+            "clarity": breakdown.clarity,
+            "task_type": dna.task_type,
+            "word_count": dna.word_count,
+        }
+        _copy_to_clip(json_mod.dumps(copy_data, indent=2), quiet=json_output)
+
 
 @app.command()
 def compress(
@@ -899,13 +942,7 @@ def compress(
         typer.echo(render_compress(result))
 
     if copy:
-        from reprompt.sharing.clipboard import copy_to_clipboard
-
-        if copy_to_clipboard(result.compressed):
-            if not json_output:
-                typer.echo("  Copied to clipboard!")
-        else:
-            typer.echo("  Could not copy to clipboard (xclip/xsel not found)", err=True)
+        _copy_to_clip(result.compressed, quiet=json_output)
 
 
 @app.command()
@@ -1027,13 +1064,7 @@ def distill(
             typer.echo(export_text)
 
         if copy:
-            from reprompt.sharing.clipboard import copy_to_clipboard
-
-            if copy_to_clipboard(export_text):
-                if not json_output:
-                    typer.echo("  Copied to clipboard!")
-            else:
-                typer.echo("  Could not copy to clipboard (xclip/xsel not found)", err=True)
+            _copy_to_clip(export_text, quiet=json_output)
         return
 
     # Output
@@ -1060,8 +1091,6 @@ def distill(
             console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
 
     if copy:
-        from reprompt.sharing.clipboard import copy_to_clipboard
-
         if summary:
             copy_text = "\n---\n".join(r.summary or "" for r in results)
         else:
@@ -1071,12 +1100,7 @@ def distill(
                     prefix = "User" if turn.role == "user" else "Assistant"
                     copy_parts.append(f"[{prefix}] {turn.text}")
             copy_text = "\n\n".join(copy_parts)
-
-        if copy_to_clipboard(copy_text):
-            if not json_output:
-                typer.echo("  Copied to clipboard!")
-        else:
-            typer.echo("  Could not copy to clipboard (xclip/xsel not found)", err=True)
+        _copy_to_clip(copy_text, quiet=json_output)
 
 
 def _resolve_distill_sessions(
@@ -1219,6 +1243,7 @@ def compare(
     source: str | None = typer.Option(
         None, "--source", "-s", help="Filter by source (with --best-worst)"
     ),
+    copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
 ) -> None:
     """Compare two prompts side by side using Prompt DNA analysis."""
     from typing import Any
@@ -1297,6 +1322,11 @@ def compare(
 
         typer.echo(render_compare(result))
 
+    if copy:
+        import json as json_mod
+
+        _copy_to_clip(json_mod.dumps(result, indent=2), quiet=json_output)
+
 
 @app.command()
 def insights(
@@ -1304,6 +1334,7 @@ def insights(
     source: str | None = typer.Option(
         None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor, aider)"
     ),
+    copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
 ) -> None:
     """Show research-backed insights about your prompting patterns."""
     from reprompt.config import Settings
@@ -1355,10 +1386,18 @@ def insights(
         if hint:
             console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
 
+    if copy:
+        import json as json_mod
+
+        result["effectiveness"] = eff_data
+        result["similar_prompts"] = sim_data
+        _copy_to_clip(json_mod.dumps(result, indent=2), quiet=json_output)
+
 
 @app.command()
 def privacy(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
 ) -> None:
     """Show where your prompts went and how they may be used."""
     import json as json_mod
@@ -1388,6 +1427,9 @@ def privacy(
     else:
         typer.echo(render_privacy(summary))
 
+    if copy:
+        _copy_to_clip(json_mod.dumps(summary, indent=2), quiet=json_output)
+
 
 @app.command()
 def digest(
@@ -1399,6 +1441,7 @@ def digest(
         None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor, aider)"
     ),
     trends_flag: bool = typer.Option(False, "--trends", help="Include period-over-period trends"),
+    copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
 ) -> None:
     """Show a weekly summary comparing current vs previous period."""
     import json as json_mod
@@ -1460,6 +1503,11 @@ def digest(
             print(json_mod.dumps(trends_data, indent=2, default=str))
         else:
             print(render_trends(trends_data), end="")
+
+    if copy:
+        _copy_to_clip(
+            json_mod.dumps(data, indent=2, default=str), quiet=(format == "json")
+        )
 
 
 @app.command()
