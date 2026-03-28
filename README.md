@@ -1,6 +1,6 @@
 # `re:prompt`
 
-**Prompt Intelligence for AI power users** -- understand, optimize, and manage your AI conversations.
+**Analyze what you type into AI tools** -- prompt scoring, agent error loops, leaked credential detection, conversation distillation.
 
 [![PyPI version](https://img.shields.io/pypi/v/reprompt-cli)](https://pypi.org/project/reprompt-cli/)
 [![Python 3.10+](https://img.shields.io/pypi/pyversions/reprompt-cli)](https://pypi.org/project/reprompt-cli/)
@@ -9,6 +9,8 @@
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://github.com/reprompt-dev/reprompt)
 
 ---
+
+![reprompt demo](docs/launch/demo.gif)
 
 ## See it in action
 

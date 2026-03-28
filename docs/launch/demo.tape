@@ -1,11 +1,11 @@
 # VHS recording script for reprompt v1.6 demo GIF
 #
 # Prerequisites:
-#   brew install vhs     (or go install github.com/charmbracelet/vhs@latest)
+#   brew install vhs
 #   pip install reprompt-cli
 #
 # Recording:
-#   reprompt demo        (generates sample data)
+#   REPROMPT_DB_PATH=/tmp/reprompt-demo.db reprompt demo
 #   vhs docs/launch/demo.tape
 #
 # Output: docs/launch/demo.gif
@@ -14,41 +14,46 @@ Output docs/launch/demo.gif
 
 Set FontSize 15
 Set Width 1100
-Set Height 750
+Set Height 600
 Set Theme "Catppuccin Mocha"
 Set Padding 20
 Set TypingSpeed 50ms
 Set Shell "zsh"
 
-# --- Scene 1: Dashboard (the first thing users see) ---
+# --- Setup: point to demo DB ---
+Set TypingSpeed 0ms
+Type "export REPROMPT_DB_PATH=/tmp/reprompt-demo.db"
+Enter
+Sleep 500ms
+Type "clear"
+Enter
+Sleep 500ms
+Set TypingSpeed 50ms
+
+# --- Scene 1: Dashboard ---
 Type "reprompt"
 Enter
-Sleep 5s
+Sleep 4s
 
 # --- Scene 2: Score a prompt ---
-Type 'reprompt score "Fix the auth bug in src/login.ts where JWT expires"'
+Type 'reprompt score "Fix the auth bug in login.ts where JWT token expires"'
 Enter
-Sleep 4s
+Sleep 3s
 
-# --- Scene 3: Agent analysis (v1.6 flagship) ---
-Type "reprompt agent --last 3"
-Enter
-Sleep 5s
-
-# --- Scene 4: Privacy deep scan (v1.6 flagship) ---
-Type "reprompt privacy --deep"
-Enter
-Sleep 5s
-
-# --- Scene 5: Distill a conversation ---
-Type "reprompt distill --last 1 --summary"
-Enter
-Sleep 5s
-
-# --- Scene 6: Compress a prompt ---
+# --- Scene 3: Compress a prompt ---
 Type 'reprompt compress "请帮我看一下这个代码，就是那个 login 的那个文件，好像有点问题"'
 Enter
-Sleep 4s
+Sleep 3s
+
+# --- Scene 4: Privacy check ---
+Type "reprompt privacy"
+Enter
+Sleep 3s
+
+# --- Scene 5: Lint with score threshold ---
+Type "reprompt lint --score-threshold 40"
+Enter
+Sleep 3s
 
 # Hold final frame
-Sleep 3s
+Sleep 2s
