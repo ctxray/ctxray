@@ -144,6 +144,75 @@ def get_status() -> str:
 
 
 @mcp.tool
+def score_prompt(text: str) -> str:
+    """Score a prompt using research-backed analysis (0-100).
+
+    Returns a breakdown across 5 dimensions: structure, context,
+    position, repetition, clarity. Based on 4 academic papers.
+
+    Args:
+        text: The prompt text to score
+    """
+    from reprompt.core.extractors import extract_features
+    from reprompt.core.scorer import score_prompt as _score
+
+    dna = extract_features(text, source="mcp", session_id="mcp-score")
+    breakdown = _score(dna)
+    return json.dumps(
+        {
+            "total": breakdown.total,
+            "structure": breakdown.structure,
+            "context": breakdown.context,
+            "position": breakdown.position,
+            "repetition": breakdown.repetition,
+            "clarity": breakdown.clarity,
+            "task_type": dna.task_type,
+            "suggestions": [
+                {"message": s.message, "impact": s.impact} for s in breakdown.suggestions[:3]
+            ],
+        },
+        indent=2,
+    )
+
+
+@mcp.tool
+def check_privacy(limit: int = 100) -> str:
+    """Scan stored prompts for sensitive content (API keys, tokens, PII).
+
+    Returns a summary of sensitive content found in your prompt history,
+    categorized by type (API keys, emails, IP addresses, etc.).
+
+    Args:
+        limit: Maximum prompts to scan (default 100, most recent)
+    """
+    from reprompt.core.privacy_scan import scan_prompts
+
+    db, _ = _get_db()
+    rows = db.get_all_prompts()
+    prompts = [
+        {"text": r["text"], "source": r.get("source", "unknown"), "id": r.get("id")}
+        for r in rows[-limit:]
+    ]
+    result = scan_prompts(prompts)
+    return json.dumps(
+        {
+            "prompts_scanned": result.prompts_scanned,
+            "total_findings": len(result.matches),
+            "categories": result.category_counts,
+            "highest_risk": (
+                {
+                    "category": result.highest_risk.category,
+                    "source": result.highest_risk.source,
+                }
+                if result.highest_risk
+                else None
+            ),
+        },
+        indent=2,
+    )
+
+
+@mcp.tool
 def scan_sessions(source: str | None = None) -> str:
     """Scan AI coding sessions for new prompts.
 
