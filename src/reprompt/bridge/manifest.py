@@ -12,6 +12,10 @@ from typing import Any
 
 HOST_NAME = "dev.reprompt.bridge"
 DESCRIPTION = "reprompt — prompt analytics bridge"
+CHROME_EXTENSION_ID = "ojdccpagaanchmkninlbgbgemdcjckhn"
+CHROME_STORE_URL = (
+    "https://chromewebstore.google.com/detail/reprompt/" + CHROME_EXTENSION_ID
+)
 FIREFOX_EXTENSION_ID = "reprompt@reprompt.dev"
 
 

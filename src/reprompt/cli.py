@@ -1609,13 +1609,15 @@ def install_hook(
 def install_extension(
     browser: str = typer.Option("chrome", help="Browser: chrome, chromium, firefox"),
     extension_id: str = typer.Option(
-        "", "--extension-id", help="Chrome extension ID (required for chrome/chromium)"
+        "", "--extension-id", help="Chrome extension ID (overrides default)"
     ),
 ) -> None:
     """Register Native Messaging host for the browser extension."""
     import json as json_mod
 
     from reprompt.bridge.manifest import (
+        CHROME_EXTENSION_ID,
+        CHROME_STORE_URL,
         generate_chrome_manifest,
         generate_firefox_manifest,
         get_manifest_dir,
@@ -1628,11 +1630,7 @@ def install_extension(
     # Generate manifest
     if browser in ("chrome", "chromium"):
         if not extension_id:
-            console.print(
-                "[yellow]No --extension-id provided. "
-                "You'll need to update the manifest after installing the extension.[/yellow]"
-            )
-            extension_id = "PLACEHOLDER_EXTENSION_ID"
+            extension_id = CHROME_EXTENSION_ID
         manifest = generate_chrome_manifest(str(host_script), extension_id)
     elif browser == "firefox":
         manifest = generate_firefox_manifest(str(host_script))
@@ -1655,11 +1653,8 @@ def install_extension(
     console.print(f"  Browser:  {browser}")
     console.print(f"  Manifest: {manifest_path}")
     console.print(f"  Host:     {host_script}")
-    if extension_id == "PLACEHOLDER_EXTENSION_ID":
-        console.print(
-            "\n[yellow]Next: install the reprompt extension, then re-run with "
-            "--extension-id to update the manifest.[/yellow]"
-        )
+    if browser in ("chrome", "chromium"):
+        console.print(f"\n  Install extension: {CHROME_STORE_URL}")
 
 
 def _create_host_wrapper() -> Path:
@@ -1683,6 +1678,7 @@ def _create_host_wrapper() -> Path:
 def extension_status() -> None:
     """Check browser extension connection status."""
     from reprompt.bridge.manifest import (
+        CHROME_STORE_URL,
         get_manifest_dir,
         get_manifest_filename,
     )
@@ -1708,6 +1704,7 @@ def extension_status() -> None:
         console.print(
             "[yellow]Not registered.[/yellow] Run [bold]reprompt install-extension[/bold]."
         )
+        console.print(f"  Chrome Web Store: {CHROME_STORE_URL}")
 
     # Check DB for extension-sourced prompts
     db = PromptDB(settings.db_path)

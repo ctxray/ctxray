@@ -131,6 +131,16 @@ reprompt distill --last 1           # distill your most recent conversation
 reprompt install-hook               # adds post-session hook to Claude Code
 ```
 
+### Browser extension
+
+Capture prompts from ChatGPT, Claude.ai, and Gemini directly in your browser:
+
+1. **Install the extension** from [Chrome Web Store](https://chromewebstore.google.com/detail/reprompt/ojdccpagaanchmkninlbgbgemdcjckhn)
+2. **Connect to the CLI:** `reprompt install-extension`
+3. **Verify:** `reprompt extension-status`
+
+Captured prompts sync locally via Native Messaging -- nothing leaves your machine.
+
 ## Privacy
 
 - All analysis runs locally. No prompts leave your machine.
@@ -143,6 +153,7 @@ reprompt install-hook               # adds post-session hook to Claude Code
 ## Links
 
 - **Website:** [getreprompt.dev](https://getreprompt.dev)
+- **Chrome Extension:** [Chrome Web Store](https://chromewebstore.google.com/detail/reprompt/ojdccpagaanchmkninlbgbgemdcjckhn)
 - **PyPI:** [reprompt-cli](https://pypi.org/project/reprompt-cli/)
 - **Changelog:** [CHANGELOG.md](CHANGELOG.md)
 - **Privacy:** [getreprompt.dev/privacy](https://getreprompt.dev/privacy)
