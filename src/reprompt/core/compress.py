@@ -58,6 +58,9 @@ class CompressResult:
     savings_pct: float
     changes: list[str] = field(default_factory=list)
     language: str = "en"
+    readability_before: float = 0.0
+    readability_after: float = 0.0
+    readability_warning: str = ""
 
 
 @dataclass
@@ -569,6 +572,46 @@ def _layer3_structure(text: str, zh_ratio: float) -> tuple[str, list[str]]:
     return text, changes
 
 
+def _score_readability(text: str, zh_ratio: float) -> float:
+    """Score text readability from 0.0 (unreadable) to 1.0 (perfectly readable).
+
+    Heuristics:
+    - Ratio of real words (len >= 2) vs fragments
+    - Average word/segment length (too short = over-compressed)
+    - Sentence structure (presence of punctuation)
+    """
+    if not text.strip():
+        return 0.0
+
+    if zh_ratio > 0.3:
+        # Chinese: check character-to-punctuation ratio and segment length
+        chars = len(re.sub(r"\s+", "", text))
+        puncts = len(re.findall(r"[，。！？；：、]", text))
+        if chars == 0:
+            return 0.0
+        punct_ratio = min(puncts / max(chars / 15, 1), 1.0)  # expect ~1 punct per 15 chars
+        length_score = min(chars / 20, 1.0)  # at least 20 chars for meaningful text
+        return round((punct_ratio * 0.4 + length_score * 0.6), 2)
+
+    # English: word-level analysis
+    words = text.split()
+    if not words:
+        return 0.0
+
+    # Real words ratio (length >= 2, not just symbols)
+    real_words = [w for w in words if len(re.sub(r"[^\w]", "", w)) >= 2]
+    word_ratio = len(real_words) / len(words) if words else 0
+
+    # Average word length (2-10 is normal, outside is suspicious)
+    avg_len = sum(len(w) for w in real_words) / max(len(real_words), 1)
+    length_score = 1.0 if 2 <= avg_len <= 12 else max(0, 1 - abs(avg_len - 7) / 10)
+
+    # Sentence structure (has punctuation)
+    has_structure = 1.0 if re.search(r"[.!?]", text) else 0.5
+
+    return round(word_ratio * 0.4 + length_score * 0.3 + has_structure * 0.3, 2)
+
+
 def compress_text(text: str) -> CompressResult:
     """Compress a prompt while preserving technical content.
 
@@ -623,6 +666,15 @@ def compress_text(text: str) -> CompressResult:
     else:
         savings_pct = 0.0
 
+    # Readability scoring
+    readability_before = _score_readability(text, zh_ratio)
+    readability_after = _score_readability(compressed, zh_ratio)
+    readability_warning = ""
+    if savings_pct > 70:
+        readability_warning = "High compression ratio (>70%) — output may have lost meaning."
+    elif readability_before > 0 and readability_after < readability_before * 0.5:
+        readability_warning = "Readability dropped significantly after compression."
+
     return CompressResult(
         original=text,
         compressed=compressed,
@@ -631,4 +683,7 @@ def compress_text(text: str) -> CompressResult:
         savings_pct=savings_pct,
         changes=all_changes,
         language=language,
+        readability_before=readability_before,
+        readability_after=readability_after,
+        readability_warning=readability_warning,
     )
