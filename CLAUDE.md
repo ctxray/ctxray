@@ -128,7 +128,8 @@ reprompt-extension (private)   ← Browser extension: Chrome/Firefox prompt capt
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 1490+ tests, 95% coverage target
+- Tests: pytest, 1494+ tests, 95% coverage target
+- CI integration: `lint --score-threshold N` for score-based gating, `.pre-commit-hooks.yaml`, GitHub Action with `score-threshold` input
 
 ## Prompt Science Engine
 
