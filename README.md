@@ -10,6 +10,8 @@
 
 ---
 
+![reprompt demo](docs/demo.gif)
+
 ## See it in action
 
 ```bash
