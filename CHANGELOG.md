@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.1] - 2026-03-28
+
+### Fixed
+- **Critical: `reprompt scan` crash** — `compute_pattern_effectiveness` failed on prompts containing SQL LIKE wildcards (`%`, `_`). Replaced `LIKE` with `INSTR()` for exact substring matching.
+- **Score calibration** — single-paragraph prompts incorrectly received 0/20 for Position (instruction was treated as "buried in the middle"). Now correctly scores instruction-at-start as optimal position.
+- **Compress grammar bugs** — fixed leading whitespace after filler deletion, dangling "that" after "the thing is" removal, orphaned commas, and remnant pleasantry fragments.
+- **Deprecated command references** — `reprompt library` and `reprompt trends` references in report footer and scan guidance now point to `reprompt template list` and `reprompt digest --trends`.
+- **Wrong adapter names** — `--source` help examples used non-existent `chatgpt-ext`; fixed to `chatgpt-export`.
+
+### Improved
+- **Compress engine** — added 15 filler phrases (`kind of`, `sort of`, `additionally`, `the fact that`, etc.) and 16 phrase simplification rules (`take a look at` → `check`, `let me know` → removed, etc.). Added post-compression cleanup pass for whitespace, punctuation, and sentence capitalization. Typical savings improved from 3-33% to 38-60%.
+- **Score UX** — suggestions now sorted by impact (high first); paper citations dimmed; new "Very Poor" grade tier for scores under 20.
+- **CLI help** — added usage examples to 7 key commands (score, scan, compress, compare, distill, lint, privacy). Added Quick Start guide to main `--help`. Standardized `--source` option across all commands with `-s` shorthand.
+- **Help panels** — moved `digest` from Manage to Analyze panel. Listed all 9 adapters in `scan --help`.
+- Tests: 1490 → 1497
+
 ## [1.6.0] - 2026-03-28
 
 ### Added

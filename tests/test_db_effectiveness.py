@@ -103,6 +103,83 @@ class TestComputePatternEffectiveness:
         assert p["effectiveness_avg"] == pytest.approx(0.70, abs=0.01)
         assert p["effectiveness_sample_size"] == 2
 
+    def test_pattern_with_percent_character(self, db):
+        """Pattern containing '%' should match literally, not as LIKE wildcard."""
+        db.insert_prompt("Set width to 100% of container", source="claude-code", session_id="s1")
+        db.insert_prompt("Set width to full container", source="claude-code", session_id="s2")
+        db.update_prompt_effectiveness("s1", 0.90)
+        db.update_prompt_effectiveness("s2", 0.50)
+
+        db.upsert_pattern(
+            pattern_text="100%",
+            frequency=1,
+            avg_length=30.0,
+            projects=[],
+            category="code",
+            first_seen="2026-03-10",
+            last_seen="2026-03-10",
+            examples=[],
+        )
+
+        db.compute_pattern_effectiveness()
+
+        patterns = db.get_patterns()
+        p = next(x for x in patterns if x["pattern_text"] == "100%")
+        # Only s1 contains "100%", so avg should be 0.90, not average of both
+        assert p["effectiveness_avg"] == pytest.approx(0.90, abs=0.01)
+        assert p["effectiveness_sample_size"] == 1
+
+    def test_pattern_with_underscore_character(self, db):
+        """Pattern containing '_' should match literally, not as LIKE single-char wildcard."""
+        db.insert_prompt("Fix __init__.py import order", source="claude-code", session_id="s1")
+        db.insert_prompt("Fix aainita.py import order", source="claude-code", session_id="s2")
+        db.update_prompt_effectiveness("s1", 0.80)
+        db.update_prompt_effectiveness("s2", 0.40)
+
+        db.upsert_pattern(
+            pattern_text="__init__",
+            frequency=1,
+            avg_length=30.0,
+            projects=[],
+            category="code",
+            first_seen="2026-03-10",
+            last_seen="2026-03-10",
+            examples=[],
+        )
+
+        db.compute_pattern_effectiveness()
+
+        patterns = db.get_patterns()
+        p = next(x for x in patterns if x["pattern_text"] == "__init__")
+        # Only s1 contains "__init__", so avg should be 0.80
+        assert p["effectiveness_avg"] == pytest.approx(0.80, abs=0.01)
+        assert p["effectiveness_sample_size"] == 1
+
+    def test_pattern_with_very_long_text(self, db):
+        """Pattern with 500+ chars should not crash the INSTR query."""
+        long_pattern = "refactor " * 60  # 540 chars
+        prompt_text = f"Please {long_pattern}the entire codebase"
+        db.insert_prompt(prompt_text, source="claude-code", session_id="s1")
+        db.update_prompt_effectiveness("s1", 0.75)
+
+        db.upsert_pattern(
+            pattern_text=long_pattern,
+            frequency=1,
+            avg_length=float(len(long_pattern)),
+            projects=[],
+            category="refactor",
+            first_seen="2026-03-10",
+            last_seen="2026-03-10",
+            examples=[],
+        )
+
+        db.compute_pattern_effectiveness()
+
+        patterns = db.get_patterns()
+        p = next(x for x in patterns if x["pattern_text"] == long_pattern)
+        assert p["effectiveness_avg"] == pytest.approx(0.75, abs=0.01)
+        assert p["effectiveness_sample_size"] == 1
+
     def test_no_data_leaves_pattern_null(self, db):
         """Patterns with no linked effective prompts remain NULL."""
         db.upsert_pattern(

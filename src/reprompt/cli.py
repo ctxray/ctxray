@@ -30,6 +30,13 @@ app = typer.Typer(
     name="reprompt",
     help="Discover, analyze, and evolve your best prompts from AI coding sessions.",
     no_args_is_help=False,
+    rich_markup_mode="rich",
+    epilog=(
+        "Quick start:\n\n"
+        "  reprompt scan            Discover prompts from your AI tools\n\n"
+        "  reprompt                 See your dashboard\n\n"
+        '  reprompt score "prompt"  Score any prompt instantly'
+    ),
 )
 console = Console()
 
@@ -237,11 +244,25 @@ def main(
 
 @app.command(rich_help_panel="Analyze")
 def scan(
-    source: str | None = typer.Option(None, help="Source adapter (claude-code, openclaw)"),
+    source: str | None = typer.Option(
+        None,
+        "--source",
+        "-s",
+        help="Filter by source (e.g. claude-code, cursor, aider)",
+    ),
     path: str | None = typer.Option(None, help="Custom session path"),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Skip auto-report after scan"),
 ) -> None:
-    """Scan AI tool sessions for prompts."""
+    """Scan AI tool sessions for prompts.
+
+    Examples:
+
+        reprompt scan                                    # scan all AI tools
+
+        reprompt scan --source cursor                    # scan Cursor only
+
+        reprompt scan --source chatgpt-export --path ~/Downloads/conversations.json
+    """
     from reprompt.config import Settings
     from reprompt.core.pipeline import build_report_data, run_scan
     from reprompt.output.terminal import render_report
@@ -278,7 +299,7 @@ def scan(
     if result.new_stored > 0 and stats.get("total_prompts", 0) <= result.new_stored + 10:
         console.print("\n[bold]Try next:[/bold]")
         console.print('  reprompt score [dim]"your prompt"[/dim]   — instant quality score')
-        console.print("  reprompt library              — see your prompt patterns")
+        console.print("  reprompt template list         — see your prompt patterns")
         console.print("  reprompt insights             — personal analysis")
     else:
         from reprompt.core.suggestions import get_suggestion
@@ -433,7 +454,10 @@ def report(
     top: int = typer.Option(20, help="Number of top terms to show"),
     clusters: int = typer.Option(0, "--clusters", help="Number of clusters (0 = auto-select)"),
     source: str = typer.Option(
-        "", "--source", "-s", help="Filter by source (e.g. chatgpt-ext, claude-ext, claude-code)"
+        "",
+        "--source",
+        "-s",
+        help="Filter by source (e.g. chatgpt-export, claude-code)",
     ),
 ) -> None:
     """Generate analytics report."""
@@ -507,7 +531,10 @@ def search(
     query: str = typer.Argument(..., help="Search term (case-insensitive)"),
     limit: int = typer.Option(20, help="Maximum results to show"),
     source: str = typer.Option(
-        "", "--source", "-s", help="Filter by source (e.g. chatgpt-ext, claude-ext, claude-code)"
+        "",
+        "--source",
+        "-s",
+        help="Filter by source (e.g. chatgpt-export, claude-code)",
     ),
     copy: bool = typer.Option(False, "--copy", help="Copy results to clipboard"),
 ) -> None:
@@ -750,7 +777,9 @@ def use(
 
 @app.command(rich_help_panel="Optimize")
 def lint(
-    source: str = typer.Option(None, help="Adapter to scan (claude-code, aider, gemini, etc.)"),
+    source: str = typer.Option(
+        None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor, aider)"
+    ),
     path: str = typer.Option(None, help="Path to scan for session files"),
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON"),
     fail_on_warning: bool = typer.Option(False, "--strict", help="Exit 1 on warnings too"),
@@ -768,6 +797,14 @@ def lint(
     - debug-needs-reference: debug prompts without file/function references
 
     CI mode: use --score-threshold to fail if average score is below a threshold.
+
+    Examples:
+
+        reprompt lint                                    # lint stored prompts
+
+        reprompt lint --score-threshold 50               # fail if avg score < 50 (CI mode)
+
+        reprompt lint --strict --json                    # strict mode with JSON output
     """
     import json as json_mod
 
@@ -880,7 +917,16 @@ def score(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
 ) -> None:
-    """Score a prompt using research-backed analysis."""
+    """Score a prompt using research-backed analysis.
+
+    Examples:
+
+        reprompt score "Fix the auth bug in login.ts where JWT expires"
+
+        reprompt score "Refactor auth module to use refresh tokens" --json
+
+        reprompt score "Fix bug" --copy
+    """
     from reprompt.core.extractors import extract_features
     from reprompt.core.scorer import score_prompt
 
@@ -962,7 +1008,16 @@ def compress(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     copy: bool = typer.Option(False, "--copy", help="Copy compressed text to clipboard"),
 ) -> None:
-    """Compress a prompt by removing filler words and simplifying phrases."""
+    """Compress a prompt by removing filler words and simplifying phrases.
+
+    Examples:
+
+        reprompt compress "Can you please help me refactor this code?"
+
+        reprompt compress "I was wondering if you could fix the bug" --json
+
+        reprompt compress "verbose prompt here" --copy
+    """
     from reprompt.core.compress import compress_text
 
     result = compress_text(text)
@@ -985,7 +1040,9 @@ def compress(
 def distill(
     session_id: str = typer.Argument(None, help="Session ID to distill"),
     last: int = typer.Option(1, "--last", help="Distill the N most recent sessions"),
-    source: str = typer.Option(None, "--source", help="Filter by adapter name"),
+    source: str = typer.Option(
+        None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor, aider)"
+    ),
     summary: bool = typer.Option(False, "--summary", help="Show compressed summary"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
@@ -999,7 +1056,16 @@ def distill(
         None, "--weights", help="Override weights, e.g. 'semantic_shift=0.4'"
     ),
 ) -> None:
-    """Distill a conversation to its most important turns."""
+    """Distill a conversation to its most important turns.
+
+    Examples:
+
+        reprompt distill                                 # distill most recent session
+
+        reprompt distill --last 3 --summary              # summarize last 3 sessions
+
+        reprompt distill --export --full                 # export context for a new session
+    """
     # --show-weights: print and exit
     if show_weights:
         from reprompt.core.distill import DEFAULT_WEIGHTS
@@ -1281,7 +1347,16 @@ def compare(
     ),
     copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
 ) -> None:
-    """Compare two prompts side by side using Prompt DNA analysis."""
+    """Compare two prompts side by side using Prompt DNA analysis.
+
+    Examples:
+
+        reprompt compare "fix bug" "Fix the login timeout in auth.py by adding retry logic"
+
+        reprompt compare --best-worst                    # compare your best vs worst prompts
+
+        reprompt compare --best-worst --source cursor
+    """
     from typing import Any
 
     from reprompt.core.extractors import extract_features
@@ -1438,7 +1513,16 @@ def privacy(
         False, "--deep", help="Scan prompts for sensitive content (API keys, passwords, PII)"
     ),
 ) -> None:
-    """Show where your prompts went and how they may be used."""
+    """Show where your prompts went and how they may be used.
+
+    Examples:
+
+        reprompt privacy                                 # show what you sent where
+
+        reprompt privacy --deep                          # scan for API keys, tokens, PII
+
+        reprompt privacy --deep --json
+    """
     import json as json_mod
 
     from reprompt.config import Settings
@@ -1511,7 +1595,7 @@ def privacy(
         _copy_to_clip(json_mod.dumps(summary, indent=2), quiet=json_output)
 
 
-@app.command(rich_help_panel="Manage")
+@app.command(rich_help_panel="Analyze")
 def digest(
     period: str = typer.Option("7d", help="Comparison window: 7d, 14d, 30d"),
     format: str = typer.Option("terminal", help="Output format: terminal, json"),
@@ -1812,7 +1896,9 @@ def extension_status() -> None:
 @app.command(rich_help_panel="Analyze")
 def agent(
     last: int = typer.Option(5, "--last", help="Analyze N most recent sessions"),
-    source: str = typer.Option(None, "--source", help="Filter by adapter (claude-code, codex)"),
+    source: str = typer.Option(
+        None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor, aider)"
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
     loops_only: bool = typer.Option(False, "--loops-only", help="Show only error loops"),

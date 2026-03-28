@@ -236,18 +236,18 @@ class PromptDB:
                   effectiveness_avg = (
                     SELECT AVG(p.effectiveness_score)
                     FROM prompts p
-                    WHERE p.text LIKE '%' || prompt_patterns.pattern_text || '%'
+                    WHERE INSTR(p.text, prompt_patterns.pattern_text) > 0
                       AND p.effectiveness_score IS NOT NULL
                   ),
                   effectiveness_sample_size = (
                     SELECT COUNT(DISTINCT p.session_id)
                     FROM prompts p
-                    WHERE p.text LIKE '%' || prompt_patterns.pattern_text || '%'
+                    WHERE INSTR(p.text, prompt_patterns.pattern_text) > 0
                       AND p.effectiveness_score IS NOT NULL
                   )
                 WHERE EXISTS (
                   SELECT 1 FROM prompts p
-                  WHERE p.text LIKE '%' || prompt_patterns.pattern_text || '%'
+                  WHERE INSTR(p.text, prompt_patterns.pattern_text) > 0
                     AND p.effectiveness_score IS NOT NULL
                 )
             """)

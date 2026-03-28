@@ -100,8 +100,8 @@ def render_report(data: dict[str, Any]) -> str:
             )
         console.print("  Run `reprompt privacy` for full breakdown")
 
-    console.print("\nRun `reprompt library` to see your reusable prompt collection")
-    console.print("Run `reprompt trends` to see your prompt evolution over time")
+    console.print("\nRun `reprompt template list` to see your reusable prompt collection")
+    console.print("Run `reprompt digest --trends` to see your prompt evolution over time")
 
     return buf.getvalue()
 
@@ -323,7 +323,15 @@ def render_score(breakdown: dict[str, Any]) -> str:
 
     total = breakdown["total"]
     grade = (
-        "Excellent" if total >= 80 else "Good" if total >= 60 else "Fair" if total >= 40 else "Poor"
+        "Excellent"
+        if total >= 80
+        else "Good"
+        if total >= 60
+        else "Fair"
+        if total >= 40
+        else "Poor"
+        if total >= 20
+        else "Very Poor"
     )
 
     console.print(f"\n[bold]Prompt DNA Score: {total:.0f}/100[/bold]  ({grade})")
@@ -343,13 +351,17 @@ def render_score(breakdown: dict[str, Any]) -> str:
         bar = "\u2588" * filled + "\u2591" * (10 - filled)
         console.print(f" {name:<12} {bar}  {cat_score:.0f}/{max_val}")
 
-    # Suggestions
+    # Suggestions (sorted by impact: high → medium → low)
     suggestions = breakdown.get("suggestions", [])
     if suggestions:
+        impact_order = {"high": 0, "medium": 1, "low": 2}
+        suggestions = sorted(suggestions, key=lambda s: impact_order.get(s["impact"], 3))
         console.print(f"\n[bold]Suggestions ({len(suggestions)}):[/bold]")
         for s in suggestions:
             impact_color = {"high": "red", "medium": "yellow", "low": "dim"}.get(s["impact"], "dim")
-            console.print(f" [{impact_color}]\u25a0[/{impact_color}] [{s['paper']}] {s['message']}")
+            console.print(
+                f" [{impact_color}]\u25a0[/{impact_color}] [dim][{s['paper']}][/dim] {s['message']}"
+            )
 
     return buf.getvalue()
 

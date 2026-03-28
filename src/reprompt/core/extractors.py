@@ -328,14 +328,26 @@ def _find_instruction_position(segments: list[PromptSegment]) -> float:
     - Position 0.5 = middle (worst attention ~45%)
     - Position 1.0 = end (moderate attention ~65%)
 
+    For single-segment prompts that are entirely an instruction, use position
+    0.0 (start) rather than the midpoint, since the instruction *is* at the
+    start -- the midpoint 0.5 is an artifact of there being only one segment
+    spanning the whole text.
+
     Returns normalized position [0.0, 1.0].
     """
-    for seg in segments:
-        if seg.segment_type == "instruction":
-            return (seg.start_pos + seg.end_pos) / 2
+    instruction_segments = [s for s in segments if s.segment_type == "instruction"]
 
-    # No instruction found -- default to start (assume the whole thing is instruction)
-    return 0.0
+    if not instruction_segments:
+        # No instruction found -- default to start (assume the whole thing is instruction)
+        return 0.0
+
+    # Single-segment prompt: the instruction starts at the beginning
+    if len(segments) == 1 and instruction_segments[0] is segments[0]:
+        return 0.0
+
+    # Multi-segment: use the midpoint of the first instruction segment
+    seg = instruction_segments[0]
+    return (seg.start_pos + seg.end_pos) / 2
 
 
 def _classify_distribution(segments: list[PromptSegment]) -> str:

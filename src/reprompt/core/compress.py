@@ -305,6 +305,22 @@ EN_PHRASE_SIMPLIFY: dict[str, str] = {
     "any and all": "all",
     "completely and totally": "completely",
     "various different": "various",
+    "take a look at": "check",
+    "let me know what you think about it": "",
+    "let me know what you think": "",
+    "let me know": "",
+    "what's happening is that": "",
+    "the fact that": "",
+    "I need help with": "",
+    "not working properly": "failing",
+    "split it up into": "split into",
+    "there might be some issues with": "possible issues in",
+    "the way it handles": "how it handles",
+    "at the same time": "simultaneously",
+    "on a regular basis": "regularly",
+    "as soon as possible": "ASAP",
+    "the reason why": "because",
+    "for better performance": "for performance",
 }
 
 # Pre-sorted by key length (descending) so longer patterns match first
@@ -406,7 +422,7 @@ EN_FILLER_PHRASES: list[str] = [
     "well",
     "anyway",
     "okay so",
-    "the thing is",
+    "the thing is that",
     "here's the thing",
     "as a matter of fact",
     "at the end of the day",
@@ -439,6 +455,20 @@ EN_FILLER_PHRASES: list[str] = [
     "it would be great if",
     "I was wondering if",
     "would it be possible to",
+    "thanks in advance for your help",
+    "I really appreciate it",
+    "thank you for your time",
+    "thank you for your help",
+    "if that makes sense",
+    "does that make sense",
+    "if you know what I mean",
+    "just to be clear",
+    "I want to make sure that",
+    "kind of",
+    "sort of",
+    "additionally",
+    "furthermore",
+    "moreover",
 ]
 
 # Sort by length descending so longer patterns match first
@@ -615,6 +645,47 @@ def compress_text(text: str) -> CompressResult:
 
     # Restore protected zones
     compressed = _restore_protected_zones(working_text, zones)
+
+    # -- Post-compression cleanup pass --
+    # Fix 4: Remove closing pleasantry sentences (full sentences at end that are pure thanks)
+    compressed = re.sub(
+        r"[.!?\s]*(?:thanks|thank you|thx|ty)[\w\s,]*[.!?]?\s*$",
+        "",
+        compressed,
+        flags=re.IGNORECASE,
+    )
+    # Fix 1: Whitespace and punctuation cleanup after all layers
+    compressed = compressed.strip()
+    compressed = re.sub(r"  +", " ", compressed)  # collapse multiple spaces
+    compressed = re.sub(r"^[,;.\s]+", "", compressed).strip()  # remove leading punctuation
+    compressed = re.sub(
+        r"(?i)^that\s+", "", compressed
+    )  # orphaned "that" at start after filler deletion
+    compressed = re.sub(r"(?i)(\.\s*)that\s+", r"\1", compressed)  # orphaned "that" after period
+    compressed = re.sub(r",\s*,", ",", compressed)  # collapse double commas
+    # Remove orphaned conjunctions before punctuation (e.g. "and ?" from deleted phrases)
+    compressed = re.sub(r"\s+(?:and|or)\s*([?!.])", r"\1", compressed)
+    # Remove trailing orphaned punctuation like ". ." or "? ."
+    compressed = re.sub(r"([.!?])\s*[.]+\s*$", r"\1", compressed)
+    # Remove isolated trailing punctuation (e.g. lone "." at end after phrase deletion)
+    compressed = re.sub(r"\s+[.!?]\s*$", "", compressed)
+    compressed = compressed.strip()
+
+    # Capitalize first letter after sentence-ending punctuation if lowercase
+    def _capitalize_after_period(m: re.Match[str]) -> str:
+        return m.group(1) + m.group(2).upper()
+
+    compressed = re.sub(r"([.!?]\s+)([a-z])", _capitalize_after_period, compressed)
+    # Capitalize first letter if compression stripped a leading prefix
+    # Only capitalize when the original text started with an uppercase letter
+    if compressed and compressed[0].islower():
+        # Find the first alphabetic character in the original text
+        first_alpha = next((c for c in text if c.isalpha()), "")
+        if first_alpha.isupper():
+            compressed = compressed[0].upper() + compressed[1:]
+
+    if compressed != _restore_protected_zones(working_text, zones):
+        all_changes.append("post: whitespace/punctuation cleanup")
 
     # Count compressed tokens and compute savings
     compressed_tokens = _count_tokens(compressed, zh_ratio)
