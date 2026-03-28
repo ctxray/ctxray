@@ -148,7 +148,9 @@ class ClaudeCodeAdapter(BaseAdapter):
                     text_parts: list[str] = []
                     tool_call_count = 0
                     tool_paths: list[str] = []
+                    tool_names: list[str] = []
                     has_error = False
+                    error_text = ""
 
                     if isinstance(content, list):
                         for block in content:
@@ -162,9 +164,13 @@ class ClaudeCodeAdapter(BaseAdapter):
                                     kw in t for kw in ("Error", "error", "traceback", "Traceback")
                                 ):
                                     has_error = True
+                                    if not error_text:
+                                        error_text = t[:200]
                             elif block_type == "tool_use":
                                 tool_call_count += 1
                                 name = block.get("name", "")
+                                if name:
+                                    tool_names.append(name)
                                 inp = block.get("input", {})
                                 if isinstance(inp, dict) and name in ("Edit", "Write"):
                                     fp = inp.get("file_path", "")
@@ -176,6 +182,8 @@ class ClaudeCodeAdapter(BaseAdapter):
                             kw in content for kw in ("Error", "error", "traceback", "Traceback")
                         ):
                             has_error = True
+                            if not error_text:
+                                error_text = content[:200]
 
                     text = " ".join(text_parts).strip()
                     if not text and tool_call_count == 0:
@@ -190,6 +198,8 @@ class ClaudeCodeAdapter(BaseAdapter):
                             tool_calls=tool_call_count,
                             has_error=has_error,
                             tool_use_paths=tool_paths,
+                            tool_names=tool_names,
+                            error_text=error_text,
                         )
                     )
                     turn_index += 1

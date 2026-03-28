@@ -36,7 +36,7 @@ class TestScanResult:
 class TestGetAdapters:
     def test_returns_list(self):
         adapters = get_adapters()
-        assert len(adapters) == 8
+        assert len(adapters) == 9
 
     def test_adapter_names(self):
         adapters = get_adapters()

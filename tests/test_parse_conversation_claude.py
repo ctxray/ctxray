@@ -158,3 +158,81 @@ def test_parse_conversation_empty_file():
     adapter = ClaudeCodeAdapter()
     turns = adapter.parse_conversation(path)
     assert turns == []
+
+
+def test_parse_conversation_tool_names_extracted():
+    """tool_names should contain the name of each tool_use block."""
+    path = _write_jsonl(SAMPLE_ENTRIES)
+    adapter = ClaudeCodeAdapter()
+    turns = adapter.parse_conversation(path)
+    assistant_turns = [t for t in turns if t.role == "assistant"]
+    assert assistant_turns[0].tool_names == ["Read", "Edit"]
+
+
+def test_parse_conversation_tool_names_empty_for_text_only():
+    """Assistant turn with only text should have empty tool_names."""
+    path = _write_jsonl(SAMPLE_ENTRIES)
+    adapter = ClaudeCodeAdapter()
+    turns = adapter.parse_conversation(path)
+    assistant_turns = [t for t in turns if t.role == "assistant"]
+    # Second assistant turn has only text (error), no tools
+    assert assistant_turns[1].tool_names == []
+
+
+def test_parse_conversation_error_text_captured():
+    """error_text should contain the actual error message."""
+    path = _write_jsonl(SAMPLE_ENTRIES)
+    adapter = ClaudeCodeAdapter()
+    turns = adapter.parse_conversation(path)
+    assistant_turns = [t for t in turns if t.role == "assistant"]
+    assert assistant_turns[1].error_text == "Error: file not found"
+    # Non-error turn should have empty error_text
+    assert assistant_turns[0].error_text == ""
+
+
+def test_parse_conversation_user_turns_no_tool_names():
+    """User turns should always have empty tool_names and error_text."""
+    path = _write_jsonl(SAMPLE_ENTRIES)
+    adapter = ClaudeCodeAdapter()
+    turns = adapter.parse_conversation(path)
+    user_turns = [t for t in turns if t.role == "user"]
+    for t in user_turns:
+        assert t.tool_names == []
+        assert t.error_text == ""
+
+
+def test_parse_conversation_multiple_tool_types():
+    """Verify tool_names captures all tool types."""
+    entries = [
+        {
+            "type": "user",
+            "timestamp": "2026-03-23T10:00:00Z",
+            "message": {"role": "user", "content": "Run the tests and fix failures"},
+        },
+        {
+            "type": "assistant",
+            "timestamp": "2026-03-23T10:00:05Z",
+            "message": {
+                "role": "assistant",
+                "content": [
+                    {"type": "text", "text": "Running tests now."},
+                    {"type": "tool_use", "name": "Bash", "input": {"command": "pytest tests/"}},
+                    {"type": "tool_use", "name": "Grep", "input": {"pattern": "def test_"}},
+                    {"type": "tool_use", "name": "Read", "input": {"file_path": "tests/foo.py"}},
+                    {
+                        "type": "tool_use",
+                        "name": "Write",
+                        "input": {"file_path": "tests/bar.py", "content": "..."},
+                    },
+                ],
+            },
+        },
+    ]
+    path = _write_jsonl(entries)
+    adapter = ClaudeCodeAdapter()
+    turns = adapter.parse_conversation(path)
+    assistant_turns = [t for t in turns if t.role == "assistant"]
+    assert assistant_turns[0].tool_names == ["Bash", "Grep", "Read", "Write"]
+    assert assistant_turns[0].tool_calls == 4
+    # Write path should be captured
+    assert "tests/bar.py" in assistant_turns[0].tool_use_paths

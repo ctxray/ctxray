@@ -808,3 +808,50 @@ def render_privacy(data: dict[str, Any]) -> str:
     console.print("\n[dim]Data policies as of March 2026. Check vendor docs for latest.[/dim]")
 
     return buf.getvalue()
+
+
+def render_privacy_deep(scan_result: Any) -> str:
+    """Render sensitive content scan results."""
+    buf = StringIO()
+    console = Console(file=buf, force_terminal=True, width=80)
+
+    n = scan_result.prompts_scanned
+    total_findings = len(scan_result.matches)
+
+    console.print(f"\n[bold]Sensitive Content Scan[/bold] ({n} prompts analyzed)")
+    console.print("\u2500" * 45)
+
+    if total_findings == 0:
+        console.print("\n  [green]No sensitive content detected.[/green]")
+        return buf.getvalue()
+
+    # Category summary
+    display_order = [
+        "API keys",
+        "Passwords",
+        "Env secrets",
+        "JWT tokens",
+        "Emails",
+        "IP addresses",
+        "Home paths",
+    ]
+    for cat in display_order:
+        count = scan_result.category_counts.get(cat, 0)
+        if count > 0:
+            sources = sorted(scan_result.category_sources.get(cat, set()))
+            source_str = f" ({', '.join(sources)})" if sources else ""
+            console.print(f"  {cat + ':':<16} [yellow]{count} found[/yellow]{source_str}")
+        else:
+            console.print(f"  {cat + ':':<16} [dim]0[/dim]")
+
+    # Highest risk
+    if scan_result.highest_risk:
+        hr = scan_result.highest_risk
+        console.print(
+            f"\n  [bold red]Highest risk:[/bold red] "
+            f"{hr.category} — {hr.matched_text} ({hr.source})"
+        )
+
+    console.print("\n[dim]Run `reprompt privacy --deep --json` for full details.[/dim]")
+
+    return buf.getvalue()

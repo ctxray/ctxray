@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 2026-03-28
+
+### Added
+- **Agent workflow analysis** — `reprompt agent` detects error loops, tool call patterns, and session efficiency from existing session files. Zero config, zero instrumentation.
+- **Codex CLI adapter** — full support for OpenAI Codex CLI sessions (`~/.codex/sessions/`), including user/assistant turns, tool calls (shell + function), error detection with exit codes, and file path tracking. 9th adapter.
+- **Sensitive content detection** — `reprompt privacy --deep` scans stored prompts for API keys, JWT tokens, emails, IP addresses, passwords, env secrets, and home paths. All regex-based, zero network.
+- **Chrome Web Store extension** — `install-extension` now defaults to the published extension ID; `extension-status` shows the Chrome Web Store install link.
+- **Extension E2E tests** — 8 tests covering the full extension -> Native Messaging -> DB -> CLI pipeline across 3 sources.
+
+### Changed
+- **ConversationTurn model** — added `tool_names` and `error_text` fields for richer agent analysis (backward-compatible defaults)
+- **Claude Code adapter** — now extracts individual tool names (Read, Edit, Bash, etc.) from tool_use blocks, not just counts
+- **Suggestions** — `distill` now suggests `reprompt agent`; `agent` suggests `--loops-only` and `privacy --deep`
+- Tests: 1397 -> 1490+
+
 ## [1.5.0] - 2026-03-25
 
 ### Added

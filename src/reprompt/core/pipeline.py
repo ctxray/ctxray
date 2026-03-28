@@ -12,6 +12,7 @@ from reprompt.adapters.chatgpt import ChatGPTAdapter
 from reprompt.adapters.claude_chat import ClaudeChatAdapter
 from reprompt.adapters.claude_code import ClaudeCodeAdapter
 from reprompt.adapters.cline import ClineAdapter
+from reprompt.adapters.codex import CodexAdapter
 from reprompt.adapters.cursor import CursorAdapter
 from reprompt.adapters.gemini import GeminiAdapter
 from reprompt.adapters.openclaw import OpenClawAdapter
@@ -43,6 +44,7 @@ def get_adapters() -> list[
     | AiderAdapter
     | GeminiAdapter
     | ClineAdapter
+    | CodexAdapter
     | ChatGPTAdapter
     | ClaudeChatAdapter
 ]:
@@ -54,6 +56,7 @@ def get_adapters() -> list[
         AiderAdapter(),
         GeminiAdapter(),
         ClineAdapter(),
+        CodexAdapter(),
         ChatGPTAdapter(),
         ClaudeChatAdapter(),
     ]

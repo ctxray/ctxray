@@ -1399,18 +1399,62 @@ def insights(
 def privacy(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
+    deep: bool = typer.Option(
+        False, "--deep", help="Scan prompts for sensitive content (API keys, passwords, PII)"
+    ),
 ) -> None:
     """Show where your prompts went and how they may be used."""
     import json as json_mod
 
     from reprompt.config import Settings
-    from reprompt.core.privacy import compute_privacy_summary
-    from reprompt.output.terminal import render_privacy
     from reprompt.storage.db import PromptDB
 
     settings = Settings()
     db = PromptDB(settings.db_path)
     all_prompts = db.get_all_prompts()
+
+    if deep:
+        from reprompt.core.privacy_scan import scan_prompts
+
+        scan_result = scan_prompts(all_prompts)
+
+        if json_output:
+            data = {
+                "prompts_scanned": scan_result.prompts_scanned,
+                "total_findings": len(scan_result.matches),
+                "categories": {
+                    cat: {
+                        "count": count,
+                        "sources": sorted(scan_result.category_sources.get(cat, set())),
+                    }
+                    for cat, count in scan_result.category_counts.items()
+                },
+                "matches": [
+                    {
+                        "category": m.category,
+                        "pattern": m.pattern_name,
+                        "redacted": m.matched_text,
+                        "source": m.source,
+                    }
+                    for m in scan_result.matches
+                ],
+            }
+            typer.echo(json_mod.dumps(data, indent=2))
+        else:
+            from reprompt.output.terminal import render_privacy_deep
+
+            typer.echo(render_privacy_deep(scan_result))
+
+        if copy:
+            data = {
+                "prompts_scanned": scan_result.prompts_scanned,
+                "categories": dict(scan_result.category_counts),
+            }
+            _copy_to_clip(json_mod.dumps(data, indent=2), quiet=json_output)
+        return
+
+    from reprompt.core.privacy import compute_privacy_summary
+    from reprompt.output.terminal import render_privacy
 
     source_counts: dict[str, int] = {}
     for p in all_prompts:
@@ -1728,6 +1772,77 @@ def extension_status() -> None:
         console.print(f"  Last sync:         {last_sync}")
     else:
         console.print("  Last sync:         never")
+
+
+@app.command(rich_help_panel="Analyze")
+def agent(
+    last: int = typer.Option(5, "--last", help="Analyze N most recent sessions"),
+    source: str = typer.Option(None, "--source", help="Filter by adapter (claude-code, codex)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
+    loops_only: bool = typer.Option(False, "--loops-only", help="Show only error loops"),
+) -> None:
+    """Analyze agent workflow: error loops, tool patterns, session efficiency."""
+    from reprompt.config import Settings
+    from reprompt.core.agent import analyze_sessions
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+
+    sessions = _resolve_distill_sessions(db, session_id=None, last=last, source=source)
+    if not sessions:
+        if json_output:
+            typer.echo("{}")
+        else:
+            typer.echo(
+                "No agent sessions found. Run [bold]reprompt scan[/bold] to import sessions first."
+            )
+        return
+
+    conversations = []
+    for file_path, adapter_source, resolved_sid in sessions:
+        conv = _load_conversation(file_path, adapter_source, db, resolved_sid)
+        if conv is not None:
+            conversations.append(conv)
+        if len(conversations) >= last:
+            break
+
+    if not conversations:
+        if json_output:
+            typer.echo("{}")
+        else:
+            typer.echo("Could not load any sessions.")
+        return
+
+    agg = analyze_sessions(conversations)
+
+    if json_output:
+        import json as json_mod
+        from dataclasses import asdict
+
+        typer.echo(json_mod.dumps(asdict(agg), indent=2, default=str))
+    elif loops_only:
+        from reprompt.output.agent_terminal import render_loops_only
+
+        typer.echo(render_loops_only(agg), nl=False)
+    else:
+        from reprompt.output.agent_terminal import render_agent_report
+
+        typer.echo(render_agent_report(agg), nl=False)
+
+        from reprompt.core.suggestions import get_suggestion
+
+        hint = get_suggestion("agent")
+        if hint:
+            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
+
+    if copy:
+        import json as json_mod
+        from dataclasses import asdict
+
+        copy_text = json_mod.dumps(asdict(agg), indent=2, default=str)
+        _copy_to_clip(copy_text, quiet=json_output)
 
 
 # Register late commands (template, wrapped, telemetry) after all @app.command()

@@ -18,7 +18,7 @@ uv run python -m build                     # build wheel
 
 ```
 src/reprompt/
-├── cli.py              # Typer CLI (scan, import, report, search, demo, status, purge, install-hook, install-extension, extension-status, score, compare, insights, digest, style, template [save|list|use], privacy, compress, distill, lint, wrapped, telemetry, mcp-serve) + bare `reprompt` dashboard + plugin loading
+├── cli.py              # Typer CLI (scan, import, report, search, demo, status, purge, install-hook, install-extension, extension-status, score, compare, insights, digest, style, template [save|list|use], privacy, compress, distill, agent, lint, wrapped, telemetry, mcp-serve) + bare `reprompt` dashboard + plugin loading
 ├── config.py           # pydantic-settings, env vars (REPROMPT_ prefix) + TOML config
 ├── demo.py             # Built-in demo data generator (no network required)
 ├── core/
@@ -40,13 +40,16 @@ src/reprompt/
 │   ├── persona.py       # 6 prompt personas (Architect/Debugger/Explorer/Novelist/Sniper/Teacher)
 │   ├── wrapped.py       # WrappedReport dataclass + build_wrapped(db) aggregation
 │   ├── privacy.py       # Privacy metadata registry + exposure summary per adapter
+│   ├── privacy_scan.py  # Sensitive content detection (API keys, tokens, PII) via regex
 │   ├── compress.py      # 4-layer prompt compression (char norm + phrase simplify + filler delete + structure cleanup)
-│   ├── suggestions.py   # Command journey suggestions ("→ Try:" hints for 5 core commands)
+│   ├── suggestions.py   # Command journey suggestions ("→ Try:" hints for 7 core commands)
 │   ├── conversation.py  # ConversationTurn, Conversation, DistillResult dataclasses
-│   └── distill.py       # 6-signal importance scoring + filtering + summary generation
+│   ├── distill.py       # 6-signal importance scoring + filtering + summary generation
+│   └── agent.py         # Agent workflow analysis: error loop detection, tool distribution, efficiency
 ├── adapters/
 │   ├── base.py         # BaseAdapter ABC + parse_conversation() default
-│   ├── claude_code.py  # Claude Code JSONL parser
+│   ├── claude_code.py  # Claude Code JSONL parser (full conversation + tool names)
+│   ├── codex.py        # Codex CLI JSONL rollout parser (full conversation + shell/function calls)
 │   ├── openclaw.py     # OpenClaw JSON parser (supports ~/.openclaw/ + legacy ~/.opencode/)
 │   ├── cursor.py       # Cursor IDE .vscdb parser (cursorDiskKV + legacy ItemTable)
 │   ├── aider.py        # Aider markdown chat history parser (.aider.chat.history.md)
@@ -87,7 +90,8 @@ src/reprompt/
     ├── wrapped_terminal.py # Rich Prompt Wrapped report rendering
     ├── wrapped_html.py     # Self-contained HTML share card (dark theme)
     ├── compress_terminal.py # Rich output for compress command
-    └── distill_terminal.py  # Rich output for distill command
+    ├── distill_terminal.py  # Rich output for distill command
+    └── agent_terminal.py   # Rich output for agent workflow report
 ```
 
 ## Data Flow
@@ -124,7 +128,7 @@ reprompt-extension (private)   ← Browser extension: Chrome/Firefox prompt capt
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (REPROMPT_ prefix) > TOML (~/.config/reprompt/config.toml) > defaults
-- Tests: pytest, 1397 tests, 95% coverage target
+- Tests: pytest, 1490+ tests, 95% coverage target
 
 ## Prompt Science Engine
 

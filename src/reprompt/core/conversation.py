@@ -18,6 +18,8 @@ class ConversationTurn:
     tool_calls: int = 0
     has_error: bool = False
     tool_use_paths: list[str] = field(default_factory=list)
+    tool_names: list[str] = field(default_factory=list)  # ["Read", "Edit", "Bash"]
+    error_text: str = ""  # Actual error message for fingerprinting
 
     # Enrichment (populated by distill engine, not adapter)
     score: float | None = None  # Display-only, from prompt_features

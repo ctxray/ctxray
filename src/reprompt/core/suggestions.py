@@ -10,8 +10,10 @@ SUGGESTIONS: dict[str, str] = {
         'reprompt template save "..." (reuse patterns) · reprompt distill --last (sessions)'
     ),
     "distill": (
-        "reprompt distill --export --copy (context recovery)"
-        ' · reprompt compress "..." (shorten turns)'
+        "reprompt agent (workflow analysis) · reprompt distill --export --copy (context recovery)"
+    ),
+    "agent": (
+        "reprompt agent --loops-only (error loops) · reprompt privacy --deep (sensitive content)"
     ),
     "template": "reprompt insights (see which patterns work best)",
 }
