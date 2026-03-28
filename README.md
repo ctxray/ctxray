@@ -144,6 +144,37 @@ Capture prompts from ChatGPT, Claude.ai, and Gemini directly in your browser:
 
 Captured prompts sync locally via Native Messaging -- nothing leaves your machine.
 
+### CI integration
+
+#### GitHub Action
+
+```yaml
+# .github/workflows/prompt-lint.yml
+- uses: reprompt-dev/reprompt@main
+  with:
+    score-threshold: 50   # fail if avg prompt score < 50
+    strict: true          # fail on warnings too
+```
+
+#### pre-commit
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/reprompt-dev/reprompt
+    rev: v1.6.0
+    hooks:
+      - id: reprompt-lint
+```
+
+#### Direct CLI
+
+```bash
+reprompt lint --score-threshold 50  # exit 1 if avg score < 50
+reprompt lint --strict              # exit 1 on warnings
+reprompt lint --json                # machine-readable output
+```
+
 ## Privacy
 
 - All analysis runs locally. No prompts leave your machine.
