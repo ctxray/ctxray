@@ -21,6 +21,10 @@ inputs:
     description: "Fail on warnings too (not just errors)"
     required: false
     default: "false"
+  score-threshold:
+    description: "Fail if average prompt score is below this threshold (0-100)"
+    required: false
+    default: "0"
   json:
     description: "Output results as JSON"
     required: false
@@ -33,6 +37,9 @@ outputs:
   warnings:
     description: "Number of lint warnings found"
     value: ${{ steps.lint.outputs.warnings }}
+  avg-score:
+    description: "Average prompt score (when score-threshold > 0)"
+    value: ${{ steps.lint.outputs.avg_score }}
 
 runs:
   using: "composite"
@@ -75,11 +82,15 @@ runs:
         if [ "${{ inputs.strict }}" = "true" ]; then
           LINT_ARGS="$LINT_ARGS --strict"
         fi
+        if [ "${{ inputs.score-threshold }}" != "0" ]; then
+          LINT_ARGS="$LINT_ARGS --score-threshold ${{ inputs.score-threshold }}"
+        fi
 
         # Always get JSON for outputs
         JSON_RESULT=$(reprompt lint --json $LINT_ARGS 2>/dev/null || echo '{"errors":0,"warnings":0}')
         echo "errors=$(echo $JSON_RESULT | python3 -c 'import sys,json; print(json.load(sys.stdin).get("errors",0))')" >> $GITHUB_OUTPUT
         echo "warnings=$(echo $JSON_RESULT | python3 -c 'import sys,json; print(json.load(sys.stdin).get("warnings",0))')" >> $GITHUB_OUTPUT
+        echo "avg_score=$(echo $JSON_RESULT | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("score",{}).get("avg_score",0))')" >> $GITHUB_OUTPUT
 
         # Run lint for display output
         if [ "${{ inputs.json }}" = "true" ]; then

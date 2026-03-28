@@ -754,6 +754,9 @@ def lint(
     path: str = typer.Option(None, help="Path to scan for session files"),
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON"),
     fail_on_warning: bool = typer.Option(False, "--strict", help="Exit 1 on warnings too"),
+    score_threshold: int = typer.Option(
+        0, "--score-threshold", help="Fail if avg prompt score < threshold (CI mode)"
+    ),
     copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
 ) -> None:
     """Check prompt quality against lint rules.
@@ -763,6 +766,8 @@ def lint(
     - short-prompt: prompts under 40 chars (warning)
     - vague-prompt: overly vague prompts like "fix it"
     - debug-needs-reference: debug prompts without file/function references
+
+    CI mode: use --score-threshold to fail if average score is below a threshold.
     """
     import json as json_mod
 
@@ -807,6 +812,25 @@ def lint(
 
     violations = lint_prompts(texts)
 
+    # Score threshold mode (CI integration)
+    score_data = None
+    if score_threshold > 0:
+        from reprompt.core.extractors import extract_features
+        from reprompt.core.scorer import score_prompt
+
+        scores = []
+        for t in texts:
+            dna = extract_features(t, source="lint", session_id="lint-ci")
+            scores.append(score_prompt(dna).total)
+        avg_score = sum(scores) / len(scores) if scores else 0
+        score_data = {
+            "avg_score": round(avg_score, 1),
+            "min_score": min(scores) if scores else 0,
+            "max_score": max(scores) if scores else 0,
+            "threshold": score_threshold,
+            "pass": avg_score >= score_threshold,
+        }
+
     if json_output:
         data = {
             "total_prompts": len(texts),
@@ -822,10 +846,19 @@ def lint(
             "errors": sum(1 for v in violations if v.severity == "error"),
             "warnings": sum(1 for v in violations if v.severity == "warning"),
         }
+        if score_data:
+            data["score"] = score_data
         print(json_mod.dumps(data, indent=2))
     else:
         lint_output = format_lint_results(violations, len(texts))
         print(lint_output)
+        if score_data:
+            status = "[green]PASS[/green]" if score_data["pass"] else "[red]FAIL[/red]"
+            console.print(
+                f"\n  Score: avg {score_data['avg_score']}/100"
+                f" (min {score_data['min_score']}, max {score_data['max_score']})"
+                f" — threshold {score_threshold} → {status}"
+            )
 
     if copy:
         if json_output:
@@ -836,6 +869,8 @@ def lint(
     errors = [v for v in violations if v.severity == "error"]
     warnings = [v for v in violations if v.severity == "warning"]
     if errors or (fail_on_warning and warnings):
+        raise typer.Exit(1)
+    if score_data and not score_data["pass"]:
         raise typer.Exit(1)
 
 

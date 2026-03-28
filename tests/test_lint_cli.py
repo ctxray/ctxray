@@ -93,3 +93,92 @@ def test_lint_strict_mode(tmp_path, monkeypatch):
 
     result = runner.invoke(app, ["lint", "--strict"])
     assert result.exit_code == 1
+
+
+def test_lint_score_threshold_pass(tmp_path, monkeypatch):
+    """Score threshold with good prompts should pass."""
+    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+
+    from reprompt.storage.db import PromptDB
+
+    db = PromptDB(tmp_path / "test.db")
+    db.insert_prompt(
+        "Fix the authentication bug in src/auth.py where JWT token validation "
+        "fails with error: 'token expired' when refresh_token is still valid. "
+        "The issue is in the verify_token() function around line 45.",
+        source="test",
+        project="test",
+        session_id="s1",
+        timestamp="2026-03-28",
+    )
+
+    result = runner.invoke(app, ["lint", "--score-threshold", "10"])
+    assert result.exit_code == 0
+    assert "PASS" in result.output or "pass" in result.output.lower()
+
+
+def test_lint_score_threshold_fail(tmp_path, monkeypatch):
+    """Score threshold with vague prompts should fail."""
+    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+
+    from reprompt.storage.db import PromptDB
+
+    db = PromptDB(tmp_path / "test.db")
+    db.insert_prompt(
+        "please help me with my code it is broken",
+        source="test",
+        project="test",
+        session_id="s1",
+        timestamp="2026-03-28",
+    )
+
+    result = runner.invoke(app, ["lint", "--score-threshold", "90"])
+    assert result.exit_code == 1
+    assert "FAIL" in result.output or "fail" in result.output.lower()
+
+
+def test_lint_score_threshold_json(tmp_path, monkeypatch):
+    """Score threshold with JSON output should include score data."""
+    import json
+
+    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+
+    from reprompt.storage.db import PromptDB
+
+    db = PromptDB(tmp_path / "test.db")
+    db.insert_prompt(
+        "Refactor the user authentication module in src/auth/ to use OAuth2 "
+        "with PKCE flow instead of basic JWT. Keep backward compatibility.",
+        source="test",
+        project="test",
+        session_id="s1",
+        timestamp="2026-03-28",
+    )
+
+    result = runner.invoke(app, ["lint", "--score-threshold", "10", "--json"])
+    data = json.loads(result.output)
+    assert "score" in data
+    assert "avg_score" in data["score"]
+    assert "threshold" in data["score"]
+    assert data["score"]["pass"] is True
+
+
+def test_lint_score_threshold_zero_is_noop(tmp_path, monkeypatch):
+    """Score threshold of 0 (default) should not trigger scoring."""
+    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+
+    from reprompt.storage.db import PromptDB
+
+    db = PromptDB(tmp_path / "test.db")
+    db.insert_prompt(
+        "fix the authentication bug in auth.py — login returns 401",
+        source="test",
+        project="test",
+        session_id="s1",
+        timestamp="2026-03-28",
+    )
+
+    result = runner.invoke(app, ["lint"])
+    assert result.exit_code == 0
+    # Score output should NOT appear when threshold is 0
+    assert "threshold" not in result.output
