@@ -25,6 +25,7 @@ def _copy_to_clip(text: str, quiet: bool = False) -> None:
     else:
         typer.echo("  Could not copy to clipboard (xclip/xsel not found)", err=True)
 
+
 app = typer.Typer(
     name="reprompt",
     help="Discover, analyze, and evolve your best prompts from AI coding sessions.",
@@ -170,7 +171,9 @@ def _register_late_commands() -> None:
     app.add_typer(template_app, name="template", rich_help_panel="Manage")
     app.command(rich_help_panel="Manage")(wrapped)
     app.add_typer(
-        telemetry_app, name="telemetry", help="Manage anonymous telemetry",
+        telemetry_app,
+        name="telemetry",
+        help="Manage anonymous telemetry",
         rich_help_panel="Setup",
     )
 
@@ -1503,9 +1506,7 @@ def digest(
             print(render_trends(trends_data), end="")
 
     if copy:
-        _copy_to_clip(
-            json_mod.dumps(data, indent=2, default=str), quiet=(format == "json")
-        )
+        _copy_to_clip(json_mod.dumps(data, indent=2, default=str), quiet=(format == "json"))
 
 
 @app.command(rich_help_panel="Setup")

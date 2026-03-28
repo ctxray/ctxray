@@ -82,9 +82,7 @@ class TestCompressCopy:
 
     @patch("reprompt.sharing.clipboard.copy_to_clipboard", return_value=True)
     def test_compress_copy_json_quiet(self, mock_clip):
-        result = runner.invoke(
-            app, ["compress", "--json", "--copy", "Please help me fix the bug"]
-        )
+        result = runner.invoke(app, ["compress", "--json", "--copy", "Please help me fix the bug"])
         assert result.exit_code == 0
         mock_clip.assert_called_once()
         assert "Copied to clipboard" not in result.output
