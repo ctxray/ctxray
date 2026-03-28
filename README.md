@@ -10,8 +10,6 @@
 
 ---
 
-![reprompt demo](docs/launch/demo.gif)
-
 ## See it in action
 
 ```bash
