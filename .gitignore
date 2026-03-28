@@ -41,6 +41,7 @@ thoughts/
 .tldr/
 .tldrignore
 .worktrees/
+CLAUDE.md
 
 # Launch / marketing drafts (not part of the codebase)
 docs/launch/
