@@ -140,7 +140,7 @@ reprompt install-hook               # adds post-session hook to Claude Code
 
 Capture prompts from ChatGPT, Claude.ai, and Gemini directly in your browser:
 
-1. **Install the extension** from [Chrome Web Store](https://chromewebstore.google.com/detail/reprompt/ojdccpagaanchmkninlbgbgemdcjckhn)
+1. **Install the extension** from [Chrome Web Store](https://chromewebstore.google.com/detail/reprompt/ojdccpagaanchmkninlbgbgemdcjckhn) or [Firefox Add-ons](https://addons.mozilla.org/addon/reprompt-cli/)
 2. **Connect to the CLI:** `reprompt install-extension`
 3. **Verify:** `reprompt extension-status`
 
@@ -191,6 +191,7 @@ reprompt lint --json                # machine-readable output
 
 - **Website:** [getreprompt.dev](https://getreprompt.dev)
 - **Chrome Extension:** [Chrome Web Store](https://chromewebstore.google.com/detail/reprompt/ojdccpagaanchmkninlbgbgemdcjckhn)
+- **Firefox Add-on:** [Firefox Add-ons](https://addons.mozilla.org/addon/reprompt-cli/)
 - **PyPI:** [reprompt-cli](https://pypi.org/project/reprompt-cli/)
 - **Changelog:** [CHANGELOG.md](CHANGELOG.md)
 - **Privacy:** [getreprompt.dev/privacy](https://getreprompt.dev/privacy)
