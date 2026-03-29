@@ -59,18 +59,17 @@ def _render_zero_state(console: Console, data: DashboardData) -> str:
         console.print(table)
         console.print()
         console.print(
-            "  [bold cyan]reprompt scan[/bold cyan]"
-            "  — import all and analyze your prompts"
+            "  [bold cyan]reprompt scan[/bold cyan]  — import all and analyze your prompts"
         )
-        console.print(
-            "  [dim]Takes ~10-30 seconds depending on session count[/dim]"
-        )
+        console.print("  [dim]Takes ~10-30 seconds depending on session count[/dim]")
     else:
         console.print()
         console.print("  No AI coding tools detected.")
         console.print()
-        console.print("  [bold]Supported tools:[/bold] Claude Code, Cursor, Aider, "
-                       "Gemini CLI, Cline, OpenClaw, ChatGPT, Codex CLI")
+        console.print(
+            "  [bold]Supported tools:[/bold] Claude Code, Cursor, Aider, "
+            "Gemini CLI, Cline, OpenClaw, ChatGPT, Codex CLI"
+        )
         console.print("  Run [bold cyan]reprompt scan --help[/bold cyan] to get started.")
 
     console.print()

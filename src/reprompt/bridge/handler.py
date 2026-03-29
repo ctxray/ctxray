@@ -94,9 +94,7 @@ def _get_last_sync(db: PromptDB) -> str:
     val = db.get_setting("last_extension_sync")
     if val:
         try:
-            return datetime.fromtimestamp(int(val), tz=timezone.utc).strftime(
-                "%Y-%m-%dT%H:%M:%SZ"
-            )
+            return datetime.fromtimestamp(int(val), tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         except (ValueError, OSError):
             return ""
     return ""
