@@ -49,6 +49,12 @@ uv run mypy src/reprompt/
 5. Run `mypy src/reprompt/` -- must pass clean
 6. Submit a PR with a clear description
 
+### Before Submitting
+
+- **Comment on the issue first** — introduce yourself and outline your approach before writing code. This avoids wasted work and duplicate effort.
+- **One PR per issue** — don't submit multiple PRs for the same issue.
+- PRs from brand-new GitHub accounts with no prior project engagement will generally not be reviewed.
+
 ## Common Contribution Areas
 
 ### Adding Adapters (new AI tool support)
