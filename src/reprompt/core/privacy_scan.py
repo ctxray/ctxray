@@ -33,6 +33,18 @@ PATTERNS: dict[str, re.Pattern[str]] = {
         re.IGNORECASE,
     ),
     "home_path_unix": re.compile(r"/(?:Users|home)/\w+/"),
+    # SSH private keys
+    "ssh_private_key": re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+    # PEM certificates
+    "pem_certificate": re.compile(r"-----BEGIN CERTIFICATE-----"),
+    # Slack tokens
+    "slack_token": re.compile(r"(?:xox[bp]|xapp)(?:-[a-zA-Z0-9]+){3,}"),
+    # Google API keys
+    "api_key_google": re.compile(r"AIza[0-9A-Za-z\-_]{35}"),
+    # npm tokens
+    "npm_token": re.compile(r"npm_[a-zA-Z0-9]{36}"),
+    # Database connection strings with credentials
+    "db_connection_string": re.compile(r"(?:postgres|mongodb|mysql)://[^\s:]+:[^\s@]+@[^\s]+"),
 }
 
 # IPs to exclude (localhost, broadcast, metadata)
@@ -46,6 +58,12 @@ _SAFE_EMAIL_DOMAINS = {
     "localhost",
     "noreply.github.com",
 }
+
+# PEM certificate markers that are safe (example/placeholder certs)
+_SAFE_CERT_CONTEXTS = {"EXAMPLE", "DO NOT USE", "test", "sample"}
+
+# Database hosts to exclude (localhost / example)
+_SAFE_DB_HOSTS = {"localhost", "127.0.0.1", "example.com", "0.0.0.0"}
 
 # Category grouping for display
 CATEGORY_MAP: dict[str, str] = {
@@ -61,6 +79,12 @@ CATEGORY_MAP: dict[str, str] = {
     "password_assignment": "Passwords",
     "env_secret": "Env secrets",
     "home_path_unix": "Home paths",
+    "ssh_private_key": "SSH keys",
+    "pem_certificate": "Certificates",
+    "slack_token": "API keys",
+    "api_key_google": "API keys",
+    "npm_token": "API keys",
+    "db_connection_string": "Database credentials",
 }
 
 
@@ -114,6 +138,26 @@ def _is_safe_email(email: str) -> bool:
     return any(domain.endswith(safe) for safe in _SAFE_EMAIL_DOMAINS)
 
 
+def _is_safe_cert(text: str, match_start: int) -> bool:
+    """Check if a certificate marker is in a safe/example context."""
+    # Look at surrounding context (200 chars before the match)
+    context_start = max(0, match_start - 200)
+    context = text[context_start:match_start].upper()
+    return any(marker in context for marker in _SAFE_CERT_CONTEXTS)
+
+
+def _is_safe_db_connection(conn_str: str) -> bool:
+    """Check if a database connection string uses a safe/localhost host."""
+    # Extract host from scheme://user:pass@host...
+    at_idx = conn_str.find("@")
+    if at_idx == -1:
+        return False
+    after_at = conn_str[at_idx + 1 :]
+    # Strip port, path, query
+    host = after_at.split(":")[0].split("/")[0].split("?")[0].lower()
+    return host in _SAFE_DB_HOSTS
+
+
 def scan_prompts(
     prompts: list[dict],
 ) -> SensitiveScanResult:
@@ -126,8 +170,11 @@ def scan_prompts(
     # Risk priority for highest_risk selection
     risk_priority = {
         "API keys": 5,
+        "SSH keys": 5,
+        "Database credentials": 5,
         "Passwords": 4,
         "Env secrets": 4,
+        "Certificates": 3,
         "JWT tokens": 3,
         "Emails": 2,
         "IP addresses": 1,
@@ -148,6 +195,10 @@ def scan_prompts(
                 if pattern_name == "ipv4" and _is_safe_ip(matched):
                     continue
                 if pattern_name == "email" and _is_safe_email(matched):
+                    continue
+                if pattern_name == "pem_certificate" and _is_safe_cert(text, m.start()):
+                    continue
+                if pattern_name == "db_connection_string" and _is_safe_db_connection(matched):
                     continue
 
                 match = SensitiveMatch(

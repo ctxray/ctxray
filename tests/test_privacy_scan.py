@@ -193,3 +193,152 @@ class TestScanIntegration:
         assert "***" in r.matches[0].matched_text
         # Should NOT contain the full key
         assert "def456ghi789" not in r.matches[0].matched_text
+
+
+# ---------------------------------------------------------------------------
+# SSH private keys
+# ---------------------------------------------------------------------------
+
+
+class TestSSHPrivateKeys:
+    def test_rsa_private_key(self):
+        r = scan_prompts([_prompt("-----BEGIN RSA PRIVATE KEY-----\nMIIE...")])
+        assert r.category_counts.get("SSH keys", 0) >= 1
+
+    def test_ec_private_key(self):
+        r = scan_prompts([_prompt("-----BEGIN EC PRIVATE KEY-----\nMHQC...")])
+        assert r.category_counts.get("SSH keys", 0) >= 1
+
+    def test_openssh_private_key(self):
+        r = scan_prompts([_prompt("-----BEGIN OPENSSH PRIVATE KEY-----\nb3Bl...")])
+        assert r.category_counts.get("SSH keys", 0) >= 1
+
+    def test_generic_private_key(self):
+        r = scan_prompts([_prompt("-----BEGIN PRIVATE KEY-----\nMIIE...")])
+        assert r.category_counts.get("SSH keys", 0) >= 1
+
+    def test_public_key_not_matched(self):
+        """Public keys should NOT be flagged."""
+        r = scan_prompts([_prompt("-----BEGIN PUBLIC KEY-----\nMIIB...")])
+        assert r.category_counts.get("SSH keys", 0) == 0
+
+
+# ---------------------------------------------------------------------------
+# PEM certificates
+# ---------------------------------------------------------------------------
+
+
+class TestPEMCertificates:
+    def test_certificate_detected(self):
+        r = scan_prompts([_prompt("-----BEGIN CERTIFICATE-----\nMIID...")])
+        assert r.category_counts.get("Certificates", 0) >= 1
+
+    def test_example_certificate_excluded(self):
+        text = "# EXAMPLE certificate for testing\n-----BEGIN CERTIFICATE-----"
+        r = scan_prompts([_prompt(text)])
+        assert r.category_counts.get("Certificates", 0) == 0
+
+
+# ---------------------------------------------------------------------------
+# Slack tokens
+# ---------------------------------------------------------------------------
+
+
+class TestSlackTokens:
+    def test_xoxb_bot_token(self):
+        r = scan_prompts([_prompt("Token: xoxb-123456-789012-abcDEF")])
+        assert r.category_counts.get("API keys", 0) >= 1
+
+    def test_xoxp_user_token(self):
+        r = scan_prompts([_prompt("SLACK_TOKEN=xoxp-123456-789012-abcDEF")])
+        assert r.category_counts.get("API keys", 0) >= 1
+
+    def test_xapp_token(self):
+        r = scan_prompts([_prompt("xapp-1-ABC123-456-defGHI789")])
+        assert r.category_counts.get("API keys", 0) >= 1
+
+    def test_xoxb_pattern_name(self):
+        r = scan_prompts([_prompt("xoxb-123456-789012-abcDEF")])
+        names = [m.pattern_name for m in r.matches]
+        assert "slack_token" in names
+
+
+# ---------------------------------------------------------------------------
+# Google API keys
+# ---------------------------------------------------------------------------
+
+
+class TestGoogleAPIKeys:
+    def test_google_api_key(self):
+        r = scan_prompts([_prompt("AIzaSyA1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q")])
+        assert r.category_counts.get("API keys", 0) >= 1
+
+    def test_google_api_key_pattern_name(self):
+        r = scan_prompts([_prompt("key=AIzaSyA1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q")])
+        names = [m.pattern_name for m in r.matches]
+        assert "api_key_google" in names
+
+    def test_short_aiza_not_matched(self):
+        """AIza followed by too-short text should not match."""
+        r = scan_prompts([_prompt("AIzaShort")])
+        names = [m.pattern_name for m in r.matches]
+        assert "api_key_google" not in names
+
+
+# ---------------------------------------------------------------------------
+# npm tokens
+# ---------------------------------------------------------------------------
+
+
+class TestNpmTokens:
+    def test_npm_token(self):
+        r = scan_prompts([_prompt("npm_abcdefghijklmnopqrstuvwxyz0123456789")])
+        assert r.category_counts.get("API keys", 0) >= 1
+
+    def test_npm_token_pattern_name(self):
+        token = "npm_abcdefghijklmnopqrstuvwxyz0123456789"
+        r = scan_prompts([_prompt(f"//registry.npmjs.org/:_authToken={token}")])
+        names = [m.pattern_name for m in r.matches]
+        assert "npm_token" in names
+
+    def test_short_npm_not_matched(self):
+        """npm_ followed by too-short text should not match."""
+        r = scan_prompts([_prompt("npm_short")])
+        names = [m.pattern_name for m in r.matches]
+        assert "npm_token" not in names
+
+
+# ---------------------------------------------------------------------------
+# Database connection strings
+# ---------------------------------------------------------------------------
+
+
+class TestDBConnectionStrings:
+    def test_postgres_connection(self):
+        r = scan_prompts([_prompt("postgres://admin:s3cret@db.prod.example.io:5432/mydb")])
+        assert r.category_counts.get("Database credentials", 0) >= 1
+
+    def test_mongodb_connection(self):
+        r = scan_prompts([_prompt("mongodb://root:password@mongo.internal:27017/app")])
+        assert r.category_counts.get("Database credentials", 0) >= 1
+
+    def test_mysql_connection(self):
+        r = scan_prompts([_prompt("mysql://deploy:hunter2@rds.amazonaws.com:3306/prod")])
+        assert r.category_counts.get("Database credentials", 0) >= 1
+
+    def test_localhost_db_excluded(self):
+        r = scan_prompts([_prompt("postgres://user:pass@localhost:5432/dev")])
+        assert r.category_counts.get("Database credentials", 0) == 0
+
+    def test_127_0_0_1_db_excluded(self):
+        r = scan_prompts([_prompt("mysql://root:root@127.0.0.1:3306/test")])
+        assert r.category_counts.get("Database credentials", 0) == 0
+
+    def test_example_com_db_excluded(self):
+        r = scan_prompts([_prompt("postgres://user:pass@example.com/db")])
+        assert r.category_counts.get("Database credentials", 0) == 0
+
+    def test_no_credentials_not_matched(self):
+        """Connection strings without user:pass should not match."""
+        r = scan_prompts([_prompt("postgres://db.prod.example.io:5432/mydb")])
+        assert r.category_counts.get("Database credentials", 0) == 0
