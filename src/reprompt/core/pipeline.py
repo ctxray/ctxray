@@ -270,6 +270,17 @@ def build_report_data(
         compress_vals = [f.get("compressibility", 0.0) for f in all_features]
         avg_compressibility = sum(compress_vals) / len(compress_vals) if compress_vals else 0.0
 
+    # Compute total token cost
+    from collections import defaultdict
+
+    from reprompt.core.cost import estimate_cost, format_cost
+
+    by_source_tokens: dict[str, int] = defaultdict(int)
+    for f in all_features:
+        src = f.get("source", "manual")
+        by_source_tokens[src] += f.get("token_count", 0)
+    total_cost = sum(estimate_cost(t, src) for src, t in by_source_tokens.items())
+
     return {
         "overview": {
             "total_prompts": stats.get("total_prompts", len(all_prompts)),
@@ -278,6 +289,7 @@ def build_report_data(
             "sources": list({p.get("source", "") for p in all_prompts}),
             "date_range": (stats.get("earliest", ""), stats.get("latest", "")),
             "avg_compressibility": round(avg_compressibility, 3),
+            "estimated_cost_display": format_cost(total_cost) if total_cost > 0 else None,
         },
         "top_patterns": [
             {

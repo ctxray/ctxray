@@ -29,6 +29,10 @@ inputs:
     description: "Output results as JSON"
     required: false
     default: "false"
+  comment-on-pr:
+    description: "Post quality report as PR comment (requires pull_request event)"
+    required: false
+    default: "false"
 
 outputs:
   errors:
@@ -97,8 +101,10 @@ runs:
           LINT_ARGS="$LINT_ARGS --score-threshold $INPUT_SCORE_THRESHOLD"
         fi
 
-        # Always get JSON for outputs
+        # Always get JSON for outputs + PR comment
         JSON_RESULT=$(reprompt lint --json $LINT_ARGS 2>/dev/null || echo '{"errors":0,"warnings":0}')
+        echo "$JSON_RESULT" > /tmp/reprompt-lint.json
+
         echo "errors=$(echo "$JSON_RESULT" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("errors",0))')" >> "$GITHUB_OUTPUT"
         echo "warnings=$(echo "$JSON_RESULT" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("warnings",0))')" >> "$GITHUB_OUTPUT"
         echo "avg_score=$(echo "$JSON_RESULT" | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("score",{}).get("avg_score",0))')" >> "$GITHUB_OUTPUT"
@@ -108,6 +114,89 @@ runs:
           reprompt lint --json $LINT_ARGS
         else
           reprompt lint $LINT_ARGS
+        fi
+
+    - name: Comment on PR
+      if: inputs.comment-on-pr == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        REPO: ${{ github.repository }}
+      run: |
+        # Build markdown comment from lint JSON
+        COMMENT=$(python3 << 'PYEOF'
+        import json, os
+
+        with open("/tmp/reprompt-lint.json") as f:
+            data = json.load(f)
+
+        errors = data.get("errors", 0)
+        warnings = data.get("warnings", 0)
+        total = data.get("total_prompts", 0)
+        score = data.get("score", {})
+        violations = data.get("violations", [])
+
+        # Status badge
+        if errors > 0:
+            status = "🔴 **Failed**"
+        elif warnings > 0:
+            status = "🟡 **Passed with warnings**"
+        else:
+            status = "🟢 **Passed**"
+
+        lines = []
+        lines.append("<!-- reprompt-lint -->")
+        lines.append("## reprompt lint " + status)
+        lines.append("")
+        lines.append(f"| Metric | Value |")
+        lines.append(f"|--------|-------|")
+        lines.append(f"| Prompts checked | {total} |")
+        lines.append(f"| Errors | {errors} |")
+        lines.append(f"| Warnings | {warnings} |")
+
+        if score:
+            avg = score.get("avg_score", 0)
+            threshold = score.get("threshold", 0)
+            passed = "✅" if score.get("pass") else "❌"
+            lines.append(f"| Avg Score | {avg}/100 {passed} (threshold: {threshold}) |")
+            lines.append(f"| Score Range | {score.get('min_score', 0)} — {score.get('max_score', 0)} |")
+
+        # Violations (collapsible)
+        if violations:
+            lines.append("")
+            lines.append(f"<details><summary>📋 {len(violations)} violation(s)</summary>")
+            lines.append("")
+            lines.append("| Severity | Rule | Message |")
+            lines.append("|----------|------|---------|")
+            for v in violations[:20]:
+                sev = "🔴" if v["severity"] == "error" else "🟡"
+                lines.append(f"| {sev} | `{v['rule']}` | {v['message']} |")
+            if len(violations) > 20:
+                lines.append(f"| | | ... and {len(violations) - 20} more |")
+            lines.append("")
+            lines.append("</details>")
+
+        lines.append("")
+        lines.append("*Run `reprompt lint` locally for full details — [docs](https://github.com/reprompt-dev/reprompt)*")
+
+        print("\n".join(lines))
+        PYEOF
+        )
+
+        # Find existing comment to update (avoid duplicates)
+        EXISTING=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+          --jq '.[] | select(.body | contains("<!-- reprompt-lint -->")) | .id' \
+          2>/dev/null | head -1)
+
+        if [ -n "$EXISTING" ]; then
+          # Update existing comment
+          gh api "repos/$REPO/issues/$PR_NUMBER/comments/$EXISTING" \
+            -X PATCH -f body="$COMMENT" > /dev/null
+        else
+          # Create new comment
+          gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+            -f body="$COMMENT" > /dev/null
         fi
 
     - name: Add summary

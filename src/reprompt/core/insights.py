@@ -177,6 +177,17 @@ def compute_insights(features: list[dict[str, Any]]) -> dict[str, Any]:
         if len(scores_list) >= 3
     }
 
+    # -- Token cost summary --
+    total_tokens = sum(f.get("token_count", 0) for f in features)
+    # Estimate cost per source using the most common source
+    from reprompt.core.cost import estimate_cost, format_cost
+
+    by_source_tokens: dict[str, int] = defaultdict(int)
+    for f in features:
+        src = f.get("source", "manual")
+        by_source_tokens[src] += f.get("token_count", 0)
+    total_cost = sum(estimate_cost(t, src) for src, t in by_source_tokens.items())
+
     return {
         "prompt_count": count,
         "avg_score": round(avg_score, 1),
@@ -190,6 +201,9 @@ def compute_insights(features: list[dict[str, Any]]) -> dict[str, Any]:
         },
         "score_distribution": distribution,
         "source_scores": source_avgs,
+        "total_tokens": total_tokens,
+        "estimated_total_cost": round(total_cost, 4),
+        "estimated_total_cost_display": format_cost(total_cost),
         "insights": insights,
     }
 

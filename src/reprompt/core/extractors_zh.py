@@ -13,6 +13,7 @@ import hashlib
 import re
 from collections import Counter
 
+from reprompt.core.cost import estimate_tokens as _estimate_tokens
 from reprompt.core.library import categorize_prompt
 from reprompt.core.prompt_dna import PromptDNA
 from reprompt.core.segmenter import PromptSegment, segment_prompt
@@ -244,7 +245,7 @@ def extract_features_zh(
         prompt_hash=prompt_hash,
         source=source,
         task_type=task_type,
-        token_count=word_count,  # approximate
+        token_count=_estimate_tokens(text, "zh"),
         word_count=word_count,
         sentence_count=sentence_count,
         line_count=line_count,

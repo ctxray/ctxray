@@ -197,11 +197,13 @@ def score_prompt(text: str) -> str:
         text: The prompt text to score
     """
     try:
+        from reprompt.core.cost import estimate_cost, format_cost
         from reprompt.core.extractors import extract_features
         from reprompt.core.scorer import score_prompt as _score
 
         dna = extract_features(text, source="mcp", session_id="mcp-score")
         breakdown = _score(dna)
+        cost_usd = estimate_cost(dna.token_count, source="mcp")
         return json.dumps(
             {
                 "total": breakdown.total,
@@ -211,6 +213,8 @@ def score_prompt(text: str) -> str:
                 "repetition": breakdown.repetition,
                 "clarity": breakdown.clarity,
                 "task_type": dna.task_type,
+                "token_count": dna.token_count,
+                "estimated_cost": format_cost(cost_usd),
                 "suggestions": [
                     {"message": s.message, "impact": s.impact} for s in breakdown.suggestions[:3]
                 ],

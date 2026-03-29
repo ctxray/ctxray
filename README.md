@@ -156,6 +156,7 @@ Captured prompts sync locally via Native Messaging -- nothing leaves your machin
   with:
     score-threshold: 50   # fail if avg prompt score < 50
     strict: true          # fail on warnings too
+    comment-on-pr: true   # post quality report as PR comment
 ```
 
 #### pre-commit
@@ -164,7 +165,7 @@ Captured prompts sync locally via Native Messaging -- nothing leaves your machin
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/reprompt-dev/reprompt
-    rev: v1.6.1
+    rev: v1.7.0
     hooks:
       - id: reprompt-lint
 ```

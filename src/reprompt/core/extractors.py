@@ -17,6 +17,7 @@ import hashlib
 import re
 from collections import Counter
 
+from reprompt.core.cost import estimate_tokens as _estimate_tokens
 from reprompt.core.lang_detect import detect_prompt_language
 from reprompt.core.library import categorize_prompt
 from reprompt.core.prompt_dna import PromptDNA
@@ -182,7 +183,7 @@ def extract_features(
         prompt_hash=prompt_hash,
         source=source,
         task_type=task_type,
-        token_count=word_count,  # approximate; real tokenization is Tier 3
+        token_count=_estimate_tokens(text, "en"),
         word_count=word_count,
         sentence_count=sentence_count,
         line_count=line_count,

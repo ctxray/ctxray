@@ -23,6 +23,8 @@ def render_report(data: dict[str, Any]) -> str:
     ov = data["overview"]
     avg_compress = ov.get("avg_compressibility", 0)
     compress_line = f"\nCompressibility:   {avg_compress:.0%}" if avg_compress > 0 else ""
+    cost_display = ov.get("estimated_cost_display")
+    cost_line = f"\nEst. prompt cost:  {cost_display}" if cost_display else ""
     overview_text = (
         f"Total prompts:     {ov['total_prompts']}\n"
         f"Unique (deduped):  {ov['unique_prompts']}\n"
@@ -30,6 +32,7 @@ def render_report(data: dict[str, Any]) -> str:
         f"Sources:           {', '.join(ov['sources']) or 'none'}\n"
         f"Date range:        {ov['date_range'][0]} → {ov['date_range'][1]}"
         f"{compress_line}"
+        f"{cost_line}"
     )
     console.print(Panel(overview_text, title="Overview"))
 
@@ -335,6 +338,12 @@ def render_score(breakdown: dict[str, Any]) -> str:
     )
 
     console.print(f"\n[bold]Prompt DNA Score: {total:.0f}/100[/bold]  ({grade})")
+    cost_info = breakdown.get("estimated_cost")
+    if cost_info:
+        console.print(
+            f"  [dim]~{cost_info['tokens']} tokens · {cost_info['cost_display']} "
+            f"({cost_info['model']})[/dim]"
+        )
     console.print("\u2500" * 40)
 
     # Category bars
@@ -386,6 +395,11 @@ def render_insights(data: dict[str, Any]) -> str:
     worst = data["worst_task_type"]
     console.print(f"  Strongest:       {best['type']} ({best['avg_score']:.0f}/100)")
     console.print(f"  Weakest:         {worst['type']} ({worst['avg_score']:.0f}/100)")
+
+    total_tokens = data.get("total_tokens", 0)
+    cost_display = data.get("estimated_total_cost_display")
+    if total_tokens > 0 and cost_display:
+        console.print(f"  Token Cost:      ~{total_tokens:,} tokens · {cost_display} est.")
 
     # Score distribution
     dist = data.get("score_distribution", {})

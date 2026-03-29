@@ -938,12 +938,21 @@ def score(
 
         reprompt score "Fix bug" --copy
     """
+    from reprompt.core.cost import estimate_cost, format_cost, model_for_source
     from reprompt.core.extractors import extract_features
     from reprompt.core.scorer import score_prompt
 
     dna = extract_features(text, source="manual", session_id="score-cli")
     breakdown = score_prompt(dna)
     dna.overall_score = breakdown.total
+
+    cost_usd = estimate_cost(dna.token_count, source="manual")
+    cost_info = {
+        "tokens": dna.token_count,
+        "model": model_for_source("manual"),
+        "cost_usd": round(cost_usd, 6),
+        "cost_display": format_cost(cost_usd),
+    }
 
     if json_output:
         import json as json_mod
@@ -957,6 +966,8 @@ def score(
             "clarity": breakdown.clarity,
             "task_type": dna.task_type,
             "word_count": dna.word_count,
+            "token_count": dna.token_count,
+            "estimated_cost": cost_info,
             "context_specificity": dna.context_specificity,
             "ambiguity_score": dna.ambiguity_score,
             "suggestions": [
@@ -980,6 +991,7 @@ def score(
             "position": breakdown.position,
             "repetition": breakdown.repetition,
             "clarity": breakdown.clarity,
+            "estimated_cost": cost_info,
             "suggestions": [
                 {
                     "category": s.category,
