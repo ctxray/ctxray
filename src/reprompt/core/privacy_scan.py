@@ -33,6 +33,18 @@ PATTERNS: dict[str, re.Pattern[str]] = {
         re.IGNORECASE,
     ),
     "home_path_unix": re.compile(r"/(?:Users|home)/\w+/"),
+    "ssh_private_key": re.compile(
+        r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"
+    ),
+    "ssh_certificate": re.compile(
+        r"-----BEGIN (?:SSH2 )?CERTIFICATE-----"
+    ),
+    "ssh_key_file_path": re.compile(
+        r"~/.ssh/(?:id_(?:rsa|dsa|ecdsa|ed25519|xmss)|authorized_keys|known_hosts)"
+    ),
+    "pem_certificate": re.compile(
+        r"-----BEGIN CERTIFICATE-----"
+    ),
 }
 
 # IPs to exclude (localhost, broadcast, metadata)
@@ -45,6 +57,16 @@ _SAFE_EMAIL_DOMAINS = {
     "test.com",
     "localhost",
     "noreply.github.com",
+}
+
+# Keywords indicating example/documentation SSH keys (not real secrets)
+_EXAMPLE_KEY_INDICATORS = {
+    "example",
+    "sample",
+    "placeholder",
+    "dummy",
+    "test",
+    "documentation",
 }
 
 # Category grouping for display
@@ -61,6 +83,10 @@ CATEGORY_MAP: dict[str, str] = {
     "password_assignment": "Passwords",
     "env_secret": "Env secrets",
     "home_path_unix": "Home paths",
+    "ssh_private_key": "SSH private keys",
+    "ssh_certificate": "Certificates",
+    "ssh_key_file_path": "SSH key paths",
+    "pem_certificate": "Certificates",
 }
 
 
@@ -132,6 +158,9 @@ def scan_prompts(
         "Emails": 2,
         "IP addresses": 1,
         "Home paths": 0,
+        "SSH private keys": 5,
+        "Certificates": 3,
+        "SSH key paths": 2,
     }
 
     for prompt in prompts:

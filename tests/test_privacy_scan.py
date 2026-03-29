@@ -193,3 +193,93 @@ class TestScanIntegration:
         assert "***" in r.matches[0].matched_text
         # Should NOT contain the full key
         assert "def456ghi789" not in r.matches[0].matched_text
+
+
+# ---------------------------------------------------------------------------
+# SSH private keys
+# ---------------------------------------------------------------------------
+
+
+class TestSSHPrivateKeys:
+    def test_rsa_private_key(self):
+        text = "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA..."
+        r = scan_prompts([_prompt(text)])
+        assert r.category_counts.get("SSH private keys", 0) >= 1
+
+    def test_openssh_private_key(self):
+        text = "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC..."
+        r = scan_prompts([_prompt(text)])
+        assert r.category_counts.get("SSH private keys", 0) >= 1
+
+    def test_ec_private_key(self):
+        text = "-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIBh..."
+        r = scan_prompts([_prompt(text)])
+        assert r.category_counts.get("SSH private keys", 0) >= 1
+
+    def test_dsa_private_key(self):
+        text = "-----BEGIN DSA PRIVATE KEY-----\nMIIBuwIBAAK..."
+        r = scan_prompts([_prompt(text)])
+        assert r.category_counts.get("SSH private keys", 0) >= 1
+
+    def test_generic_private_key(self):
+        """PKCS#8 format without algorithm prefix."""
+        text = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBg..."
+        r = scan_prompts([_prompt(text)])
+        assert r.category_counts.get("SSH private keys", 0) >= 1
+
+    def test_private_key_highest_risk(self):
+        """SSH private keys should rank as highest risk."""
+        r = scan_prompts(
+            [
+                _prompt("/Users/chris/file.py"),
+                _prompt("-----BEGIN RSA PRIVATE KEY-----\nMIIEow..."),
+            ]
+        )
+        assert r.highest_risk is not None
+        assert r.highest_risk.category == "SSH private keys"
+
+    def test_private_key_redacted(self):
+        text = "-----BEGIN RSA PRIVATE KEY-----"
+        r = scan_prompts([_prompt(text)])
+        assert len(r.matches) >= 1
+        assert "***" in r.matches[0].matched_text
+
+
+# ---------------------------------------------------------------------------
+# Certificates
+# ---------------------------------------------------------------------------
+
+
+class TestCertificates:
+    def test_pem_certificate(self):
+        text = "-----BEGIN CERTIFICATE-----\nMIIDdzCCAl+gAw..."
+        r = scan_prompts([_prompt(text)])
+        assert r.category_counts.get("Certificates", 0) >= 1
+
+    def test_ssh2_certificate(self):
+        text = "-----BEGIN SSH2 CERTIFICATE-----\nAAAAHHNza..."
+        r = scan_prompts([_prompt(text)])
+        assert r.category_counts.get("Certificates", 0) >= 1
+
+
+# ---------------------------------------------------------------------------
+# SSH key file paths
+# ---------------------------------------------------------------------------
+
+
+class TestSSHKeyPaths:
+    def test_id_rsa_path(self):
+        r = scan_prompts([_prompt("Copy your key from ~/.ssh/id_rsa")])
+        assert r.category_counts.get("SSH key paths", 0) >= 1
+
+    def test_id_ed25519_path(self):
+        r = scan_prompts([_prompt("Use ~/.ssh/id_ed25519 for authentication")])
+        assert r.category_counts.get("SSH key paths", 0) >= 1
+
+    def test_id_ecdsa_path(self):
+        r = scan_prompts([_prompt("Check ~/.ssh/id_ecdsa permissions")])
+        assert r.category_counts.get("SSH key paths", 0) >= 1
+
+    def test_authorized_keys_path(self):
+        r = scan_prompts([_prompt("Add to ~/.ssh/authorized_keys")])
+        assert r.category_counts.get("SSH key paths", 0) >= 1
