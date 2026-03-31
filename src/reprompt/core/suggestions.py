@@ -18,6 +18,9 @@ SUGGESTIONS: dict[str, str] = {
     "sessions": (
         "reprompt sessions --detail <id> (deep-dive) · reprompt agent (error loop analysis)"
     ),
+    "repetition": (
+        'reprompt template save "..." (reuse patterns) · reprompt insights (all patterns)'
+    ),
     "template": "reprompt insights (see which patterns work best)",
 }
 

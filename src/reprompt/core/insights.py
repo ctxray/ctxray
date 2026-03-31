@@ -293,3 +293,29 @@ def get_similar_prompts_insight(
         "total_clusters": len(clusters),
         "total_clustered_prompts": sum(c["size"] for c in clusters),
     }
+
+
+def get_cross_session_repetition_insight(
+    db: PromptDB,
+    source: str | None = None,
+) -> dict[str, Any] | None:
+    """Return cross-session repetition summary, or None if no recurring topics."""
+    from reprompt.core.repetition import analyze_repetition
+
+    report = analyze_repetition(db, source=source, limit=500)
+
+    if not report.recurring_topics:
+        return None
+
+    return {
+        "repetition_rate": report.repetition_rate,
+        "top_topics": [
+            {
+                "canonical_text": t.canonical_text[:80],
+                "session_count": t.session_count,
+                "total_matches": t.total_matches,
+            }
+            for t in report.recurring_topics[:3]
+        ],
+        "total_recurring_topics": len(report.recurring_topics),
+    }

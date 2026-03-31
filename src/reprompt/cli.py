@@ -1474,6 +1474,7 @@ def insights(
     from reprompt.config import Settings
     from reprompt.core.insights import (
         compute_insights,
+        get_cross_session_repetition_insight,
         get_effectiveness_insight,
         get_similar_prompts_insight,
     )
@@ -1487,12 +1488,14 @@ def insights(
     # Expanded sections
     eff_data = get_effectiveness_insight(db, source=source)
     sim_data = get_similar_prompts_insight(db, source=source)
+    rep_data = get_cross_session_repetition_insight(db, source=source)
 
     if json_output:
         import json as json_mod
 
         result["effectiveness"] = eff_data
         result["similar_prompts"] = sim_data
+        result["cross_session_repetition"] = rep_data
         typer.echo(json_mod.dumps(result, indent=2))
     else:
         from reprompt.core.suggestions import get_suggestion
@@ -1516,6 +1519,15 @@ def insights(
                 '  [dim]\u2192 Try: reprompt template save "..." (reuse instead of rewrite)[/dim]'
             )
 
+        if rep_data:
+            rate_pct = f"{rep_data['repetition_rate'] * 100:.0f}%"
+            n = rep_data["total_recurring_topics"]
+            console.print("\n  [bold]Cross-Session Repetition[/bold]")
+            console.print(f"  {rate_pct} of prompts recur across sessions ({n} topics)")
+            for t in rep_data["top_topics"]:
+                console.print(f'    "{t["canonical_text"]}" \u2014 {t["session_count"]} sessions')
+            console.print("  [dim]\u2192 Try: reprompt repetition (full analysis)[/dim]")
+
         hint = get_suggestion("insights")
         if hint:
             console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
@@ -1525,6 +1537,7 @@ def insights(
 
         result["effectiveness"] = eff_data
         result["similar_prompts"] = sim_data
+        result["cross_session_repetition"] = rep_data
         _copy_to_clip(json_mod.dumps(result, indent=2), quiet=json_output)
 
 
@@ -1971,6 +1984,44 @@ def sessions(
             copy_text = json_mod.dumps(match, indent=2, default=str)  # type: ignore[possibly-undefined]
         else:
             copy_text = json_mod.dumps(data, indent=2, default=str)  # type: ignore[possibly-undefined]
+        _copy_to_clip(copy_text, quiet=json_output)
+
+
+@app.command(rich_help_panel="Analyze")
+def repetition(
+    last: int = typer.Option(500, "--last", help="Analyze N most recent unique prompts"),
+    source: str = typer.Option(
+        None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor)"
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
+) -> None:
+    """Detect recurring prompts across different sessions."""
+    import json as json_mod
+    from dataclasses import asdict
+
+    from reprompt.config import Settings
+    from reprompt.core.repetition import analyze_repetition
+    from reprompt.output.repetition_terminal import render_repetition_report
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    report = analyze_repetition(db, source=source, limit=last)
+
+    if json_output:
+        typer.echo(json_mod.dumps(asdict(report), indent=2, default=str))
+    else:
+        typer.echo(render_repetition_report(report), nl=False)
+
+        from reprompt.core.suggestions import get_suggestion
+
+        hint = get_suggestion("repetition")
+        if hint:
+            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
+
+    if copy:
+        copy_text = json_mod.dumps(asdict(report), indent=2, default=str)
         _copy_to_clip(copy_text, quiet=json_output)
 
 
