@@ -8,8 +8,14 @@ from reprompt.core.suggestions import SUGGESTIONS, get_suggestion
 class TestGetSuggestion:
     def test_all_commands_have_suggestions(self):
         expected = {
-            "scan", "report", "score", "insights",
-            "distill", "agent", "sessions", "template",
+            "scan",
+            "report",
+            "score",
+            "insights",
+            "distill",
+            "agent",
+            "sessions",
+            "template",
         }
         assert set(SUGGESTIONS.keys()) == expected
 

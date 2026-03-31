@@ -82,9 +82,7 @@ def _detect_frustration(turns: list[ConversationTurn]) -> FrustrationSignals:
         escalation = second_rate > first_rate * 1.5 and second_rate > 0.2
 
     # Stall turns: assistant turns with no tool calls and short text
-    stall_turns = sum(
-        1 for t in asst_turns if t.tool_calls == 0 and len(t.text.strip()) < 50
-    )
+    stall_turns = sum(1 for t in asst_turns if t.tool_calls == 0 and len(t.text.strip()) < 50)
 
     return FrustrationSignals(
         abandonment=abandonment,

@@ -49,9 +49,7 @@ def render_sessions_table(sessions: list[dict[str, Any]]) -> str:
 
     if not sessions:
         console.print("[dim]No sessions with quality scores found.[/dim]")
-        console.print(
-            "Run [bold cyan]reprompt scan[/bold cyan] to import and score sessions."
-        )
+        console.print("Run [bold cyan]reprompt scan[/bold cyan] to import and score sessions.")
         return console.export_text()
 
     # Compute avg quality
@@ -59,11 +57,7 @@ def render_sessions_table(sessions: list[dict[str, Any]]) -> str:
     avg_q = sum(s["quality_score"] for s in scored) / len(scored) if scored else 0
 
     # Header
-    header = (
-        f"Sessions: {len(sessions)}  |  "
-        f"Scored: {len(scored)}  |  "
-        f"Avg Quality: {avg_q:.0f}/100"
-    )
+    header = f"Sessions: {len(sessions)}  |  Scored: {len(scored)}  |  Avg Quality: {avg_q:.0f}/100"
     console.print(Panel(header, title="Session Quality", border_style="cyan"))
 
     # Table
