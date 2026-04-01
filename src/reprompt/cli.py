@@ -820,12 +820,18 @@ def lint(
     import json as json_mod
 
     from reprompt.config import Settings
-    from reprompt.core.lint import format_lint_results, lint_prompts
+    from reprompt.core.lint import format_lint_results, lint_prompts, load_lint_config
     from reprompt.core.pipeline import get_adapters
     from reprompt.storage.db import PromptDB
 
     settings = Settings()
     db = PromptDB(settings.db_path)
+
+    # Load lint config from .reprompt.toml / pyproject.toml
+    lint_config = load_lint_config()
+
+    # CLI flags override config file
+    effective_threshold = score_threshold if score_threshold > 0 else lint_config.score_threshold
 
     # Collect prompts from DB (already scanned)
     rows = db.get_all_prompts()
@@ -858,11 +864,11 @@ def lint(
         console.print("No prompts found. Run [bold]reprompt scan[/bold] first.")
         raise typer.Exit(0)
 
-    violations = lint_prompts(texts)
+    violations = lint_prompts(texts, config=lint_config)
 
     # Score threshold mode (CI integration)
     score_data = None
-    if score_threshold > 0:
+    if effective_threshold > 0:
         from reprompt.core.extractors import extract_features
         from reprompt.core.scorer import score_prompt
 
@@ -875,8 +881,8 @@ def lint(
             "avg_score": round(avg_score, 1),
             "min_score": min(scores) if scores else 0,
             "max_score": max(scores) if scores else 0,
-            "threshold": score_threshold,
-            "pass": avg_score >= score_threshold,
+            "threshold": effective_threshold,
+            "pass": avg_score >= effective_threshold,
         }
 
     if json_output:
@@ -905,7 +911,7 @@ def lint(
             console.print(
                 f"\n  Score: avg {score_data['avg_score']}/100"
                 f" (min {score_data['min_score']}, max {score_data['max_score']})"
-                f" — threshold {score_threshold} → {status}"
+                f" — threshold {effective_threshold} → {status}"
             )
 
     if copy:
