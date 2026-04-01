@@ -34,21 +34,23 @@ $ reprompt rewrite "I was wondering if you could maybe help me fix the auth bug"
   → Reference specific files or functions by name
   → Add constraints (e.g., "Do not modify existing tests")
 
-# Score any prompt instantly (research-backed, 30+ features)
-$ reprompt score "Fix the auth bug in src/login.ts where JWT expires"
-  Score: 40/100  (Fair)
-  Tip: Include the error message -- debug prompts with errors are 3.7x more effective
+# Full diagnostic in one command
+$ reprompt check "Fix the auth bug in src/login.ts where JWT expires"
+  GOOD · 58
 
-# Compress prompts to save tokens
-$ reprompt compress "I was wondering if you could please help me refactor this code. Basically what I need is to split this function into smaller helpers."
-  Before: 28 tokens → After: 14 tokens (50% saved)
+  Clarity     ████████████░░░░░░░░ 15/25
+  Context     ████████████████░░░░ 20/25
+  Position    ████████████████████ 20/20
+  Structure   ░░░░░░░░░░░░░░░░░░░░  0/15
+  Repetition  ███░░░░░░░░░░░░░░░░░  3/15
 
-# Your personal dashboard
-$ reprompt
-  ╭─ Prompt Dashboard ─────────────────────────────────────────╮
-  │  Prompts: 1,063 (295 unique)   Sessions: 890              │
-  │  Avg Score: 68/100             Top: debug (31%), impl (24%)│
-  ╰────────────────────────────────────────────────────────────╯
+  Strengths
+  ✓ Key instruction at the start — optimal placement
+  ✓ References specific files
+
+  Improve
+  → Add the actual error message (+6 pts)
+  → Add constraints like "Don't modify tests" (+5 pts)
 ```
 
 ## What it does
@@ -144,10 +146,9 @@ pip install reprompt-cli[mcp]       # + MCP server for Claude Code / Continue.de
 ### Quick start
 
 ```bash
+reprompt check "your prompt here"   # full diagnostic — score + lint + rewrite
 reprompt scan                       # discover prompts from installed AI tools
 reprompt                            # see your dashboard
-reprompt score "your prompt here"   # score any prompt instantly
-reprompt distill --last 1           # distill your most recent conversation
 ```
 
 ### Auto-scan after every session
@@ -185,7 +186,7 @@ Captured prompts sync locally via Native Messaging -- nothing leaves your machin
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/reprompt-dev/reprompt
-    rev: v2.2.1
+    rev: v2.2.2
     hooks:
       - id: reprompt-lint
 ```
