@@ -18,6 +18,7 @@ class TestGetSuggestion:
             "repetition",
             "template",
             "lint",
+            "rewrite",
         }
         assert set(SUGGESTIONS.keys()) == expected
 
@@ -66,6 +67,8 @@ class TestGetSuggestion:
             "reprompt agent",
             "reprompt sessions",
             "reprompt privacy",
+            "reprompt init",
+            "reprompt rewrite",
         }
         for cmd, hint in SUGGESTIONS.items():
             # Each suggestion should reference at least one valid command

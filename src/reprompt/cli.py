@@ -1066,6 +1066,58 @@ def compress(
 
 
 @app.command(rich_help_panel="Optimize")
+def rewrite(
+    text: str = typer.Argument(..., help="Prompt text to improve"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    copy: bool = typer.Option(False, "--copy", help="Copy rewritten text to clipboard"),
+) -> None:
+    """Rewrite a prompt to improve its score. Rule-based, no LLM needed.
+
+    Applies 4 layers: filler removal, instruction front-loading,
+    key requirement echo, and hedging cleanup. Also suggests manual
+    improvements you can make.
+
+    Examples:
+
+        reprompt rewrite "I was wondering if you could fix the authentication bug"
+
+        reprompt rewrite "please help me refactor this code to be better" --copy
+
+        reprompt rewrite "fix the login" --json
+    """
+    from reprompt.core.rewrite import rewrite_prompt
+
+    result = rewrite_prompt(text)
+
+    if json_output:
+        import json as json_mod
+
+        data = {
+            "original": result.original,
+            "rewritten": result.rewritten,
+            "score_before": result.score_before,
+            "score_after": result.score_after,
+            "score_delta": result.score_delta,
+            "changes": result.changes,
+            "manual_suggestions": result.manual_suggestions,
+        }
+        typer.echo(json_mod.dumps(data, indent=2, ensure_ascii=False))
+    else:
+        from reprompt.output.rewrite_terminal import render_rewrite
+
+        typer.echo(render_rewrite(result))
+
+    if copy:
+        _copy_to_clip(result.rewritten, quiet=json_output)
+
+    from reprompt.core.suggestions import get_suggestion
+
+    hint = get_suggestion("rewrite")
+    if hint and not json_output:
+        console.print(f"  [dim]→ Try: {hint}[/dim]\n")
+
+
+@app.command(rich_help_panel="Optimize")
 def distill(
     session_id: str = typer.Argument(None, help="Session ID to distill"),
     last: int = typer.Option(1, "--last", help="Distill the N most recent sessions"),
