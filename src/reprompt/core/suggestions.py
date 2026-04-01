@@ -28,6 +28,7 @@ SUGGESTIONS: dict[str, str] = {
     "explain": "reprompt rewrite (auto-improve) · reprompt build (construct from parts)",
     "rewrite": "reprompt compress (reduce tokens) · reprompt score (verify improvement)",
     "projects": "reprompt sessions --detail <id> (deep-dive) · reprompt insights (patterns)",
+    "patterns": "reprompt rewrite (auto-improve gaps) · reprompt insights (full analysis)",
 }
 
 

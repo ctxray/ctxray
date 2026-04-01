@@ -23,6 +23,7 @@ class TestGetSuggestion:
             "build",
             "check",
             "explain",
+            "patterns",
         }
         assert set(SUGGESTIONS.keys()) == expected
 

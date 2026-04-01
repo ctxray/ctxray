@@ -261,8 +261,7 @@ def _apply_task_scaffold(text: str, dna: object) -> str:
         # fabric review_code: 6 named axes instead of generic "focus"
         if not getattr(dna, "has_constraints", False):
             missing.append(
-                "Review axes: <correctness, security, performance, "
-                "readability, error handling>"
+                "Review axes: <correctness, security, performance, readability, error handling>"
             )
         if not getattr(dna, "has_file_references", False):
             missing.append("Scope: <which files or PR to review>")

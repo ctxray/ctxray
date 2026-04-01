@@ -2401,6 +2401,38 @@ def sessions(
 
 
 @app.command(rich_help_panel="Analyze")
+def patterns(
+    last: int = typer.Option(500, "--last", help="Analyze N most recent prompts"),
+    source: str = typer.Option(
+        None, "--source", "-s", help="Filter by source (e.g. claude-code, cursor)"
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
+) -> None:
+    """Discover your personal prompt weaknesses and recurring gaps."""
+    import json as json_mod
+    from dataclasses import asdict
+
+    from reprompt.config import Settings
+    from reprompt.core.patterns import analyze_patterns
+    from reprompt.output.patterns_terminal import render_patterns
+    from reprompt.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    report = analyze_patterns(db, source=source, limit=last)
+
+    if json_output:
+        typer.echo(json_mod.dumps(asdict(report), indent=2, default=str))
+    else:
+        typer.echo(render_patterns(report), nl=False)
+
+    if copy:
+        copy_text = json_mod.dumps(asdict(report), indent=2, default=str)
+        _copy_to_clip(copy_text, quiet=json_output)
+
+
+@app.command(rich_help_panel="Analyze")
 def repetition(
     last: int = typer.Option(500, "--last", help="Analyze N most recent unique prompts"),
     source: str = typer.Option(
