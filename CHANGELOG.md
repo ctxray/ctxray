@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.0] - 2026-04-01
+
+### Added
+- **Prompt builder** — `reprompt build "task" --file src/auth.ts --error "TypeError" --constraint "keep tests"` assembles well-scored prompts from components. Model-aware formatting: XML tags for Claude, markdown headers for GPT. Shows score, tier, and suggestions for missing components.
+- **Unified diagnostic** — `reprompt check "prompt"` runs score + lint + rewrite in one command. Shows dimensional breakdown, strengths, suggestions with point values, lint issues, and auto-rewrite preview.
+- **Prompt explainer** — `reprompt explain "prompt"` explains what makes a prompt good or bad in plain English. Educational feedback with research-backed insights per dimension.
+- Tests: 1741 → 1846
+
 ## [2.1.0] - 2026-04-01
 
 ### Added
