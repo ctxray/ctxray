@@ -800,6 +800,9 @@ def lint(
     model: str = typer.Option(
         None, "--model", "-m", help="Target model for model-specific rules (claude/gpt/gemini)"
     ),
+    max_tokens: int = typer.Option(
+        0, "--max-tokens", help="Warn when prompts exceed token budget (0 = disabled)"
+    ),
     copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
 ) -> None:
     """Check prompt quality against lint rules.
@@ -809,6 +812,7 @@ def lint(
     - short-prompt: prompts under 40 chars (warning)
     - vague-prompt: overly vague prompts like "fix it"
     - debug-needs-reference: debug prompts without file/function references
+    - max-tokens: prompt exceeds token budget
 
     Model-specific rules (--model):
     - claude: suggests XML tags for structure
@@ -844,6 +848,8 @@ def lint(
     effective_threshold = score_threshold if score_threshold > 0 else lint_config.score_threshold
     if model:
         lint_config.model = model.lower()
+    if max_tokens > 0:
+        lint_config.max_tokens = max_tokens
 
     # Collect prompts from DB (already scanned)
     rows = db.get_all_prompts()
@@ -1099,6 +1105,7 @@ def compress(
 def rewrite(
     text: str = typer.Argument(..., help="Prompt text to improve"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    diff: bool = typer.Option(False, "--diff", help="Show unified diff (red/green)"),
     copy: bool = typer.Option(False, "--copy", help="Copy rewritten text to clipboard"),
 ) -> None:
     """Rewrite a prompt to improve its score. Rule-based, no LLM needed.
@@ -1111,9 +1118,9 @@ def rewrite(
 
         reprompt rewrite "I was wondering if you could fix the authentication bug"
 
-        reprompt rewrite "please help me refactor this code to be better" --copy
+        reprompt rewrite "fix the login" --diff
 
-        reprompt rewrite "fix the login" --json
+        reprompt rewrite "please help me refactor this code to be better" --copy
     """
     from reprompt.core.rewrite import rewrite_prompt
 
@@ -1132,6 +1139,10 @@ def rewrite(
             "manual_suggestions": result.manual_suggestions,
         }
         typer.echo(json_mod.dumps(data, indent=2, ensure_ascii=False))
+    elif diff:
+        from reprompt.output.rewrite_terminal import render_rewrite_diff
+
+        typer.echo(render_rewrite_diff(result))
     else:
         from reprompt.output.rewrite_terminal import render_rewrite
 
@@ -2057,6 +2068,9 @@ def init(
 # Target model for model-specific rules (claude, gpt, gemini)
 # Enables rules like "prefer XML tags" (Claude) or "avoid XML tags" (GPT)
 # model = "claude"
+
+# Token budget — warn when prompts exceed this limit (0 = disabled)
+# max-tokens = 4096
 
 [lint.rules]
 # min-length: error if prompt < N chars (0 = disabled)

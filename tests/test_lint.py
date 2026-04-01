@@ -377,6 +377,33 @@ class TestModelSpecificRules:
         rules = [v.rule for v in violations]
         assert "gpt-no-cot-reasoning" not in rules
 
+    def test_token_budget_warning(self):
+        config = LintConfig(min_length=0, short_prompt=0, max_tokens=10)
+        text = "Fix the authentication middleware " * 10  # ~50 tokens
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "max-tokens" in rules
+        assert "budget: 10" in violations[-1].message
+
+    def test_token_budget_ok(self):
+        config = LintConfig(min_length=0, short_prompt=0, max_tokens=1000)
+        text = "Fix the auth bug in login.ts please"
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "max-tokens" not in rules
+
+    def test_token_budget_disabled_by_default(self):
+        config = LintConfig(min_length=0, short_prompt=0)
+        text = "Fix " * 1000
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "max-tokens" not in rules
+
+    def test_token_budget_from_config(self, tmp_path: Path):
+        (tmp_path / ".reprompt.toml").write_text("[lint]\nmax-tokens = 100\n")
+        config = load_lint_config(start_dir=tmp_path)
+        assert config.max_tokens == 100
+
     def test_format_results_with_hints(self):
         v = LintViolation(
             rule="claude-prefer-xml", severity="hint", message="test", prompt_text="x"

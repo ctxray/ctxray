@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import difflib
 from io import StringIO
 from typing import TYPE_CHECKING
 
@@ -53,6 +54,52 @@ def render_rewrite(result: RewriteResult) -> str:
         for s in result.manual_suggestions:
             console.print(f"  [yellow]→[/yellow] {s}")
 
+    console.print()
+    return buf.getvalue()
+
+
+def render_rewrite_diff(result: RewriteResult) -> str:
+    """Render a unified diff between original and rewritten prompt."""
+    buf = StringIO()
+    console = Console(file=buf, width=100, record=True)
+
+    orig_lines = result.original.splitlines(keepends=True)
+    new_lines = result.rewritten.splitlines(keepends=True)
+
+    diff = difflib.unified_diff(
+        orig_lines, new_lines, fromfile="original", tofile="rewritten", lineterm=""
+    )
+
+    console.print()
+    has_diff = False
+    for line in diff:
+        line = line.rstrip("\n")
+        if line.startswith("---"):
+            console.print(f"[bold red]{line}[/bold red]")
+            has_diff = True
+        elif line.startswith("+++"):
+            console.print(f"[bold green]{line}[/bold green]")
+        elif line.startswith("@@"):
+            console.print(f"[cyan]{line}[/cyan]")
+        elif line.startswith("-"):
+            console.print(f"[red]{line}[/red]")
+        elif line.startswith("+"):
+            console.print(f"[green]{line}[/green]")
+        else:
+            console.print(f" {line}")
+
+    if not has_diff:
+        console.print("[dim]No changes — prompt is already optimized.[/dim]")
+
+    # Score summary
+    delta = result.score_delta
+    if delta > 0:
+        delta_str = f"[green]+{delta:.0f}[/green]"
+    elif delta < 0:
+        delta_str = f"[red]{delta:.0f}[/red]"
+    else:
+        delta_str = "[dim]±0[/dim]"
+    console.print(f"\n  Score: {result.score_before:.0f} → {result.score_after:.0f} ({delta_str})")
     console.print()
     return buf.getvalue()
 

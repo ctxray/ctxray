@@ -59,6 +59,9 @@ class LintConfig:
     # CI score threshold (0 = disabled, set via --score-threshold or config)
     score_threshold: int = 0
 
+    # Token budget (0 = disabled). Warn when prompt exceeds this many tokens.
+    max_tokens: int = 0
+
     # Target model for model-specific rules (None = universal rules only)
     model: str | None = None
 
@@ -132,6 +135,9 @@ def _build_config(lint_data: dict) -> LintConfig:
     # Top-level lint settings
     if "score-threshold" in lint_data:
         config.score_threshold = int(lint_data["score-threshold"])
+
+    if "max-tokens" in lint_data:
+        config.max_tokens = int(lint_data["max-tokens"])
 
     if "model" in lint_data:
         model = str(lint_data["model"]).lower()
@@ -218,6 +224,24 @@ def lint_prompt(text: str, config: LintConfig | None = None) -> list[LintViolati
                     rule="debug-needs-reference",
                     severity="warning",
                     message="Debug prompt lacks file/function reference — add specifics",
+                    prompt_text=text,
+                )
+            )
+
+    # Rule 4: Token budget
+    if config.max_tokens > 0:
+        from reprompt.core.cost import estimate_tokens
+
+        tokens = estimate_tokens(text)
+        if tokens > config.max_tokens:
+            violations.append(
+                LintViolation(
+                    rule="max-tokens",
+                    severity="warning",
+                    message=(
+                        f"Prompt is ~{tokens} tokens (budget: {config.max_tokens}) — "
+                        "consider compressing with `reprompt compress`"
+                    ),
                     prompt_text=text,
                 )
             )
