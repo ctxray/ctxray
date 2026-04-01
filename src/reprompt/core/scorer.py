@@ -244,28 +244,39 @@ def score_prompt(dna: PromptDNA) -> ScoreBreakdown:
     confirmations: list[Confirmation] = []
     if pos_score >= 0.8:
         confirmations.append(
-            Confirmation("position", "Key instruction at the start — optimal placement",
-                         f"{round(position)}/20")
+            Confirmation(
+                "position",
+                "Key instruction at the start — optimal placement",
+                f"{round(position)}/20",
+            )
         )
     if dna.has_file_references:
         confirmations.append(
-            Confirmation("context", "File references detected — specificity matters",
-                         f"{round(min(context, 25))}/25")
+            Confirmation(
+                "context",
+                "File references detected — specificity matters",
+                f"{round(min(context, 25))}/25",
+            )
         )
     if dna.has_error_messages:
         confirmations.append(
-            Confirmation("context", "Error context included — 3.7x more effective",
-                         f"{round(min(context, 25))}/25")
+            Confirmation(
+                "context",
+                "Error context included — 3.7x more effective",
+                f"{round(min(context, 25))}/25",
+            )
         )
     if dna.has_constraints:
         confirmations.append(
-            Confirmation("structure", "Constraints defined — clear boundaries set",
-                         f"{round(structure)}/15")
+            Confirmation(
+                "structure", "Constraints defined — clear boundaries set", f"{round(structure)}/15"
+            )
         )
     if dna.opening_quality >= 0.4:
         confirmations.append(
-            Confirmation("clarity", "Strong opening — starts with clear intent",
-                         f"{round(clarity)}/25")
+            Confirmation(
+                "clarity", "Strong opening — starts with clear intent", f"{round(clarity)}/25"
+            )
         )
 
     # ── Total ──

@@ -348,9 +348,7 @@ def render_score(breakdown: dict[str, Any]) -> str:
         else "dim"
     )
 
-    console.print(
-        f"\n[bold]Score: {total:.0f}/100[/bold]  [{tier_color}]{tier}[/{tier_color}]"
-    )
+    console.print(f"\n[bold]Score: {total:.0f}/100[/bold]  [{tier_color}]{tier}[/{tier_color}]")
     cost_info = breakdown.get("estimated_cost")
     if cost_info:
         console.print(
