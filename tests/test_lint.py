@@ -341,6 +341,42 @@ class TestModelSpecificRules:
         hint_violations = [v for v in violations if v.rule == "claude-prefer-xml"]
         assert hint_violations[0].severity == "hint"
 
+    def test_gemini_broad_negative_warning(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="gemini")
+        text = "Summarize this document but do not infer any meaning beyond what is stated"
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "gemini-broad-negative" in rules
+
+    def test_gemini_no_broad_negative_for_specific(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="gemini")
+        text = "Summarize this document. Only include facts explicitly mentioned."
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "gemini-broad-negative" not in rules
+
+    def test_gpt_cot_hint_for_reasoning(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="gpt")
+        text = "Let's think step by step about how to solve this authentication problem"
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "gpt-no-cot-reasoning" in rules
+
+    def test_gpt_no_cot_warning_without_cot(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="gpt")
+        text = "Fix the authentication bug in src/auth.ts where JWT token expires"
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "gpt-no-cot-reasoning" not in rules
+
+    def test_claude_no_cot_warning(self):
+        """CoT hint only fires for GPT, not Claude."""
+        config = LintConfig(min_length=0, short_prompt=0, model="claude")
+        text = "Let's think step by step about how to solve this authentication problem"
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "gpt-no-cot-reasoning" not in rules
+
     def test_format_results_with_hints(self):
         v = LintViolation(
             rule="claude-prefer-xml", severity="hint", message="test", prompt_text="x"

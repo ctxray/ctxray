@@ -234,6 +234,13 @@ def lint_prompt(text: str, config: LintConfig | None = None) -> list[LintViolati
 _XML_TAG_RE = re.compile(r"<(?:context|instructions|examples?|constraints?|output|task|role)\b")
 _MD_HEADER_RE = re.compile(r"^#{1,3}\s+\w", re.MULTILINE)
 _JSON_MODE_RE = re.compile(r"(?:respond|output|return|reply|format).*\bjson\b", re.IGNORECASE)
+_COT_RE = re.compile(
+    r"\b(?:think step by step|let'?s think|chain of thought|step-by-step reasoning)\b",
+    re.IGNORECASE,
+)
+_BROAD_NEGATIVE_RE = re.compile(
+    r"\bdo not (?:infer|guess|assume|speculate|make assumptions)\b", re.IGNORECASE
+)
 
 
 def _check_model_rules(text: str, model: str) -> list[LintViolation]:
@@ -313,6 +320,33 @@ def _check_model_rules(text: str, model: str) -> list[LintViolation]:
                     prompt_text=text,
                 )
             )
+        # Gemini: broad negatives break reasoning (official Gemini 3 guide)
+        if _BROAD_NEGATIVE_RE.search(text):
+            violations.append(
+                LintViolation(
+                    rule="gemini-broad-negative",
+                    severity="warning",
+                    message=(
+                        'Broad negatives ("do not infer/guess/assume") break '
+                        "Gemini's reasoning — use positive instructions instead"
+                    ),
+                    prompt_text=text,
+                )
+            )
+
+    # Cross-model: CoT anti-pattern for reasoning models
+    if model == "gpt" and _COT_RE.search(text):
+        violations.append(
+            LintViolation(
+                rule="gpt-no-cot-reasoning",
+                severity="hint",
+                message=(
+                    '"Think step by step" hurts o-series reasoning models — '
+                    "give high-level goals instead of prescriptive steps"
+                ),
+                prompt_text=text,
+            )
+        )
 
     return violations
 
