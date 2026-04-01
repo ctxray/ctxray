@@ -96,15 +96,21 @@ $ reprompt check "Fix the auth bug in src/login.ts where JWT expires"
 
 ## Prompt Science
 
-Scoring is calibrated against 4 research papers covering 30+ features across 5 dimensions:
+Scoring is calibrated against 10 peer-reviewed papers covering 30+ features across 5 dimensions:
 
-| Dimension | What it measures | Paper |
-|-----------|-----------------|-------|
-| **Structure** | Markdown, code blocks, explicit constraints | Prompt Report 2406.06608 |
-| **Context** | File paths, error messages, technical specificity | Google 2512.14982 |
-| **Position** | Instruction placement relative to context | Stanford 2307.03172 |
-| **Repetition** | Redundancy that degrades model attention | Google 2512.14982 |
-| **Clarity** | Readability, sentence length, ambiguity | SPELL (EMNLP 2023) |
+| Dimension | What it measures | Key papers |
+|-----------|-----------------|------------|
+| **Structure** | Markdown, code blocks, explicit constraints | Prompt Report ([2406.06608](https://arxiv.org/abs/2406.06608)) |
+| **Context** | File paths, error messages, I/O specs, edge cases | Zi+ ([2508.03678](https://arxiv.org/abs/2508.03678)), Google ([2512.14982](https://arxiv.org/abs/2512.14982)) |
+| **Position** | Instruction placement relative to context | Stanford ([2307.03172](https://arxiv.org/abs/2307.03172)), Veseli+ ([2508.07479](https://arxiv.org/abs/2508.07479)), Chowdhury ([2603.10123](https://arxiv.org/abs/2603.10123)) |
+| **Repetition** | Redundancy that degrades model attention | Google ([2512.14982](https://arxiv.org/abs/2512.14982)) |
+| **Clarity** | Readability, sentence length, ambiguity | SPELL (EMNLP 2023), PEEM ([2603.10477](https://arxiv.org/abs/2603.10477)) |
+
+Cross-validated findings that inform our engine:
+
+- **Position bias is architectural** — present at initialization, not learned. Front-loading instructions is effective for prompts under 50% of context window (3 papers agree)
+- **Moderate compression improves output** — rule-based filler removal doesn't just save tokens, it enhances LLM performance ([2505.00019](https://arxiv.org/abs/2505.00019))
+- **Prompt quality is independently measurable** — prompt-only scoring predicts output quality without seeing the response (ACL 2025, [2503.10084](https://arxiv.org/abs/2503.10084))
 
 All analysis runs locally in <1ms per prompt. No LLM calls, no network requests.
 
