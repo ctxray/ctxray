@@ -4,7 +4,7 @@ Checks prompts against configurable quality rules and returns violations.
 Designed for CI integration — each rule produces a severity + message.
 
 Configuration loaded from (highest priority wins):
-1. CLI flags (--score-threshold, --strict)
+1. CLI flags (--score-threshold, --strict, --model)
 2. .reprompt.toml in CWD or parents
 3. [tool.reprompt.lint] in pyproject.toml
 4. Built-in defaults
@@ -12,6 +12,7 @@ Configuration loaded from (highest priority wins):
 
 from __future__ import annotations
 
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -24,13 +25,16 @@ else:
     except ModuleNotFoundError:  # Python 3.10
         import tomli as tomllib  # type: ignore[no-redefine]
 
+# Valid model targets
+VALID_MODELS = {"claude", "gpt", "gemini"}
+
 
 @dataclass
 class LintViolation:
     """A single lint rule violation."""
 
     rule: str
-    severity: str  # "error" | "warning"
+    severity: str  # "error" | "warning" | "hint"
     message: str
     prompt_text: str
 
@@ -54,6 +58,9 @@ class LintConfig:
 
     # CI score threshold (0 = disabled, set via --score-threshold or config)
     score_threshold: int = 0
+
+    # Target model for model-specific rules (None = universal rules only)
+    model: str | None = None
 
 
 # --- Default config ---
@@ -125,6 +132,11 @@ def _build_config(lint_data: dict) -> LintConfig:
     # Top-level lint settings
     if "score-threshold" in lint_data:
         config.score_threshold = int(lint_data["score-threshold"])
+
+    if "model" in lint_data:
+        model = str(lint_data["model"]).lower()
+        if model in VALID_MODELS:
+            config.model = model
 
     # Rule settings
     rules = lint_data.get("rules", {})
@@ -210,6 +222,98 @@ def lint_prompt(text: str, config: LintConfig | None = None) -> list[LintViolati
                 )
             )
 
+    # ── Model-specific rules ──
+    if config.model and len(stripped) >= 30:
+        violations.extend(_check_model_rules(text, config.model))
+
+    return violations
+
+
+# ── Model-specific patterns ──
+
+_XML_TAG_RE = re.compile(r"<(?:context|instructions|examples?|constraints?|output|task|role)\b")
+_MD_HEADER_RE = re.compile(r"^#{1,3}\s+\w", re.MULTILINE)
+_JSON_MODE_RE = re.compile(r"(?:respond|output|return|reply|format).*\bjson\b", re.IGNORECASE)
+
+
+def _check_model_rules(text: str, model: str) -> list[LintViolation]:
+    """Return model-specific lint violations and hints."""
+    violations: list[LintViolation] = []
+    has_xml = bool(_XML_TAG_RE.search(text))
+    has_md_headers = bool(_MD_HEADER_RE.search(text))
+    word_count = len(text.split())
+
+    if model == "claude":
+        # Claude: XML tags are preferred for structured prompts
+        if not has_xml and word_count > 50 and not has_md_headers:
+            violations.append(
+                LintViolation(
+                    rule="claude-prefer-xml",
+                    severity="hint",
+                    message=(
+                        "Claude handles XML tags well for structured prompts — "
+                        "try <context>, <instructions>, <constraints>"
+                    ),
+                    prompt_text=text,
+                )
+            )
+
+    elif model == "gpt":
+        # GPT: XML tags may be echoed verbatim; prefer markdown
+        if has_xml:
+            violations.append(
+                LintViolation(
+                    rule="gpt-avoid-xml",
+                    severity="warning",
+                    message=(
+                        "GPT may echo XML tags verbatim — "
+                        "use markdown headers (## Context, ## Instructions) instead"
+                    ),
+                    prompt_text=text,
+                )
+            )
+        # GPT: markdown headers are preferred
+        if not has_md_headers and word_count > 50:
+            violations.append(
+                LintViolation(
+                    rule="gpt-prefer-markdown",
+                    severity="hint",
+                    message=(
+                        "Long prompts for GPT benefit from markdown headers — "
+                        "use ## sections for clarity"
+                    ),
+                    prompt_text=text,
+                )
+            )
+        # GPT: JSON mode needs explicit instruction
+        if _JSON_MODE_RE.search(text) is None and "json" in text.lower():
+            violations.append(
+                LintViolation(
+                    rule="gpt-json-instruction",
+                    severity="warning",
+                    message=(
+                        "GPT requires explicit JSON instruction — "
+                        'add "Respond in JSON format" for reliable JSON output'
+                    ),
+                    prompt_text=text,
+                )
+            )
+
+    elif model == "gemini":
+        # Gemini: very long prompts may lose focus
+        if word_count > 500:
+            violations.append(
+                LintViolation(
+                    rule="gemini-prompt-length",
+                    severity="warning",
+                    message=(
+                        f"Prompt is {word_count} words — "
+                        "Gemini may lose focus on long instructions, consider splitting"
+                    ),
+                    prompt_text=text,
+                )
+            )
+
     return violations
 
 
@@ -228,15 +332,19 @@ def format_lint_results(violations: list[LintViolation], total_prompts: int) -> 
 
     errors = [v for v in violations if v.severity == "error"]
     warnings = [v for v in violations if v.severity == "warning"]
+    hints = [v for v in violations if v.severity == "hint"]
 
     lines: list[str] = []
     lines.append(f"Checked {total_prompts} prompts\n")
 
     for v in violations:
-        prefix = "✗" if v.severity == "error" else "!"
+        prefix = "✗" if v.severity == "error" else "!" if v.severity == "warning" else "→"
         display = v.prompt_text[:60] + "..." if len(v.prompt_text) > 60 else v.prompt_text
         lines.append(f'  {prefix} [{v.rule}] "{display}"')
         lines.append(f"    {v.message}")
 
-    lines.append(f"\n{len(errors)} error(s), {len(warnings)} warning(s)")
+    parts = [f"{len(errors)} error(s)", f"{len(warnings)} warning(s)"]
+    if hints:
+        parts.append(f"{len(hints)} hint(s)")
+    lines.append(f"\n{', '.join(parts)}")
     return "\n".join(lines)

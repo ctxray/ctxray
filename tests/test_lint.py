@@ -235,3 +235,116 @@ class TestLoadLintConfig:
         config = load_lint_config(start_dir=tmp_path)
         violations = lint_prompts(["fix it", "hi", "ok"], config=config)
         assert violations == []
+
+    def test_model_config_from_toml(self, tmp_path: Path):
+        (tmp_path / ".reprompt.toml").write_text('[lint]\nmodel = "claude"\n')
+        config = load_lint_config(start_dir=tmp_path)
+        assert config.model == "claude"
+
+    def test_invalid_model_ignored(self, tmp_path: Path):
+        (tmp_path / ".reprompt.toml").write_text('[lint]\nmodel = "llama"\n')
+        config = load_lint_config(start_dir=tmp_path)
+        assert config.model is None
+
+
+# -- Model-specific rules --
+
+
+class TestModelSpecificRules:
+    """Tests for model-specific lint rules."""
+
+    LONG_PLAIN = "Fix the authentication middleware that handles token validation " * 8
+
+    def test_no_model_no_model_rules(self):
+        config = LintConfig(min_length=0, short_prompt=0)
+        violations = lint_prompt(self.LONG_PLAIN, config=config)
+        rules = [v.rule for v in violations]
+        assert not any(r.startswith("claude-") or r.startswith("gpt-") for r in rules)
+
+    def test_claude_suggests_xml_for_long_prompts(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="claude")
+        violations = lint_prompt(self.LONG_PLAIN, config=config)
+        rules = [v.rule for v in violations]
+        assert "claude-prefer-xml" in rules
+
+    def test_claude_no_hint_when_xml_present(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="claude")
+        text = "<instructions>Fix the auth bug in login.ts</instructions> " * 5
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "claude-prefer-xml" not in rules
+
+    def test_claude_no_hint_when_markdown_present(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="claude")
+        text = "## Instructions\nFix the authentication middleware " * 5
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "claude-prefer-xml" not in rules
+
+    def test_gpt_warns_on_xml_tags(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="gpt")
+        text = "<instructions>Fix the auth bug</instructions> and more context here please"
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "gpt-avoid-xml" in rules
+
+    def test_gpt_suggests_markdown_for_long_prompts(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="gpt")
+        violations = lint_prompt(self.LONG_PLAIN, config=config)
+        rules = [v.rule for v in violations]
+        assert "gpt-prefer-markdown" in rules
+
+    def test_gpt_no_markdown_hint_when_headers_present(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="gpt")
+        text = "## Context\nFix the authentication middleware " * 5
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "gpt-prefer-markdown" not in rules
+
+    def test_gpt_json_instruction_warning(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="gpt")
+        text = "Parse the data and give me the json with all the fields intact please"
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "gpt-json-instruction" in rules
+
+    def test_gpt_json_ok_when_explicit(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="gpt")
+        text = "Parse the data. Respond in JSON format with all fields intact please"
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "gpt-json-instruction" not in rules
+
+    def test_gemini_warns_on_very_long_prompts(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="gemini")
+        text = "word " * 600
+        violations = lint_prompt(text, config=config)
+        rules = [v.rule for v in violations]
+        assert "gemini-prompt-length" in rules
+
+    def test_gemini_no_warning_for_normal_length(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="gemini")
+        violations = lint_prompt(self.LONG_PLAIN, config=config)
+        rules = [v.rule for v in violations]
+        assert "gemini-prompt-length" not in rules
+
+    def test_short_prompts_skip_model_rules(self):
+        """Model rules only fire for prompts >= 30 chars."""
+        config = LintConfig(min_length=0, short_prompt=0, model="claude")
+        violations = lint_prompt("fix auth bug now", config=config)
+        rules = [v.rule for v in violations]
+        assert not any(r.startswith("claude-") for r in rules)
+
+    def test_hint_severity(self):
+        config = LintConfig(min_length=0, short_prompt=0, model="claude")
+        violations = lint_prompt(self.LONG_PLAIN, config=config)
+        hint_violations = [v for v in violations if v.rule == "claude-prefer-xml"]
+        assert hint_violations[0].severity == "hint"
+
+    def test_format_results_with_hints(self):
+        v = LintViolation(
+            rule="claude-prefer-xml", severity="hint", message="test", prompt_text="x"
+        )
+        result = format_lint_results([v], 1)
+        assert "hint" in result
+        assert "→" in result

@@ -797,6 +797,9 @@ def lint(
     score_threshold: int = typer.Option(
         0, "--score-threshold", help="Fail if avg prompt score < threshold (CI mode)"
     ),
+    model: str = typer.Option(
+        None, "--model", "-m", help="Target model for model-specific rules (claude/gpt/gemini)"
+    ),
     copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
 ) -> None:
     """Check prompt quality against lint rules.
@@ -807,11 +810,18 @@ def lint(
     - vague-prompt: overly vague prompts like "fix it"
     - debug-needs-reference: debug prompts without file/function references
 
+    Model-specific rules (--model):
+    - claude: suggests XML tags for structure
+    - gpt: warns on XML tags (may echo verbatim), prefers markdown
+    - gemini: warns on very long prompts
+
     CI mode: use --score-threshold to fail if average score is below a threshold.
 
     Examples:
 
         reprompt lint                                    # lint stored prompts
+
+        reprompt lint --model claude                     # with Claude-specific hints
 
         reprompt lint --score-threshold 50               # fail if avg score < 50 (CI mode)
 
@@ -832,6 +842,8 @@ def lint(
 
     # CLI flags override config file
     effective_threshold = score_threshold if score_threshold > 0 else lint_config.score_threshold
+    if model:
+        lint_config.model = model.lower()
 
     # Collect prompts from DB (already scanned)
     rows = db.get_all_prompts()
@@ -2041,6 +2053,10 @@ def init(
 # Fail `reprompt lint` if average prompt score < threshold (0 = disabled)
 # Useful for CI: reprompt lint --score-threshold reads this value
 # score-threshold = 50
+
+# Target model for model-specific rules (claude, gpt, gemini)
+# Enables rules like "prefer XML tags" (Claude) or "avoid XML tags" (GPT)
+# model = "claude"
 
 [lint.rules]
 # min-length: error if prompt < N chars (0 = disabled)
