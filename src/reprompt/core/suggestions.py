@@ -23,6 +23,7 @@ SUGGESTIONS: dict[str, str] = {
     ),
     "template": "reprompt insights (see which patterns work best)",
     "lint": "reprompt init (generate .reprompt.toml) · reprompt rewrite (improve prompts)",
+    "build": "reprompt rewrite (improve existing) · reprompt score (check any prompt)",
     "rewrite": "reprompt compress (reduce tokens) · reprompt score (verify improvement)",
     "projects": "reprompt sessions --detail <id> (deep-dive) · reprompt insights (patterns)",
 }

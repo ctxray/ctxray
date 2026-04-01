@@ -1159,6 +1159,73 @@ def rewrite(
 
 
 @app.command(rich_help_panel="Optimize")
+def build(
+    task: str = typer.Argument(..., help="What the AI should do"),
+    context: str = typer.Option("", "--context", "-c", help="Background information"),
+    file: list[str] = typer.Option([], "--file", "-f", help="File references (repeatable)"),
+    error: str = typer.Option("", "--error", "-e", help="Error message or stack trace"),
+    constraint: list[str] = typer.Option([], "--constraint", help="Constraints (repeatable)"),
+    example: str = typer.Option("", "--example", help="Example input/output"),
+    output_format: str = typer.Option("", "--output-format", help="Expected response format"),
+    role: str = typer.Option("", "--role", "-r", help="AI role/persona"),
+    model: str = typer.Option("", "--model", "-m", help="Target model (claude/gpt/gemini)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    copy: bool = typer.Option(False, "--copy", help="Copy built prompt to clipboard"),
+) -> None:
+    """Build a well-structured prompt from components.
+
+    Assembles a prompt that maximizes quality score by combining
+    your task with context, files, errors, and constraints.
+
+    Examples:
+
+        reprompt build "fix the auth bug"
+
+        reprompt build "fix the crash" --file src/auth.ts --error "TypeError: ..."
+
+        reprompt build "refactor" -f src/app.py --constraint "keep tests" --model claude
+    """
+    from reprompt.core.build import build_prompt
+
+    result = build_prompt(
+        task,
+        context=context,
+        files=file if file else None,
+        error=error,
+        constraints=constraint if constraint else None,
+        examples=example,
+        output_format=output_format,
+        role=role,
+        model=model,
+    )
+
+    if json_output:
+        import json as json_mod
+
+        data = {
+            "prompt": result.prompt,
+            "score": result.score,
+            "tier": result.tier,
+            "components_used": result.components_used,
+            "suggestions": result.suggestions,
+        }
+        typer.echo(json_mod.dumps(data, indent=2, ensure_ascii=False))
+    else:
+        from reprompt.output.build_terminal import render_build
+
+        typer.echo(render_build(result))
+
+    if copy:
+        _copy_to_clip(result.prompt, quiet=json_output)
+
+    from reprompt.core.suggestions import get_suggestion
+
+    hint = get_suggestion("build")
+    if hint and not json_output:
+        console.print(f"  [dim]→ Try: {hint}[/dim]\n")
+
+
+@app.command(rich_help_panel="Optimize")
 def distill(
     session_id: str = typer.Argument(None, help="Session ID to distill"),
     last: int = typer.Option(1, "--last", help="Distill the N most recent sessions"),
