@@ -1008,6 +1008,50 @@ def check(
 
 
 @app.command(rich_help_panel="Analyze")
+def explain(
+    text: str = typer.Argument(..., help="Prompt text to explain"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+) -> None:
+    """Explain what makes a prompt good or bad in plain English.
+
+    Analyzes the prompt and provides educational feedback: what's working,
+    what's missing, and specific tips to improve. No LLM needed.
+
+    Examples:
+
+        reprompt explain "fix the auth bug"
+
+        reprompt explain "Fix the JWT expiration in src/auth.ts line 42" --json
+    """
+    from reprompt.core.explain import explain_prompt
+
+    result = explain_prompt(text)
+
+    if json_output:
+        import json as json_mod
+
+        data = {
+            "score": result.score,
+            "tier": result.tier,
+            "summary": result.summary,
+            "strengths": result.strengths,
+            "weaknesses": result.weaknesses,
+            "tips": result.tips,
+        }
+        typer.echo(json_mod.dumps(data, indent=2, ensure_ascii=False))
+    else:
+        from reprompt.output.explain_terminal import render_explain
+
+        typer.echo(render_explain(result))
+
+    from reprompt.core.suggestions import get_suggestion
+
+    hint = get_suggestion("explain")
+    if hint and not json_output:
+        console.print(f"  [dim]→ Try: {hint}[/dim]\n")
+
+
+@app.command(rich_help_panel="Analyze")
 def score(
     text: str = typer.Argument(..., help="Prompt text to score"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),

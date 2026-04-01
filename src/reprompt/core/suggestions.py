@@ -25,6 +25,7 @@ SUGGESTIONS: dict[str, str] = {
     "lint": "reprompt init (generate .reprompt.toml) · reprompt rewrite (improve prompts)",
     "build": "reprompt rewrite (improve existing) · reprompt score (check any prompt)",
     "check": "reprompt build (construct from parts) · reprompt rewrite --diff (see changes)",
+    "explain": "reprompt rewrite (auto-improve) · reprompt build (construct from parts)",
     "rewrite": "reprompt compress (reduce tokens) · reprompt score (verify improvement)",
     "projects": "reprompt sessions --detail <id> (deep-dive) · reprompt insights (patterns)",
 }
