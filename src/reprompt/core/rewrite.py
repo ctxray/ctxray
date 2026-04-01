@@ -7,7 +7,8 @@ Layers:
 1. Compress — remove filler (reuse compress engine)
 2. Restructure — front-load instructions (move imperative to start)
 3. Reinforce — echo key requirement at end for long prompts
-4. Annotate — suggest what the user should add manually
+4. Clarity — remove hedging language
+5. Task-specific — append structural scaffolding based on detected task type
 """
 
 from __future__ import annotations
@@ -70,6 +71,12 @@ def rewrite_prompt(text: str) -> RewriteResult:
     if cleaned != result:
         result = cleaned
         changes.append("Removed hedging language")
+
+    # Layer 5: Task-specific scaffolding
+    scaffolded = _apply_task_scaffold(result, dna)
+    if scaffolded != result:
+        result = scaffolded
+        changes.append(f"Added {dna.task_type} prompt structure")
 
     # Score rewritten
     dna_after = extract_features(result, source="rewrite", session_id="")
@@ -194,6 +201,65 @@ def _remove_hedging(text: str) -> str:
     lines = result.split("\n")
     result = "\n".join(line.lstrip() if line.strip() else line for line in lines)
     return result
+
+
+def _apply_task_scaffold(text: str, dna: object) -> str:
+    """Append task-specific structural cues based on detected task type.
+
+    Only fires when the prompt is short (<30 words) AND missing critical
+    context for the detected task type. Adds fill-in-the-blank lines so
+    the user knows what to add — not generic advice, but structured slots.
+    """
+    task = getattr(dna, "task_type", "other")
+    word_count = getattr(dna, "word_count", 0)
+
+    # Only scaffold short prompts — long prompts already have context
+    if word_count > 30:
+        return text
+
+    missing: list[str] = []
+
+    if task == "debug":
+        if not getattr(dna, "has_error_messages", False):
+            missing.append("Error: <paste the error message or stack trace>")
+        if not getattr(dna, "has_file_references", False):
+            missing.append("File: <which file and function>")
+        if not getattr(dna, "has_code_blocks", False):
+            missing.append("Code: <paste the relevant code block>")
+
+    elif task == "implement":
+        if not getattr(dna, "has_io_spec", False):
+            missing.append("Input/Output: <what it takes and returns>")
+        if not getattr(dna, "has_constraints", False):
+            missing.append("Constraints: <what NOT to change>")
+        if not getattr(dna, "has_edge_cases", False):
+            missing.append("Edge cases: <empty input, null, zero, etc.>")
+
+    elif task == "refactor":
+        if not getattr(dna, "has_file_references", False):
+            missing.append("Scope: <which files/modules to touch>")
+        if not getattr(dna, "has_constraints", False):
+            missing.append("Preserve: <what must NOT change (API, tests, etc.)>")
+
+    elif task == "test":
+        if not getattr(dna, "has_file_references", False):
+            missing.append("Target: <function or module to test>")
+        if not getattr(dna, "has_edge_cases", False):
+            missing.append("Edge cases: <empty, null, boundary values>")
+        if not getattr(dna, "has_io_spec", False):
+            missing.append("Expected: <what the correct behavior should be>")
+
+    elif task == "review":
+        if not getattr(dna, "has_constraints", False):
+            missing.append("Focus: <security, performance, error handling, etc.>")
+        if not getattr(dna, "has_file_references", False):
+            missing.append("Scope: <which files or PR to review>")
+
+    if not missing:
+        return text
+
+    scaffold = "\n".join(missing)
+    return f"{text.rstrip()}\n\n{scaffold}"
 
 
 def _generate_manual_suggestions(dna: object) -> list[str]:

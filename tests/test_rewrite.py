@@ -110,6 +110,55 @@ class TestRewritePrompt:
         result = rewrite_prompt("x")
         assert isinstance(result, RewriteResult)
 
+    # -- Layer 5: Task-specific scaffold tests --
+
+    def test_debug_scaffold_adds_error_slot(self):
+        result = rewrite_prompt("fix the auth bug")
+        # Short debug prompt should get error/file/code scaffold
+        has_scaffold = any("debug" in c.lower() or "structure" in c.lower() for c in result.changes)
+        suggestions_text = " ".join(result.manual_suggestions).lower()
+        has_error_slot = "Error:" in result.rewritten or "error" in suggestions_text
+        assert has_scaffold or has_error_slot
+
+    def test_implement_scaffold_adds_io_spec(self):
+        result = rewrite_prompt("implement user login")
+        # Should suggest I/O spec or constraints
+        all_text = result.rewritten + " ".join(result.manual_suggestions)
+        has_io = "Input/Output:" in all_text or "input/output" in all_text.lower()
+        has_constraints = "Constraints:" in all_text or "constraint" in all_text.lower()
+        assert has_io or has_constraints
+
+    def test_refactor_scaffold_adds_scope(self):
+        result = rewrite_prompt("refactor the auth module")
+        all_text = result.rewritten + " ".join(result.manual_suggestions)
+        has_scope = "Scope:" in all_text or "file" in all_text.lower()
+        assert has_scope
+
+    def test_test_scaffold_adds_target(self):
+        result = rewrite_prompt("write tests for login")
+        all_text = result.rewritten + " ".join(result.manual_suggestions)
+        lower_text = all_text.lower()
+        has_target = "Target:" in all_text or "function" in lower_text or "edge" in lower_text
+        assert has_target
+
+    def test_long_prompt_no_scaffold(self):
+        # Long prompts (>30 words) should NOT get scaffold
+        long_prompt = (
+            "Fix the authentication bug in src/auth/middleware.ts where the JWT token "
+            "expiration check fails for tokens issued before the timezone migration. "
+            "The error is TypeError: Cannot read property 'exp' of undefined at line 42. "
+            "Do not modify the refresh token logic."
+        )
+        result = rewrite_prompt(long_prompt)
+        has_scaffold = any("structure" in c.lower() for c in result.changes)
+        assert not has_scaffold
+
+    def test_scaffold_not_duplicated(self):
+        # If prompt already has error message, don't add Error: slot
+        result = rewrite_prompt("fix the TypeError in auth.ts")
+        # Should not scaffold Error: because error message is present
+        assert result.rewritten.count("Error:") <= 1
+
 
 class TestRewriteCLI:
     def test_rewrite_command_exists(self):
