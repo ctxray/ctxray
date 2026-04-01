@@ -1,6 +1,6 @@
 """reprompt — Discover, analyze, and evolve your best prompts from AI coding sessions."""
 
-__version__ = "1.10.0"
+__version__ = "2.0.0"
 
 __all__ = [
     "__version__",
