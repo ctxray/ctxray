@@ -1,0 +1,32 @@
+name: Feedback
+description: Share your experience, ideas, or anything on your mind
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We'd love to hear from you — what's working, what's not, or any ideas you have.
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Your feedback
+      description: Tell us anything — what you like, what could be better, or what you wish existed.
+      placeholder: "I tried reprompt rewrite and..."
+    validations:
+      required: true
+  - type: input
+    id: commands
+    attributes:
+      label: Which commands do you use most?
+      placeholder: "rewrite, check, patterns"
+  - type: input
+    id: tools
+    attributes:
+      label: Which AI tools do you use?
+      placeholder: "Claude Code, Cursor, ChatGPT"
+  - type: input
+    id: version
+    attributes:
+      label: reprompt version
+      description: "Run: reprompt --version"
+      placeholder: "2.4.1"

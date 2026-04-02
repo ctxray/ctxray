@@ -55,6 +55,22 @@ app = typer.Typer(
 )
 console = Console()
 
+
+def _show_hint(db: object, command: str, *, json_output: bool = False) -> None:
+    """Show journey hint or one-time feedback hint after a command."""
+    if json_output:
+        return
+    from reprompt.core.suggestions import get_suggestion, maybe_feedback_hint
+
+    fb = maybe_feedback_hint(db, command)
+    if fb:
+        console.print(f"  [dim]\u2192 {fb}[/dim]\n")
+        return
+    hint = get_suggestion(command)
+    if hint:
+        console.print(f"  [dim]\u2192 Try: {hint}[/dim]\n")
+
+
 # --- Template sub-app ---
 template_app = typer.Typer(help="Manage prompt templates.", invoke_without_command=True)
 
@@ -320,11 +336,8 @@ def scan(
         console.print("  reprompt template list         — see your prompt patterns")
         console.print("  reprompt insights             — personal analysis")
     else:
-        from reprompt.core.suggestions import get_suggestion
-
-        hint = get_suggestion("scan")
-        if hint and result.unique_after_dedup > 0:
-            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
+        if result.unique_after_dedup > 0:
+            _show_hint(db, "scan")
 
 
 def _hook_registered() -> bool:
@@ -524,13 +537,11 @@ def report(
 
         print(format_json_report(data))
     else:
-        from reprompt.core.suggestions import get_suggestion
         from reprompt.output.terminal import render_report
+        from reprompt.storage.db import PromptDB
 
         print(render_report(data), end="")
-        hint = get_suggestion("report")
-        if hint:
-            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
+        _show_hint(PromptDB(settings.db_path), "report")
 
 
 @app.command(deprecated=True, hidden=True)
@@ -1017,11 +1028,11 @@ def check(
     if copy:
         _copy_to_clip(result.rewritten, quiet=json_output)
 
-    from reprompt.core.suggestions import get_suggestion
+    if not json_output:
+        from reprompt.config import Settings as _S
+        from reprompt.storage.db import PromptDB as _DB
 
-    hint = get_suggestion("check")
-    if hint and not json_output:
-        console.print(f"  [dim]→ Try: {hint}[/dim]\n")
+        _show_hint(_DB(_S().db_path), "check", json_output=json_output)
 
 
 @app.command(rich_help_panel="Analyze")
@@ -1063,11 +1074,11 @@ def explain(
 
         typer.echo(render_explain(result))
 
-    from reprompt.core.suggestions import get_suggestion
+    if not json_output:
+        from reprompt.config import Settings as _S
+        from reprompt.storage.db import PromptDB as _DB
 
-    hint = get_suggestion("explain")
-    if hint and not json_output:
-        console.print(f"  [dim]→ Try: {hint}[/dim]\n")
+        _show_hint(_DB(_S().db_path), "explain", json_output=json_output)
 
 
 @app.command(rich_help_panel="Analyze")
@@ -1171,11 +1182,10 @@ def score(
             ],
         }
         typer.echo(render_score(data))
-        from reprompt.core.suggestions import get_suggestion
+        from reprompt.config import Settings as _S
+        from reprompt.storage.db import PromptDB as _DB
 
-        hint = get_suggestion("score")
-        if hint:
-            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
+        _show_hint(_DB(_S().db_path), "score")
 
     if copy:
         import json as json_mod
@@ -1281,11 +1291,11 @@ def rewrite(
     if copy:
         _copy_to_clip(result.rewritten, quiet=json_output)
 
-    from reprompt.core.suggestions import get_suggestion
+    if not json_output:
+        from reprompt.config import Settings as _S
+        from reprompt.storage.db import PromptDB as _DB
 
-    hint = get_suggestion("rewrite")
-    if hint and not json_output:
-        console.print(f"  [dim]→ Try: {hint}[/dim]\n")
+        _show_hint(_DB(_S().db_path), "rewrite", json_output=json_output)
 
 
 @app.command(rich_help_panel="Optimize")
@@ -1348,11 +1358,11 @@ def build(
     if copy:
         _copy_to_clip(result.prompt, quiet=json_output)
 
-    from reprompt.core.suggestions import get_suggestion
+    if not json_output:
+        from reprompt.config import Settings as _S
+        from reprompt.storage.db import PromptDB as _DB
 
-    hint = get_suggestion("build")
-    if hint and not json_output:
-        console.print(f"  [dim]→ Try: {hint}[/dim]\n")
+        _show_hint(_DB(_S().db_path), "build", json_output=json_output)
 
 
 @app.command(rich_help_panel="Optimize")
@@ -1505,11 +1515,7 @@ def distill(
             else:
                 parts.append(render_distill(result))
         typer.echo("\n---\n".join(parts) if len(parts) > 1 else parts[0])
-        from reprompt.core.suggestions import get_suggestion
-
-        hint = get_suggestion("distill")
-        if hint:
-            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
+        _show_hint(db, "distill")
 
     if copy:
         if summary:
@@ -1794,7 +1800,6 @@ def insights(
         result["cross_session_repetition"] = rep_data
         typer.echo(json_mod.dumps(result, indent=2))
     else:
-        from reprompt.core.suggestions import get_suggestion
         from reprompt.output.terminal import (
             render_effectiveness_section,
             render_insights,
@@ -1824,9 +1829,7 @@ def insights(
                 console.print(f'    "{t["canonical_text"]}" \u2014 {t["session_count"]} sessions')
             console.print("  [dim]\u2192 Try: reprompt repetition (full analysis)[/dim]")
 
-        hint = get_suggestion("insights")
-        if hint:
-            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
+        _show_hint(db, "insights")
 
     if copy:
         import json as json_mod
@@ -1982,13 +1985,10 @@ def digest(
     if format == "json":
         print(json_mod.dumps(data, indent=2, default=str))
     else:
-        from reprompt.core.suggestions import get_suggestion
         from reprompt.output.terminal import render_digest
 
         print(render_digest(data), end="")
-        hint = get_suggestion("digest")
-        if hint:
-            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
+        _show_hint(db, "digest")
 
     if trends_flag:
         from reprompt.core.trends import compute_trends
@@ -2291,6 +2291,29 @@ debug-needs-reference = true
     console.print("  Edit rules, then run [bold]reprompt lint[/bold] to verify.")
 
 
+@app.command(rich_help_panel="Setup")
+def feedback() -> None:
+    """Open the feedback form — share your experience, ideas, or suggestions.
+
+    Opens a GitHub issue template in your browser. No account required to view,
+    but you'll need a GitHub account to submit.
+
+    Examples:
+
+        reprompt feedback
+    """
+    import webbrowser
+
+    from reprompt.core.suggestions import FEEDBACK_URL
+
+    console.print(
+        "\n  [bold]We'd love to hear from you![/bold]\n  Opening feedback form in your browser...\n"
+    )
+    opened = webbrowser.open(FEEDBACK_URL)
+    if not opened:
+        console.print(f"  [dim]Could not open browser. Visit:[/dim]\n  {FEEDBACK_URL}\n")
+
+
 @app.command(rich_help_panel="Analyze")
 def projects(
     source: str = typer.Option(
@@ -2335,11 +2358,7 @@ def projects(
         else:
             _copy_to_clip(output)
 
-    from reprompt.core.suggestions import get_suggestion
-
-    hint = get_suggestion("projects")
-    if hint and not json_output:
-        console.print(f"  [dim]→ Try: {hint}[/dim]\n")
+    _show_hint(db, "projects", json_output=json_output)
 
 
 @app.command(rich_help_panel="Analyze")
@@ -2385,12 +2404,7 @@ def sessions(
             typer.echo(json_mod.dumps(data, indent=2, default=str))
         else:
             typer.echo(render_sessions_table(data), nl=False)
-
-            from reprompt.core.suggestions import get_suggestion
-
-            hint = get_suggestion("sessions")
-            if hint:
-                console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
+            _show_hint(db, "sessions")
 
     if copy:
         if detail:
@@ -2426,6 +2440,7 @@ def patterns(
         typer.echo(json_mod.dumps(asdict(report), indent=2, default=str))
     else:
         typer.echo(render_patterns(report), nl=False)
+        _show_hint(db, "patterns", json_output=json_output)
 
     if copy:
         copy_text = json_mod.dumps(asdict(report), indent=2, default=str)
@@ -2458,12 +2473,7 @@ def repetition(
         typer.echo(json_mod.dumps(asdict(report), indent=2, default=str))
     else:
         typer.echo(render_repetition_report(report), nl=False)
-
-        from reprompt.core.suggestions import get_suggestion
-
-        hint = get_suggestion("repetition")
-        if hint:
-            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
+        _show_hint(db, "repetition")
 
     if copy:
         copy_text = json_mod.dumps(asdict(report), indent=2, default=str)
@@ -2528,12 +2538,7 @@ def agent(
         from reprompt.output.agent_terminal import render_agent_report
 
         typer.echo(render_agent_report(agg), nl=False)
-
-        from reprompt.core.suggestions import get_suggestion
-
-        hint = get_suggestion("agent")
-        if hint:
-            console.print(f"\n  [dim]\u2192 Try: {hint}[/dim]")
+        _show_hint(db, "agent")
 
     if copy:
         import json as json_mod

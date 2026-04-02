@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import sys
+
+FEEDBACK_URL = "https://github.com/reprompt-dev/reprompt/issues/new?template=feedback.yml"
+FEEDBACK_COMMANDS_THRESHOLD = 5  # show feedback hint after 5 distinct commands used
+
 SUGGESTIONS: dict[str, str] = {
     "scan": "reprompt report (see results) · reprompt insights (personal patterns)",
     "report": "reprompt insights (patterns) · reprompt distill --last (session review)",
@@ -35,3 +40,26 @@ SUGGESTIONS: dict[str, str] = {
 def get_suggestion(command: str) -> str | None:
     """Return the suggestion line for a command, or None."""
     return SUGGESTIONS.get(command)
+
+
+def maybe_feedback_hint(db: object, command: str) -> str | None:
+    """Return a one-time feedback hint if the user has used enough commands.
+
+    Returns the hint string (replacing the journey hint) exactly once,
+    then never again. Returns None in non-TTY / CI / JSON contexts.
+    """
+    if not sys.stdout.isatty():
+        return None
+    if hasattr(db, "get_setting") and db.get_setting("feedback_hint_shown"):  # type: ignore[union-attr]
+        return None
+    # Track distinct commands used
+    used_raw = db.get_setting("commands_used") if hasattr(db, "get_setting") else None  # type: ignore[union-attr]
+    used: set[str] = set(used_raw.split(",")) if used_raw else set()
+    used.add(command)
+    if hasattr(db, "set_setting"):
+        db.set_setting("commands_used", ",".join(sorted(used)))  # type: ignore[union-attr]
+    if len(used) >= FEEDBACK_COMMANDS_THRESHOLD:
+        if hasattr(db, "set_setting"):
+            db.set_setting("feedback_hint_shown", "1")  # type: ignore[union-attr]
+        return "Feedback or ideas? reprompt feedback"
+    return None
