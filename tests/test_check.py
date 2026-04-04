@@ -1,6 +1,6 @@
 """Tests for unified check command."""
 
-from reprompt.core.check import CheckResult, check_prompt
+from ctxray.core.check import CheckResult, check_prompt
 
 
 class TestCheckPrompt:
@@ -75,7 +75,7 @@ class TestCheckPrompt:
 
 class TestCheckOutput:
     def test_render_check(self):
-        from reprompt.output.check_terminal import render_check
+        from ctxray.output.check_terminal import render_check
 
         result = check_prompt(
             "I was wondering if you could maybe help me fix the auth bug in login.ts"
@@ -86,14 +86,14 @@ class TestCheckOutput:
         assert "Context" in output
 
     def test_render_with_lint(self):
-        from reprompt.output.check_terminal import render_check
+        from ctxray.output.check_terminal import render_check
 
         result = check_prompt("fix it")
         output = render_check(result)
         assert "Lint" in output or "DRAFT" in output
 
     def test_render_with_rewrite(self):
-        from reprompt.output.check_terminal import render_check
+        from ctxray.output.check_terminal import render_check
 
         result = check_prompt("I was wondering if you could perhaps fix this terrible bug")
         output = render_check(result)

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from reprompt.core.insights import compute_insights
+from ctxray.core.insights import compute_insights
 
 
 class TestComputeInsights:

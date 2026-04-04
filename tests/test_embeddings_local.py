@@ -21,9 +21,9 @@ def _mock_sentence_transformers():
 def _local_embedder_cls(_mock_sentence_transformers):
     """Import LocalEmbedder with mocked sentence_transformers."""
     # Force reimport so the module picks up the mock
-    mod_key = "reprompt.embeddings.local_embed"
+    mod_key = "ctxray.embeddings.local_embed"
     sys.modules.pop(mod_key, None)
-    from reprompt.embeddings.local_embed import LocalEmbedder
+    from ctxray.embeddings.local_embed import LocalEmbedder
 
     return LocalEmbedder
 
@@ -99,14 +99,14 @@ def test_model_loaded_lazily(_local_embedder_cls, _mock_sentence_transformers):
 def test_import_error_when_not_installed():
     """When sentence_transformers is not installed, ImportError should be helpful."""
     # Remove any cached import of the module
-    mod_key = "reprompt.embeddings.local_embed"
+    mod_key = "ctxray.embeddings.local_embed"
     sys.modules.pop(mod_key, None)
 
     with patch.dict(sys.modules, {"sentence_transformers": None}):
-        from reprompt.embeddings.local_embed import LocalEmbedder
+        from ctxray.embeddings.local_embed import LocalEmbedder
 
         embedder = LocalEmbedder()
-        with pytest.raises(ImportError, match="pip install reprompt-cli\\[local\\]"):
+        with pytest.raises(ImportError, match="pip install ctxray\\[local\\]"):
             embedder.embed(["test"])
 
     # Clean up

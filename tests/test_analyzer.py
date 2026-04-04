@@ -1,6 +1,6 @@
 """Tests for TF-IDF analyzer and K-means clustering."""
 
-from reprompt.core.analyzer import cluster_prompts, compute_tfidf_stats
+from ctxray.core.analyzer import cluster_prompts, compute_tfidf_stats
 
 
 def test_compute_tfidf_top_terms():

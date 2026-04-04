@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from reprompt.core.patterns import analyze_patterns
-from reprompt.storage.db import PromptDB
+from ctxray.core.patterns import analyze_patterns
+from ctxray.storage.db import PromptDB
 
 
 @pytest.fixture
@@ -147,7 +147,7 @@ class TestPatternsCLI:
     def test_patterns_command_exists(self) -> None:
         from typer.testing import CliRunner
 
-        from reprompt.cli import app
+        from ctxray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["patterns", "--help"])
@@ -157,7 +157,7 @@ class TestPatternsCLI:
     def test_patterns_json_output(self) -> None:
         from typer.testing import CliRunner
 
-        from reprompt.cli import app
+        from ctxray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["patterns", "--json"])

@@ -6,7 +6,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from reprompt.adapters.claude_code import ClaudeCodeAdapter
+from ctxray.adapters.claude_code import ClaudeCodeAdapter
 
 
 def _write_jsonl(entries: list[dict]) -> Path:

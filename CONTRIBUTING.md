@@ -4,15 +4,15 @@ Thanks for your interest in contributing! reprompt is an open-source prompt inte
 
 ## Quick Links
 
-- [Good First Issues](https://github.com/reprompt-dev/reprompt/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-- [Help Wanted](https://github.com/reprompt-dev/reprompt/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+- [Good First Issues](https://github.com/ctxray/ctxray/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+- [Help Wanted](https://github.com/ctxray/ctxray/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 ## Development Setup
 
 **Requirements:** Python 3.10+ and [uv](https://docs.astral.sh/uv/)
 
 ```bash
-git clone https://github.com/reprompt-dev/reprompt
+git clone https://github.com/ctxray/ctxray
 cd reprompt
 uv venv
 uv pip install -e ".[dev]"
@@ -41,7 +41,7 @@ uv run ruff format src/ tests/
 We use [mypy](https://mypy-lang.org/) in strict mode:
 
 ```bash
-uv run mypy src/reprompt/
+uv run mypy src/ctxray/
 ```
 
 ## Pull Requests
@@ -50,7 +50,7 @@ uv run mypy src/reprompt/
 2. Write tests for new functionality
 3. Ensure all tests pass and coverage stays above 88%
 4. Run `ruff check src/ tests/` and `ruff format --check src/ tests/`
-5. Run `mypy src/reprompt/` -- must pass clean
+5. Run `mypy src/ctxray/` -- must pass clean
 6. Submit a PR with a clear description — CI must pass before merge
 
 ### Before Submitting
@@ -65,7 +65,7 @@ uv run mypy src/reprompt/
 
 Adding a new adapter is the easiest way to contribute. Each adapter is ~50-100 lines:
 
-1. Create `src/reprompt/adapters/your_tool.py`
+1. Create `src/ctxray/adapters/your_tool.py`
 2. Subclass `BaseAdapter` from `adapters/base.py`
 3. Implement:
    - `name` property -- adapter identifier (e.g., `"copilot"`)
@@ -101,7 +101,7 @@ Extend sensitive content detection in `core/privacy_scan.py`:
 ## Architecture
 
 ```
-src/reprompt/
+src/ctxray/
 ├── cli.py              # Typer CLI (30+ commands)
 ├── config.py           # pydantic-settings configuration
 ├── core/               # Business logic

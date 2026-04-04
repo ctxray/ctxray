@@ -1,26 +1,26 @@
-- id: reprompt-lint
-  name: reprompt lint
+- id: ctxray-lint
+  name: ctxray lint
   description: Check AI prompt quality in session files
-  entry: reprompt lint
+  entry: ctxray lint
   language: python
   pass_filenames: false
   always_run: true
-  additional_dependencies: ["reprompt-cli"]
+  additional_dependencies: ["ctxray"]
 
-- id: reprompt-lint-strict
-  name: reprompt lint (strict)
+- id: ctxray-lint-strict
+  name: ctxray lint (strict)
   description: Check AI prompt quality — fail on warnings too
-  entry: reprompt lint --strict
+  entry: ctxray lint --strict
   language: python
   pass_filenames: false
   always_run: true
-  additional_dependencies: ["reprompt-cli"]
+  additional_dependencies: ["ctxray"]
 
-- id: reprompt-lint-score
-  name: reprompt lint (score gate)
+- id: ctxray-lint-score
+  name: ctxray lint (score gate)
   description: Check AI prompt quality — fail if avg score below threshold
-  entry: reprompt lint --score-threshold 50
+  entry: ctxray lint --score-threshold 50
   language: python
   pass_filenames: false
   always_run: true
-  additional_dependencies: ["reprompt-cli"]
+  additional_dependencies: ["ctxray"]

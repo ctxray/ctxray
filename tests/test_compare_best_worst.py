@@ -14,7 +14,7 @@ class TestGetBestWorstPrompts:
     """Tests for db.get_best_worst_prompts()."""
 
     def _make_db(self, tmp_path: Path):
-        from reprompt.storage.db import PromptDB
+        from ctxray.storage.db import PromptDB
 
         db = PromptDB(tmp_path / "test.db")
         return db
@@ -144,8 +144,8 @@ class TestCompareBestWorstCLI:
 
     def test_best_worst_flag(self, tmp_path: Path, monkeypatch):
         db_path = self._make_db_with_data(tmp_path)
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
-        from reprompt.cli import app
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
+        from ctxray.cli import app
 
         result = runner.invoke(app, ["compare", "--best-worst"])
         assert result.exit_code == 0
@@ -154,8 +154,8 @@ class TestCompareBestWorstCLI:
 
     def test_best_worst_json(self, tmp_path: Path, monkeypatch):
         db_path = self._make_db_with_data(tmp_path)
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
-        from reprompt.cli import app
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
+        from ctxray.cli import app
 
         result = runner.invoke(app, ["compare", "--best-worst", "--json"])
         assert result.exit_code == 0
@@ -165,8 +165,8 @@ class TestCompareBestWorstCLI:
 
     def test_best_worst_shows_prompt_texts(self, tmp_path: Path, monkeypatch):
         db_path = self._make_db_with_data(tmp_path)
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
-        from reprompt.cli import app
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
+        from ctxray.cli import app
 
         result = runner.invoke(app, ["compare", "--best-worst"])
         text = _strip_ansi(result.output)
@@ -174,25 +174,25 @@ class TestCompareBestWorstCLI:
 
     def test_mutual_exclusion_error(self, tmp_path: Path, monkeypatch):
         db_path = self._make_db_with_data(tmp_path)
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
-        from reprompt.cli import app
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
+        from ctxray.cli import app
 
         result = runner.invoke(app, ["compare", "prompt a", "prompt b", "--best-worst"])
         assert result.exit_code == 1
 
     def test_no_args_no_flag_error(self, tmp_path: Path, monkeypatch):
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "empty.db"))
-        from reprompt.cli import app
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "empty.db"))
+        from ctxray.cli import app
 
         result = runner.invoke(app, ["compare"])
         assert result.exit_code == 1
 
     def test_best_worst_empty_db(self, tmp_path: Path, monkeypatch):
-        from reprompt.storage.db import PromptDB
+        from ctxray.storage.db import PromptDB
 
         PromptDB(tmp_path / "empty.db")
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "empty.db"))
-        from reprompt.cli import app
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "empty.db"))
+        from ctxray.cli import app
 
         result = runner.invoke(app, ["compare", "--best-worst"])
         text = _strip_ansi(result.output)
@@ -219,8 +219,8 @@ class TestCompareBestWorstCLI:
             60.0,
             source="claude-code",
         )
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
-        from reprompt.cli import app
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
+        from ctxray.cli import app
 
         result = runner.invoke(
             app,

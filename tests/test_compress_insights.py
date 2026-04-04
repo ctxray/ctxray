@@ -1,6 +1,6 @@
 """Tests for compressibility integration into insights engine."""
 
-from reprompt.core.insights import OPTIMAL, compute_insights
+from ctxray.core.insights import OPTIMAL, compute_insights
 
 
 def test_optimal_has_compressibility():

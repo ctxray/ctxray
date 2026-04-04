@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 
-from reprompt.sharing.client import sign_request
+from ctxray.sharing.client import sign_request
 
 
 class TestHmacCompatibility:

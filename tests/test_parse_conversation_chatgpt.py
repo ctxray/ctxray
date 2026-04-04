@@ -6,7 +6,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from reprompt.adapters.chatgpt import ChatGPTAdapter
+from ctxray.adapters.chatgpt import ChatGPTAdapter
 
 SAMPLE_EXPORT = [
     {
@@ -111,7 +111,7 @@ def test_parse_conversation_first_conversation_by_default():
 def test_parse_conversation_conv_id_selection():
     path = _write_json(SAMPLE_EXPORT)
     adapter = ChatGPTAdapter()
-    from reprompt.adapters.chatgpt import _make_session_id
+    from ctxray.adapters.chatgpt import _make_session_id
 
     conv_id_2 = _make_session_id(SAMPLE_EXPORT[1])
     turns = adapter.parse_conversation(path, conv_id=conv_id_2)

@@ -1,7 +1,7 @@
 """Tests for compressibility integration into PromptDNA and extractors."""
 
-from reprompt.core.extractors import extract_features
-from reprompt.core.prompt_dna import PromptDNA
+from ctxray.core.extractors import extract_features
+from ctxray.core.prompt_dna import PromptDNA
 
 
 def test_prompt_dna_has_compressibility():

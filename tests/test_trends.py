@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from reprompt.core.timeutil import TimeWindow
-from reprompt.core.trends import (
+from ctxray.core.timeutil import TimeWindow
+from ctxray.core.trends import (
     _compute_specificity,
     _norm,
     compute_trends,
     compute_window_snapshot,
     generate_insights,
 )
-from reprompt.storage.db import PromptDB
+from ctxray.storage.db import PromptDB
 
 
 def _populate_db(db: PromptDB, count: int = 10, start_date: str = "2026-03-05") -> None:

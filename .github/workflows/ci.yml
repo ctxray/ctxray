@@ -28,7 +28,7 @@ jobs:
       - name: Format check
         run: ruff format --check src/ tests/
       - name: Test
-        run: pytest tests/ -v --cov=reprompt --cov-report=xml --cov-fail-under=88
+        run: pytest tests/ -v --cov=ctxray --cov-report=xml --cov-fail-under=88
       - name: Upload coverage
         if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v6

@@ -1,4 +1,4 @@
-"""Tests for reprompt recommend command and engine."""
+"""Tests for ctxray recommend command and engine."""
 
 from __future__ import annotations
 
@@ -7,9 +7,9 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
-from reprompt.core.recommend import SPECIFICITY_UPGRADES, compute_recommendations
-from reprompt.storage.db import PromptDB
+from ctxray.cli import app
+from ctxray.core.recommend import SPECIFICITY_UPGRADES, compute_recommendations
+from ctxray.storage.db import PromptDB
 
 runner = CliRunner()
 
@@ -137,8 +137,8 @@ class TestRecommendCommand:
 
 def test_best_by_category(tmp_path):
     """Recommendations include best prompts grouped by category."""
-    from reprompt.core.recommend import compute_recommendations
-    from reprompt.storage.db import PromptDB
+    from ctxray.core.recommend import compute_recommendations
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
     # Insert prompts with session meta for effectiveness
@@ -181,8 +181,8 @@ def test_best_by_category(tmp_path):
 
 def test_progress_tracking(tmp_path):
     """Recommendations include progress data when enough history exists."""
-    from reprompt.core.recommend import compute_recommendations
-    from reprompt.storage.db import PromptDB
+    from ctxray.core.recommend import compute_recommendations
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
     # Insert prompts across two time periods

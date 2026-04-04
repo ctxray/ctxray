@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # ---------------------------------------------------------------------------
-# reprompt/__init__.py  —  grade helper + lazy __getattr__
+# ctxray/__init__.py  —  grade helper + lazy __getattr__
 # ---------------------------------------------------------------------------
 
 
@@ -21,31 +21,31 @@ class TestGradeFunction:
     """Cover all branches of _grade (lines 21, 23, 25, 27)."""
 
     def test_grade_a(self):
-        from reprompt import _grade
+        from ctxray import _grade
 
         assert _grade(85) == "A"
         assert _grade(100) == "A"
 
     def test_grade_b(self):
-        from reprompt import _grade
+        from ctxray import _grade
 
         assert _grade(60) == "B"
         assert _grade(84) == "B"
 
     def test_grade_c(self):
-        from reprompt import _grade
+        from ctxray import _grade
 
         assert _grade(40) == "C"
         assert _grade(59) == "C"
 
     def test_grade_d(self):
-        from reprompt import _grade
+        from ctxray import _grade
 
         assert _grade(25) == "D"
         assert _grade(39) == "D"
 
     def test_grade_f(self):
-        from reprompt import _grade
+        from ctxray import _grade
 
         assert _grade(0) == "F"
         assert _grade(24) == "F"
@@ -55,34 +55,34 @@ class TestLazyImports:
     """Cover __getattr__ lazy imports (lines 76-88)."""
 
     def test_lazy_import_prompt_db(self):
-        import reprompt
+        import ctxray
 
-        cls = reprompt.PromptDB
-        from reprompt.storage.db import PromptDB
+        cls = ctxray.PromptDB
+        from ctxray.storage.db import PromptDB
 
         assert cls is PromptDB
 
     def test_lazy_import_prompt(self):
-        import reprompt
+        import ctxray
 
-        cls = reprompt.Prompt
-        from reprompt.core.models import Prompt
+        cls = ctxray.Prompt
+        from ctxray.core.models import Prompt
 
         assert cls is Prompt
 
     def test_lazy_import_prompt_dna(self):
-        import reprompt
+        import ctxray
 
-        cls = reprompt.PromptDNA
-        from reprompt.core.prompt_dna import PromptDNA
+        cls = ctxray.PromptDNA
+        from ctxray.core.prompt_dna import PromptDNA
 
         assert cls is PromptDNA
 
     def test_lazy_import_unknown_raises(self):
-        import reprompt
+        import ctxray
 
         with pytest.raises(AttributeError, match="no_such_thing"):
-            _ = reprompt.no_such_thing
+            _ = ctxray.no_such_thing
 
 
 # ---------------------------------------------------------------------------
@@ -94,7 +94,7 @@ class TestConfigPlatformBranches:
     """Cover platform-specific branches in _default_db_path and _default_config_path."""
 
     def test_default_db_path_nt(self, monkeypatch):
-        import reprompt.config as config_mod
+        import ctxray.config as config_mod
 
         monkeypatch.setattr(
             config_mod,
@@ -127,7 +127,7 @@ class TestConfigPlatformBranches:
         # but os.uname().sysname != "Darwin".
         import os as real_os
 
-        from reprompt import config
+        from ctxray import config
 
         class FakeUname:
             sysname = "Linux"
@@ -142,7 +142,7 @@ class TestConfigPlatformBranches:
         """Cover the XDG_CONFIG_HOME else-branch (line 41)."""
         import os as real_os
 
-        from reprompt import config
+        from ctxray import config
 
         class FakeUname:
             sysname = "Linux"
@@ -160,9 +160,9 @@ class TestTomlConfigInvalid:
     def test_invalid_toml_returns_empty(self, tmp_path, monkeypatch):
         config_file = tmp_path / "bad.toml"
         config_file.write_text("this is not valid toml [[[")
-        monkeypatch.setenv("REPROMPT_CONFIG_PATH", str(config_file))
+        monkeypatch.setenv("CTXRAY_CONFIG_PATH", str(config_file))
 
-        from reprompt.config import _load_toml_config
+        from ctxray.config import _load_toml_config
 
         result = _load_toml_config()
         assert result == {}
@@ -173,10 +173,10 @@ class TestTomlConfigSourceFieldValue:
 
     def test_field_value_found(self, tmp_path, monkeypatch):
         config_file = tmp_path / "config.toml"
-        config_file.write_text('[reprompt]\nembedding_backend = "ollama"\n')
-        monkeypatch.setenv("REPROMPT_CONFIG_PATH", str(config_file))
+        config_file.write_text('[ctxray]\nembedding_backend = "ollama"\n')
+        monkeypatch.setenv("CTXRAY_CONFIG_PATH", str(config_file))
 
-        from reprompt.config import Settings, _TomlConfigSource
+        from ctxray.config import Settings, _TomlConfigSource
 
         source = _TomlConfigSource(Settings)
         val, name, _ = source.get_field_value(None, "embedding_backend")
@@ -185,10 +185,10 @@ class TestTomlConfigSourceFieldValue:
 
     def test_field_value_not_found(self, tmp_path, monkeypatch):
         config_file = tmp_path / "config.toml"
-        config_file.write_text("[reprompt]\n")
-        monkeypatch.setenv("REPROMPT_CONFIG_PATH", str(config_file))
+        config_file.write_text("[ctxray]\n")
+        monkeypatch.setenv("CTXRAY_CONFIG_PATH", str(config_file))
 
-        from reprompt.config import Settings, _TomlConfigSource
+        from ctxray.config import Settings, _TomlConfigSource
 
         source = _TomlConfigSource(Settings)
         val, name, _ = source.get_field_value(None, "nonexistent_key")
@@ -196,10 +196,10 @@ class TestTomlConfigSourceFieldValue:
 
     def test_call_returns_dict(self, tmp_path, monkeypatch):
         config_file = tmp_path / "config.toml"
-        config_file.write_text('[reprompt]\nembedding_backend = "tfidf"\n')
-        monkeypatch.setenv("REPROMPT_CONFIG_PATH", str(config_file))
+        config_file.write_text('[ctxray]\nembedding_backend = "tfidf"\n')
+        monkeypatch.setenv("CTXRAY_CONFIG_PATH", str(config_file))
 
-        from reprompt.config import Settings, _TomlConfigSource
+        from ctxray.config import Settings, _TomlConfigSource
 
         source = _TomlConfigSource(Settings)
         result = source()
@@ -221,7 +221,7 @@ class TestAskConsentRich:
         mock_console.input.return_value = "y"
         MockConsole.return_value = mock_console
 
-        from reprompt.telemetry.prompt import _ask_consent_rich
+        from ctxray.telemetry.prompt import _ask_consent_rich
 
         result = _ask_consent_rich()
         assert result is True
@@ -232,7 +232,7 @@ class TestAskConsentRich:
         mock_console.input.return_value = "yes"
         MockConsole.return_value = mock_console
 
-        from reprompt.telemetry.prompt import _ask_consent_rich
+        from ctxray.telemetry.prompt import _ask_consent_rich
 
         result = _ask_consent_rich()
         assert result is True
@@ -243,7 +243,7 @@ class TestAskConsentRich:
         mock_console.input.return_value = "n"
         MockConsole.return_value = mock_console
 
-        from reprompt.telemetry.prompt import _ask_consent_rich
+        from ctxray.telemetry.prompt import _ask_consent_rich
 
         result = _ask_consent_rich()
         assert result is False
@@ -254,7 +254,7 @@ class TestAskConsentRich:
         mock_console.input.side_effect = EOFError
         MockConsole.return_value = mock_console
 
-        from reprompt.telemetry.prompt import _ask_consent_rich
+        from ctxray.telemetry.prompt import _ask_consent_rich
 
         result = _ask_consent_rich()
         assert result is False
@@ -265,7 +265,7 @@ class TestAskConsentRich:
         mock_console.input.side_effect = KeyboardInterrupt
         MockConsole.return_value = mock_console
 
-        from reprompt.telemetry.prompt import _ask_consent_rich
+        from ctxray.telemetry.prompt import _ask_consent_rich
 
         result = _ask_consent_rich()
         assert result is False
@@ -276,7 +276,7 @@ class TestAskConsentRich:
         mock_console.input.return_value = ""
         MockConsole.return_value = mock_console
 
-        from reprompt.telemetry.prompt import _ask_consent_rich
+        from ctxray.telemetry.prompt import _ask_consent_rich
 
         result = _ask_consent_rich()
         assert result is False
@@ -292,7 +292,7 @@ class TestConsentEdgeCases:
 
     def test_get_or_create_salt_corrupt_toml(self, tmp_path):
         """When TOML is corrupt, salt should still be created (line 57-58)."""
-        from reprompt.telemetry.consent import get_or_create_salt
+        from ctxray.telemetry.consent import get_or_create_salt
 
         config_path = tmp_path / "config.toml"
         config_path.write_text("this is [[[invalid toml")
@@ -303,7 +303,7 @@ class TestConsentEdgeCases:
 
     def test_read_consent_corrupt_toml(self, tmp_path):
         """When TOML is corrupt, read_consent returns NOT_ASKED (line 75-76)."""
-        from reprompt.telemetry.consent import TelemetryConsent, read_consent
+        from ctxray.telemetry.consent import TelemetryConsent, read_consent
 
         config_path = tmp_path / "config.toml"
         config_path.write_text("corrupt [[[[ toml data")
@@ -312,10 +312,10 @@ class TestConsentEdgeCases:
 
     def test_upsert_existing_key_updates(self, tmp_path):
         """_upsert_toml_key should update an existing key (line ~108-110)."""
-        from reprompt.telemetry.consent import _upsert_toml_key
+        from ctxray.telemetry.consent import _upsert_toml_key
 
         config_path = tmp_path / "config.toml"
-        config_path.write_text('[reprompt]\ntelemetry_consent = "not_asked"\n')
+        config_path.write_text('[ctxray]\ntelemetry_consent = "not_asked"\n')
 
         _upsert_toml_key(config_path, "telemetry_consent", "opted_in")
         content = config_path.read_text()
@@ -333,13 +333,13 @@ class TestCollectorGetCollector:
     """Cover get_collector() factory (lines 130-136)."""
 
     def test_get_collector_returns_collector(self, tmp_path, monkeypatch):
-        import reprompt.config as config_mod
+        import ctxray.config as config_mod
 
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "reprompt.db"))
-        monkeypatch.setenv("REPROMPT_CONFIG_PATH", str(tmp_path / "config.toml"))
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "ctxray.db"))
+        monkeypatch.setenv("CTXRAY_CONFIG_PATH", str(tmp_path / "config.toml"))
         monkeypatch.setattr(config_mod, "_default_config_path", lambda: tmp_path / "config.toml")
 
-        from reprompt.telemetry.collector import get_collector
+        from ctxray.telemetry.collector import get_collector
 
         collector = get_collector()
         assert collector is not None
@@ -351,13 +351,13 @@ class TestCollectorGetVersion:
     """Cover _get_version() (lines 143-150)."""
 
     def test_get_version_returns_string(self):
-        from reprompt.telemetry.collector import _get_version
+        from ctxray.telemetry.collector import _get_version
 
         ver = _get_version()
         assert isinstance(ver, str)
 
     def test_get_version_fallback_on_error(self):
-        from reprompt.telemetry.collector import _get_version
+        from ctxray.telemetry.collector import _get_version
 
         # _get_version does `from importlib.metadata import version` internally,
         # so we patch importlib.metadata.version
@@ -370,8 +370,8 @@ class TestCollectorFlushEmptyBatch:
     """Cover empty-batch early return in flush (line 111)."""
 
     def test_flush_with_no_events(self, tmp_path):
-        from reprompt.telemetry.collector import TelemetryCollector
-        from reprompt.telemetry.consent import TelemetryConsent, write_consent
+        from ctxray.telemetry.collector import TelemetryCollector
+        from ctxray.telemetry.consent import TelemetryConsent, write_consent
 
         config_path = tmp_path / "config.toml"
         write_consent(TelemetryConsent.OPTED_IN, config_path)
@@ -382,7 +382,7 @@ class TestCollectorFlushEmptyBatch:
             version="1.0.0",
         )
         # flush on empty queue should not raise and should not call send_batch
-        with patch("reprompt.telemetry.collector.send_batch") as mock_send:
+        with patch("ctxray.telemetry.collector.send_batch") as mock_send:
             collector.flush()
             mock_send.assert_not_called()
 
@@ -398,9 +398,9 @@ class TestClipboardPlatformBranches:
     @patch("subprocess.run")
     def test_linux_uses_xclip(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0)
-        with patch("reprompt.sharing.clipboard.sys") as mock_sys:
+        with patch("ctxray.sharing.clipboard.sys") as mock_sys:
             mock_sys.platform = "linux"
-            from reprompt.sharing.clipboard import copy_to_clipboard
+            from ctxray.sharing.clipboard import copy_to_clipboard
 
             result = copy_to_clipboard("test text")
         assert result is True
@@ -409,32 +409,32 @@ class TestClipboardPlatformBranches:
     @patch("subprocess.run")
     def test_win32_uses_clip(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0)
-        with patch("reprompt.sharing.clipboard.sys") as mock_sys:
+        with patch("ctxray.sharing.clipboard.sys") as mock_sys:
             mock_sys.platform = "win32"
-            from reprompt.sharing.clipboard import copy_to_clipboard
+            from ctxray.sharing.clipboard import copy_to_clipboard
 
             result = copy_to_clipboard("test text")
         assert result is True
         assert mock_run.call_args[0][0] == ["clip"]
 
     def test_unsupported_platform_returns_false(self):
-        with patch("reprompt.sharing.clipboard.sys") as mock_sys:
+        with patch("ctxray.sharing.clipboard.sys") as mock_sys:
             mock_sys.platform = "freebsd"
-            from reprompt.sharing.clipboard import copy_to_clipboard
+            from ctxray.sharing.clipboard import copy_to_clipboard
 
             result = copy_to_clipboard("test text")
         assert result is False
 
     @patch("subprocess.run", side_effect=subprocess.TimeoutExpired(cmd="pbcopy", timeout=3))
     def test_timeout_returns_false(self, mock_run):
-        from reprompt.sharing.clipboard import copy_to_clipboard
+        from ctxray.sharing.clipboard import copy_to_clipboard
 
         result = copy_to_clipboard("test text")
         assert result is False
 
     @patch("subprocess.run", side_effect=subprocess.CalledProcessError(1, "pbcopy"))
     def test_called_process_error_returns_false(self, mock_run):
-        from reprompt.sharing.clipboard import copy_to_clipboard
+        from ctxray.sharing.clipboard import copy_to_clipboard
 
         result = copy_to_clipboard("test text")
         assert result is False
@@ -448,11 +448,11 @@ class TestClipboardPlatformBranches:
 class TestShareClient503:
     """Cover 503 error branch (lines 53-55)."""
 
-    @patch("reprompt.sharing.client.urlopen")
+    @patch("ctxray.sharing.client.urlopen")
     def test_503_raises_unavailable(self, mock_urlopen):
         from urllib.error import HTTPError
 
-        from reprompt.sharing.client import upload_share
+        from ctxray.sharing.client import upload_share
 
         mock_urlopen.side_effect = HTTPError(
             url="", code=503, msg="Service Unavailable", hdrs=None, fp=None
@@ -460,11 +460,11 @@ class TestShareClient503:
         with pytest.raises(RuntimeError, match="unavailable"):
             upload_share(install_id="a" * 64, report_json="{}")
 
-    @patch("reprompt.sharing.client.urlopen")
+    @patch("ctxray.sharing.client.urlopen")
     def test_generic_http_error_raises(self, mock_urlopen):
         from urllib.error import HTTPError
 
-        from reprompt.sharing.client import upload_share
+        from ctxray.sharing.client import upload_share
 
         mock_urlopen.side_effect = HTTPError(
             url="", code=500, msg="Server Error", hdrs=None, fp=None
@@ -483,13 +483,13 @@ class TestRenderRecommendationsEdgeCases:
     """Cover uncovered branches in render_recommendations."""
 
     def test_zero_prompts(self):
-        from reprompt.output.terminal import render_recommendations
+        from ctxray.output.terminal import render_recommendations
 
         result = render_recommendations({"total_prompts": 0})
         assert "No prompts found" in result
 
     def test_specificity_tips(self):
-        from reprompt.output.terminal import render_recommendations
+        from ctxray.output.terminal import render_recommendations
 
         data = {
             "total_prompts": 10,
@@ -509,7 +509,7 @@ class TestRenderRecommendationsEdgeCases:
         assert "longer" in result.lower() or "Try" in result
 
     def test_category_and_overall_tips(self):
-        from reprompt.output.terminal import render_recommendations
+        from ctxray.output.terminal import render_recommendations
 
         data = {
             "total_prompts": 5,
@@ -529,7 +529,7 @@ class TestRenderTrendsNegativeDelta:
     """Cover negative specificity delta branch (line 120)."""
 
     def test_negative_specificity_pct(self):
-        from reprompt.output.terminal import render_trends
+        from ctxray.output.terminal import render_trends
 
         data = {
             "period": "7d",
@@ -555,7 +555,7 @@ class TestRenderInsightsEmpty:
     """Cover empty insights (lines 342-345)."""
 
     def test_zero_prompts_insights(self):
-        from reprompt.output.terminal import render_insights
+        from ctxray.output.terminal import render_insights
 
         data = {"prompt_count": 0}
         result = render_insights(data)
@@ -566,7 +566,7 @@ class TestRenderStyleWithData:
     """Cover render_style with actual data (lines 543-584)."""
 
     def test_render_style_full(self):
-        from reprompt.output.terminal import render_style
+        from ctxray.output.terminal import render_style
 
         data = {
             "prompt_count": 10,
@@ -602,7 +602,7 @@ class TestRenderTemplatesWithFilter:
     """Cover category_filter branch in render_templates (line 224)."""
 
     def test_with_category_filter(self):
-        from reprompt.output.terminal import render_templates
+        from ctxray.output.terminal import render_templates
 
         result = render_templates([], category_filter="debug")
         assert "debug" in result
@@ -617,14 +617,14 @@ class TestExtractorsZhEdgeCases:
     """Cover edge cases in Chinese extractors (lines 151-162, 355, 383, etc.)."""
 
     def test_empty_text_returns_zero_scores(self):
-        from reprompt.core.extractors_zh import extract_features_zh
+        from ctxray.core.extractors_zh import extract_features_zh
 
         dna = extract_features_zh("", source="test", session_id="s1")
         assert dna.word_count == 0
 
     def test_text_with_no_content_words(self):
         """Covers line 355 (empty content_words returns 0.0, False)."""
-        from reprompt.core.extractors_zh import extract_features_zh
+        from ctxray.core.extractors_zh import extract_features_zh
 
         # Only stop words
         dna = extract_features_zh("的 了 是 在", source="test", session_id="s1")
@@ -632,15 +632,15 @@ class TestExtractorsZhEdgeCases:
 
     def test_classify_distribution_empty(self):
         """Covers _classify_distribution with empty segments (line 383)."""
-        from reprompt.core.extractors_zh import _classify_distribution
+        from ctxray.core.extractors_zh import _classify_distribution
 
         result = _classify_distribution([])
         assert result == "unknown"
 
     def test_classify_distribution_no_critical(self):
         """Covers _classify_distribution with no critical types (line 392)."""
-        from reprompt.core.extractors_zh import _classify_distribution
-        from reprompt.core.segmenter import PromptSegment
+        from ctxray.core.extractors_zh import _classify_distribution
+        from ctxray.core.segmenter import PromptSegment
 
         segments = [
             PromptSegment(
@@ -656,8 +656,8 @@ class TestExtractorsZhEdgeCases:
 
     def test_classify_distribution_front_loaded(self):
         """Cover front-loaded branch (line 396)."""
-        from reprompt.core.extractors_zh import _classify_distribution
-        from reprompt.core.segmenter import PromptSegment
+        from ctxray.core.extractors_zh import _classify_distribution
+        from ctxray.core.segmenter import PromptSegment
 
         segments = [
             PromptSegment(
@@ -673,8 +673,8 @@ class TestExtractorsZhEdgeCases:
 
     def test_classify_distribution_end_loaded(self):
         """Cover end-loaded branch (line 398)."""
-        from reprompt.core.extractors_zh import _classify_distribution
-        from reprompt.core.segmenter import PromptSegment
+        from ctxray.core.extractors_zh import _classify_distribution
+        from ctxray.core.segmenter import PromptSegment
 
         segments = [
             PromptSegment(
@@ -690,8 +690,8 @@ class TestExtractorsZhEdgeCases:
 
     def test_classify_distribution_distributed(self):
         """Cover distributed branch (line 400)."""
-        from reprompt.core.extractors_zh import _classify_distribution
-        from reprompt.core.segmenter import PromptSegment
+        from ctxray.core.extractors_zh import _classify_distribution
+        from ctxray.core.segmenter import PromptSegment
 
         segments = [
             PromptSegment(
@@ -714,14 +714,14 @@ class TestExtractorsZhEdgeCases:
 
     def test_score_opening_zh_empty(self):
         """Cover _score_opening_zh with empty first line (line 408)."""
-        from reprompt.core.extractors_zh import _score_opening_zh
+        from ctxray.core.extractors_zh import _score_opening_zh
 
         result = _score_opening_zh("\n后面的内容", has_file_refs=False, has_errors=False)
         assert result == 0.0
 
     def test_compute_specificity_zh_zero_words(self):
         """Cover _compute_specificity_zh with zero word_count (line 442)."""
-        from reprompt.core.extractors_zh import _compute_specificity_zh
+        from ctxray.core.extractors_zh import _compute_specificity_zh
 
         result = _compute_specificity_zh(
             "", has_code=False, has_files=False, has_errors=False, word_count=0
@@ -730,7 +730,7 @@ class TestExtractorsZhEdgeCases:
 
     def test_compute_specificity_zh_with_identifiers(self):
         """Cover identifier detection in _compute_specificity_zh (line 460-462)."""
-        from reprompt.core.extractors_zh import _compute_specificity_zh
+        from ctxray.core.extractors_zh import _compute_specificity_zh
 
         result = _compute_specificity_zh(
             "修复 AuthManager 和 user_service 中的 bug，编号 42 和 99",
@@ -743,14 +743,14 @@ class TestExtractorsZhEdgeCases:
 
     def test_compute_ambiguity_zh_zero_words(self):
         """Cover _compute_ambiguity_zh zero word_count (line 470)."""
-        from reprompt.core.extractors_zh import _compute_ambiguity_zh
+        from ctxray.core.extractors_zh import _compute_ambiguity_zh
 
         result = _compute_ambiguity_zh("", [], 0)
         assert result == 1.0
 
     def test_segment_words_fallback_no_jieba(self):
         """Cover _segment_words fallback path when jieba is not available (lines 151-162)."""
-        from reprompt.core.extractors_zh import _segment_words
+        from ctxray.core.extractors_zh import _segment_words
 
         # Even with jieba, test that function works with Chinese text
         words = _segment_words("修复认证模块的错误")
@@ -758,7 +758,7 @@ class TestExtractorsZhEdgeCases:
 
     def test_segment_words_mixed_text(self):
         """Cover mixed CJK + ASCII in _segment_words."""
-        from reprompt.core.extractors_zh import _segment_words
+        from ctxray.core.extractors_zh import _segment_words
 
         words = _segment_words("修复AuthManager中的bug")
         assert len(words) > 0

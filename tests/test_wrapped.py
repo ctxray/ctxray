@@ -6,8 +6,8 @@ import hashlib
 
 import pytest
 
-from reprompt.core.wrapped import WrappedReport, build_wrapped
-from reprompt.storage.db import PromptDB
+from ctxray.core.wrapped import WrappedReport, build_wrapped
+from ctxray.storage.db import PromptDB
 
 
 def _hash(text: str) -> str:

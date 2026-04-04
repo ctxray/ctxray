@@ -10,7 +10,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from reprompt.storage.db import PromptDB
+from ctxray.storage.db import PromptDB
 
 
 class TestComputeStyleTrends:
@@ -51,7 +51,7 @@ class TestComputeStyleTrends:
             conn.close()
 
     def test_returns_empty_when_no_data(self, tmp_path: Path):
-        from reprompt.core.style import compute_style_trends
+        from ctxray.core.style import compute_style_trends
 
         db = self._make_db(tmp_path)
         result = compute_style_trends(db, period="7d")
@@ -59,7 +59,7 @@ class TestComputeStyleTrends:
         assert result["previous"]["prompt_count"] == 0
 
     def test_computes_deltas(self, tmp_path: Path):
-        from reprompt.core.style import compute_style_trends
+        from ctxray.core.style import compute_style_trends
 
         db = self._make_db(tmp_path)
         now = datetime.now(timezone.utc)
@@ -102,7 +102,7 @@ class TestComputeStyleTrends:
         assert "prompt_count" in result["deltas"]
 
     def test_source_filter(self, tmp_path: Path):
-        from reprompt.core.style import compute_style_trends
+        from ctxray.core.style import compute_style_trends
 
         db = self._make_db(tmp_path)
         now = datetime.now(timezone.utc)
@@ -125,7 +125,7 @@ class TestComputeStyleTrends:
         assert result["current"]["prompt_count"] == 1
 
     def test_top_category_changed_flag(self, tmp_path: Path):
-        from reprompt.core.style import compute_style_trends
+        from ctxray.core.style import compute_style_trends
 
         db = self._make_db(tmp_path)
         now = datetime.now(timezone.utc)
@@ -171,7 +171,7 @@ class TestStyleTrendsCLI:
     """CLI integration tests for style --trends."""
 
     def _make_db_with_data(self, tmp_path: Path):
-        from reprompt.storage.db import PromptDB
+        from ctxray.storage.db import PromptDB
 
         db = PromptDB(tmp_path / "test.db")
         now = datetime.now(timezone.utc)
@@ -206,8 +206,8 @@ class TestStyleTrendsCLI:
 
     def test_trends_flag(self, tmp_path: Path, monkeypatch):
         db_path = self._make_db_with_data(tmp_path)
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
-        from reprompt.cli import app
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
+        from ctxray.cli import app
 
         result = runner.invoke(app, ["style", "--trends"])
         assert result.exit_code == 0
@@ -216,8 +216,8 @@ class TestStyleTrendsCLI:
 
     def test_trends_json(self, tmp_path: Path, monkeypatch):
         db_path = self._make_db_with_data(tmp_path)
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
-        from reprompt.cli import app
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
+        from ctxray.cli import app
 
         result = runner.invoke(app, ["style", "--trends", "--json"])
         assert result.exit_code == 0
@@ -229,26 +229,26 @@ class TestStyleTrendsCLI:
 
     def test_trends_with_period(self, tmp_path: Path, monkeypatch):
         db_path = self._make_db_with_data(tmp_path)
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
-        from reprompt.cli import app
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
+        from ctxray.cli import app
 
         result = runner.invoke(app, ["style", "--trends", "--period", "30d"])
         assert result.exit_code == 0
 
     def test_trends_with_source(self, tmp_path: Path, monkeypatch):
         db_path = self._make_db_with_data(tmp_path)
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
-        from reprompt.cli import app
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
+        from ctxray.cli import app
 
         result = runner.invoke(app, ["style", "--trends", "--source", "claude-code"])
         assert result.exit_code == 0
 
     def test_trends_empty_db(self, tmp_path: Path, monkeypatch):
-        from reprompt.storage.db import PromptDB
+        from ctxray.storage.db import PromptDB
 
         PromptDB(tmp_path / "empty.db")
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "empty.db"))
-        from reprompt.cli import app
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "empty.db"))
+        from ctxray.cli import app
 
         result = runner.invoke(app, ["style", "--trends"])
         assert result.exit_code == 0

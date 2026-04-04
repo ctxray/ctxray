@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from reprompt.core.privacy import (
+from ctxray.core.privacy import (
     ADAPTER_PRIVACY,
     PrivacyProfile,
     compute_privacy_summary,
@@ -221,12 +221,12 @@ class TestComputePrivacySummary:
 class TestPrivacyInReportData:
     def test_report_data_includes_privacy(self, tmp_path, monkeypatch):
         """build_report_data should include a 'privacy' key."""
-        from reprompt.config import Settings
-        from reprompt.core.pipeline import build_report_data
-        from reprompt.storage.db import PromptDB
+        from ctxray.config import Settings
+        from ctxray.core.pipeline import build_report_data
+        from ctxray.storage.db import PromptDB
 
         db_path = tmp_path / "test.db"
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
         settings = Settings()
         db = PromptDB(db_path)
 

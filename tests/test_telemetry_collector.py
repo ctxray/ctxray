@@ -8,10 +8,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from reprompt.core.prompt_dna import PromptDNA
-from reprompt.core.scorer import ScoreBreakdown
-from reprompt.telemetry.collector import TelemetryCollector
-from reprompt.telemetry.consent import TelemetryConsent, write_consent
+from ctxray.core.prompt_dna import PromptDNA
+from ctxray.core.scorer import ScoreBreakdown
+from ctxray.telemetry.collector import TelemetryCollector
+from ctxray.telemetry.consent import TelemetryConsent, write_consent
 
 
 @pytest.fixture
@@ -90,7 +90,7 @@ class TestCollectorRecord:
 
 
 class TestCollectorFlush:
-    @patch("reprompt.telemetry.collector.send_batch")
+    @patch("ctxray.telemetry.collector.send_batch")
     def test_flush_sends_and_acks(self, mock_send: MagicMock, collector: TelemetryCollector):
         mock_send.return_value = True
         for _ in range(3):
@@ -102,7 +102,7 @@ class TestCollectorFlush:
         # Events should be acknowledged (removed from queue)
         assert collector.queue.pending_count() == 0
 
-    @patch("reprompt.telemetry.collector.send_batch")
+    @patch("ctxray.telemetry.collector.send_batch")
     def test_flush_keeps_events_on_failure(
         self, mock_send: MagicMock, collector: TelemetryCollector
     ):
@@ -112,7 +112,7 @@ class TestCollectorFlush:
         # Events stay in queue for next attempt
         assert collector.queue.pending_count() == 1
 
-    @patch("reprompt.telemetry.collector.send_batch")
+    @patch("ctxray.telemetry.collector.send_batch")
     def test_flush_respects_batch_limit(self, mock_send: MagicMock, collector: TelemetryCollector):
         mock_send.return_value = True
         for _ in range(75):
@@ -124,7 +124,7 @@ class TestCollectorFlush:
         # 25 remain in queue
         assert collector.queue.pending_count() == 25
 
-    @patch("reprompt.telemetry.collector.send_batch")
+    @patch("ctxray.telemetry.collector.send_batch")
     def test_flush_skips_when_opted_out(self, mock_send: MagicMock, tmp_path: Path):
         config_path = tmp_path / "config.toml"
         write_consent(TelemetryConsent.OPTED_OUT, config_path)
@@ -136,7 +136,7 @@ class TestCollectorFlush:
         c.flush()
         mock_send.assert_not_called()
 
-    @patch("reprompt.telemetry.collector.send_batch")
+    @patch("ctxray.telemetry.collector.send_batch")
     def test_flush_also_cleans_old_events(
         self, mock_send: MagicMock, collector: TelemetryCollector
     ):

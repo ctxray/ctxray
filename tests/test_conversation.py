@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.core.conversation import (
+from ctxray.core.conversation import (
     Conversation,
     ConversationTurn,
     DistillResult,
@@ -65,7 +65,7 @@ class TestConversation:
         conv = Conversation(
             session_id="abc123",
             source="claude-code",
-            project="reprompt",
+            project="ctxray",
             turns=turns,
         )
         assert conv.session_id == "abc123"

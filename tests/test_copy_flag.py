@@ -7,20 +7,20 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 runner = CliRunner()
 
 
 class TestScoreCopy:
-    @patch("reprompt.sharing.clipboard.copy_to_clipboard", return_value=True)
+    @patch("ctxray.sharing.clipboard.copy_to_clipboard", return_value=True)
     def test_score_copy(self, mock_clip):
         result = runner.invoke(app, ["score", "--copy", "Fix the bug in auth.py"])
         assert result.exit_code == 0
         mock_clip.assert_called_once()
         assert "Copied to clipboard" in result.output
 
-    @patch("reprompt.sharing.clipboard.copy_to_clipboard", return_value=True)
+    @patch("ctxray.sharing.clipboard.copy_to_clipboard", return_value=True)
     def test_score_copy_json_quiet(self, mock_clip):
         result = runner.invoke(app, ["score", "--json", "--copy", "Fix the bug"])
         assert result.exit_code == 0
@@ -28,7 +28,7 @@ class TestScoreCopy:
         # Should NOT show "Copied" message in json mode
         assert "Copied to clipboard" not in result.output
 
-    @patch("reprompt.sharing.clipboard.copy_to_clipboard", return_value=False)
+    @patch("ctxray.sharing.clipboard.copy_to_clipboard", return_value=False)
     def test_score_copy_failure(self, mock_clip):
         result = runner.invoke(app, ["score", "--copy", "Fix the bug"])
         assert result.exit_code == 0
@@ -36,7 +36,7 @@ class TestScoreCopy:
 
 
 class TestCompareCopy:
-    @patch("reprompt.sharing.clipboard.copy_to_clipboard", return_value=True)
+    @patch("ctxray.sharing.clipboard.copy_to_clipboard", return_value=True)
     def test_compare_copy(self, mock_clip):
         result = runner.invoke(
             app, ["compare", "--copy", "Fix the bug", "Fix TypeError in auth.py:42"]
@@ -60,7 +60,7 @@ class TestSearchCopy:
 
 
 class TestLintCopy:
-    @patch("reprompt.sharing.clipboard.copy_to_clipboard", return_value=True)
+    @patch("ctxray.sharing.clipboard.copy_to_clipboard", return_value=True)
     def test_lint_copy(self, mock_clip):
         # Lint exits 1 on violations, 0 on clean — both are valid
         result = runner.invoke(app, ["lint", "--copy"])
@@ -73,14 +73,14 @@ class TestLintCopy:
 class TestCompressCopy:
     """Verify existing compress --copy still works after refactor."""
 
-    @patch("reprompt.sharing.clipboard.copy_to_clipboard", return_value=True)
+    @patch("ctxray.sharing.clipboard.copy_to_clipboard", return_value=True)
     def test_compress_copy(self, mock_clip):
         result = runner.invoke(app, ["compress", "--copy", "Please help me fix the bug"])
         assert result.exit_code == 0
         mock_clip.assert_called_once()
         assert "Copied to clipboard" in result.output
 
-    @patch("reprompt.sharing.clipboard.copy_to_clipboard", return_value=True)
+    @patch("ctxray.sharing.clipboard.copy_to_clipboard", return_value=True)
     def test_compress_copy_json_quiet(self, mock_clip):
         result = runner.invoke(app, ["compress", "--json", "--copy", "Please help me fix the bug"])
         assert result.exit_code == 0

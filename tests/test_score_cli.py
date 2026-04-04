@@ -1,11 +1,11 @@
 # tests/test_score_cli.py
-"""Tests for reprompt score and compare CLI commands."""
+"""Tests for ctxray score and compare CLI commands."""
 
 from __future__ import annotations
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 runner = CliRunner()
 

@@ -23,13 +23,13 @@ def _decode_message(data: bytes) -> dict:
 def test_host_ping_pong(tmp_path: Path) -> None:
     """Send a ping message via subprocess and verify pong response."""
     db_path = tmp_path / "test.db"
-    env = {**os.environ, "REPROMPT_DB_PATH": str(db_path)}
+    env = {**os.environ, "CTXRAY_DB_PATH": str(db_path)}
 
     # Send ping then close stdin
     input_data = _encode_message({"type": "ping"})
 
     result = subprocess.run(
-        [sys.executable, "-u", "-m", "reprompt.bridge.host"],
+        [sys.executable, "-u", "-m", "ctxray.bridge.host"],
         input=input_data,
         capture_output=True,
         timeout=10,
@@ -45,7 +45,7 @@ def test_host_ping_pong(tmp_path: Path) -> None:
 def test_host_sync_prompts(tmp_path: Path) -> None:
     """Send sync_prompts via subprocess and verify storage."""
     db_path = tmp_path / "test.db"
-    env = {**os.environ, "REPROMPT_DB_PATH": str(db_path)}
+    env = {**os.environ, "CTXRAY_DB_PATH": str(db_path)}
 
     msg = {
         "type": "sync_prompts",
@@ -62,7 +62,7 @@ def test_host_sync_prompts(tmp_path: Path) -> None:
     input_data = _encode_message(msg)
 
     result = subprocess.run(
-        [sys.executable, "-u", "-m", "reprompt.bridge.host"],
+        [sys.executable, "-u", "-m", "ctxray.bridge.host"],
         input=input_data,
         capture_output=True,
         timeout=10,
@@ -75,7 +75,7 @@ def test_host_sync_prompts(tmp_path: Path) -> None:
     assert response["new_stored"] == 1
 
     # Verify prompt actually stored in DB
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(db_path)
     stats = db.get_stats()

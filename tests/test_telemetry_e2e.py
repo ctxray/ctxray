@@ -8,11 +8,11 @@ from unittest.mock import patch
 
 import pytest
 
-from reprompt.core.extractors import extract_features
-from reprompt.core.scorer import score_prompt
-from reprompt.telemetry.collector import TelemetryCollector
-from reprompt.telemetry.consent import TelemetryConsent, write_consent
-from reprompt.telemetry.events import TelemetryEvent
+from ctxray.core.extractors import extract_features
+from ctxray.core.scorer import score_prompt
+from ctxray.telemetry.collector import TelemetryCollector
+from ctxray.telemetry.consent import TelemetryConsent, write_consent
+from ctxray.telemetry.events import TelemetryEvent
 
 
 @pytest.fixture
@@ -37,7 +37,7 @@ class TestTelemetryE2E:
         text = (
             "You are a senior Python developer. Refactor the database module "
             "to use async/await. Must maintain backward compatibility. "
-            "Output as a diff. Reference: src/reprompt/storage/db.py"
+            "Output as a diff. Reference: src/ctxray/storage/db.py"
         )
         dna = extract_features(text, source="claude_code", session_id="e2e-test")
         scores = score_prompt(dna)
@@ -66,7 +66,7 @@ class TestTelemetryE2E:
         assert event_data["source"] == "claude_code"
         assert event_data["score_total"] > 0
         assert event_data["client"] == "cli"
-        assert event_data["reprompt_version"] == "0.9.1"
+        assert event_data["ctxray_version"] == "0.9.1"
 
         # Verify NO prompt text leaked
         serialized = json.dumps(event_data)
@@ -74,7 +74,7 @@ class TestTelemetryE2E:
         assert "db.py" not in serialized
         assert "backward compatibility" not in serialized
 
-    @patch("reprompt.telemetry.collector.send_batch")
+    @patch("ctxray.telemetry.collector.send_batch")
     def test_queue_to_send_pipeline(self, mock_send, e2e_env: dict[str, Path]):
         """Events are sent and acknowledged on flush."""
         mock_send.return_value = True
@@ -109,7 +109,7 @@ class TestTelemetryE2E:
         # Queue should be empty after successful send
         assert collector.queue.pending_count() == 0
 
-    @patch("reprompt.telemetry.collector.send_batch")
+    @patch("ctxray.telemetry.collector.send_batch")
     def test_failed_send_retains_events(self, mock_send, e2e_env: dict[str, Path]):
         """Failed sends keep events in queue for retry."""
         mock_send.return_value = False

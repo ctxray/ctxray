@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from reprompt.core.extractors import extract_features
-from reprompt.core.scorer import score_prompt
-from reprompt.core.wrapped import build_wrapped
-from reprompt.output.wrapped_html import render_wrapped_html
-from reprompt.output.wrapped_terminal import render_wrapped
-from reprompt.storage.db import PromptDB
+from ctxray.core.extractors import extract_features
+from ctxray.core.scorer import score_prompt
+from ctxray.core.wrapped import build_wrapped
+from ctxray.output.wrapped_html import render_wrapped_html
+from ctxray.output.wrapped_terminal import render_wrapped
+from ctxray.storage.db import PromptDB
 
 
 @pytest.fixture
@@ -83,7 +83,7 @@ class TestWrappedE2E:
         report = build_wrapped(populated_db)
         html = render_wrapped_html(report)
         assert "<html" in html
-        assert "reprompt" in html
+        assert "ctxray" in html
 
     def test_json_roundtrip(self, populated_db: PromptDB) -> None:
         report = build_wrapped(populated_db)

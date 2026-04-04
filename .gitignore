@@ -56,5 +56,5 @@ docs/logo-*
 docs/superpowers/plans/
 
 # Generated outputs
-reprompt-report.html
+ctxray-report.html
 *-hot-phrases-tf-idf.txt

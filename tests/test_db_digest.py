@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from reprompt.storage.db import PromptDB
+from ctxray.storage.db import PromptDB
 
 
 @pytest.fixture
@@ -31,12 +31,12 @@ class TestDigestLog:
             period="7d",
             window_start="2026-03-03T00:00:00+00:00",
             window_end="2026-03-10T00:00:00+00:00",
-            summary="reprompt: 42 prompts (+5), specificity 0.62 (↑)",
+            summary="ctxray: 42 prompts (+5), specificity 0.62 (↑)",
         )
         result = db.get_last_digest("7d")
         assert result is not None
         assert result["period"] == "7d"
-        assert result["summary"] == "reprompt: 42 prompts (+5), specificity 0.62 (↑)"
+        assert result["summary"] == "ctxray: 42 prompts (+5), specificity 0.62 (↑)"
 
     def test_get_last_digest_returns_none_when_empty(self, db):
         """get_last_digest() returns None when no entries exist."""

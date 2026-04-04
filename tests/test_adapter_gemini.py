@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.adapters.gemini import GeminiAdapter
+from ctxray.adapters.gemini import GeminiAdapter
 
 
 def test_detect_installed(tmp_path):

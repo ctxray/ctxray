@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from reprompt.telemetry.queue import TelemetryQueue
+from ctxray.telemetry.queue import TelemetryQueue
 
 
 @pytest.fixture

@@ -5,10 +5,10 @@ from __future__ import annotations
 
 import json
 
-from reprompt.core.extractors import extract_features
-from reprompt.core.lang_detect import detect_prompt_language
-from reprompt.core.prompt_dna import PromptDNA
-from reprompt.core.scorer import score_prompt
+from ctxray.core.extractors import extract_features
+from ctxray.core.lang_detect import detect_prompt_language
+from ctxray.core.prompt_dna import PromptDNA
+from ctxray.core.scorer import score_prompt
 
 
 class TestChineseE2E:

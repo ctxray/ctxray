@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-from reprompt.core.prompt_dna import PromptDNA
-from reprompt.core.scorer import ScoreBreakdown, score_prompt
+from ctxray.core.prompt_dna import PromptDNA
+from ctxray.core.scorer import ScoreBreakdown, score_prompt
 
 
 class TestScorePrompt:

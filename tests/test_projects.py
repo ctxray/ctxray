@@ -1,11 +1,11 @@
-"""Tests for reprompt projects command."""
+"""Tests for ctxray projects command."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from reprompt.output.projects_terminal import render_projects_table
-from reprompt.storage.db import PromptDB
+from ctxray.output.projects_terminal import render_projects_table
+from ctxray.storage.db import PromptDB
 
 
 def _meta(db: PromptDB, session_id: str, project: str, source: str = "claude-code", **kw):
@@ -176,7 +176,7 @@ class TestProjectsCLI:
     def test_help(self) -> None:
         from typer.testing import CliRunner
 
-        from reprompt.cli import app
+        from ctxray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["projects", "--help"])
@@ -189,12 +189,12 @@ class TestProjectsCLI:
 
         from typer.testing import CliRunner
 
-        from reprompt.cli import app
+        from ctxray.cli import app
 
-        os.environ["REPROMPT_DB_PATH"] = str(tmp_path / "test.db")
+        os.environ["CTXRAY_DB_PATH"] = str(tmp_path / "test.db")
         runner = CliRunner()
         result = runner.invoke(app, ["projects", "--json"])
-        del os.environ["REPROMPT_DB_PATH"]
+        del os.environ["CTXRAY_DB_PATH"]
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data == []

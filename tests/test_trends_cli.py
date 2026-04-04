@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
-from reprompt.output.terminal import render_trends
+from ctxray.cli import app
+from ctxray.output.terminal import render_trends
 
 runner = CliRunner()
 
 
 def test_trends_command_empty(tmp_path, monkeypatch):
     """Trends is deprecated; it now prints a deprecation notice."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["trends"])
     assert result.exit_code == 0
     assert "digest --trends" in result.output
@@ -20,21 +20,21 @@ def test_trends_command_empty(tmp_path, monkeypatch):
 
 def test_trends_command_json(tmp_path, monkeypatch):
     """Trends --format json is deprecated; it now prints a deprecation notice."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["trends", "--format", "json"])
     assert result.exit_code == 0
     assert "digest --trends" in result.output
 
 
 def test_trends_command_custom_period(tmp_path, monkeypatch):
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["trends", "--period", "30d", "--windows", "2"])
     assert result.exit_code == 0
 
 
 def test_trends_with_data(tmp_path, monkeypatch):
     """Trends is deprecated; it prints deprecation notice even with data."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["trends", "--period", "7d", "--windows", "2"])
     assert result.exit_code == 0
     assert "digest --trends" in result.output

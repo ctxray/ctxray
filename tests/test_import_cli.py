@@ -1,4 +1,4 @@
-"""Tests for reprompt import CLI command."""
+"""Tests for ctxray import CLI command."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 runner = CliRunner()
 
@@ -16,7 +16,7 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _isolate_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Use a temp DB so import tests don't pollute the user's real database."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
 
 
 def test_import_chatgpt(fixtures_path: Path) -> None:

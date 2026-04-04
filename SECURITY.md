@@ -13,7 +13,7 @@
 If you discover a security vulnerability, please report it responsibly:
 
 1. **Do not** open a public issue
-2. Open a [private security advisory](https://github.com/reprompt-dev/reprompt/security/advisories/new) on GitHub
+2. Open a [private security advisory](https://github.com/ctxray/ctxray/security/advisories/new) on GitHub
 3. Include: description, reproduction steps, potential impact
 4. We will respond within 72 hours
 

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from reprompt.core.persona import PERSONAS
-from reprompt.core.wrapped import WrappedReport
-from reprompt.output.wrapped_terminal import render_wrapped
+from ctxray.core.persona import PERSONAS
+from ctxray.core.wrapped import WrappedReport
+from ctxray.output.wrapped_terminal import render_wrapped
 
 
 def _sample_report() -> WrappedReport:

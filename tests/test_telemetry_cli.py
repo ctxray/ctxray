@@ -1,4 +1,4 @@
-"""Tests for reprompt telemetry CLI commands."""
+"""Tests for ctxray telemetry CLI commands."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from unittest.mock import patch
 import pytest
 from typer.testing import CliRunner
 
-from reprompt.cli import app
-from reprompt.telemetry.consent import TelemetryConsent, read_consent, write_consent
+from ctxray.cli import app
+from ctxray.telemetry.consent import TelemetryConsent, read_consent, write_consent
 
 runner = CliRunner()
 
@@ -18,9 +18,9 @@ runner = CliRunner()
 def isolated_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Redirect config path and DB path to tmp for all tests."""
     config_path = tmp_path / "config.toml"
-    db_path = tmp_path / "reprompt.db"
-    monkeypatch.setenv("REPROMPT_CONFIG_PATH", str(config_path))
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    db_path = tmp_path / "ctxray.db"
+    monkeypatch.setenv("CTXRAY_CONFIG_PATH", str(config_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
     return config_path
 
 
@@ -76,7 +76,7 @@ class TestTelemetryStatus:
 
 
 class TestScoreTelemetryIntegration:
-    @patch("reprompt.telemetry.collector.send_batch")
+    @patch("ctxray.telemetry.collector.send_batch")
     def test_score_records_telemetry_when_opted_in(self, mock_send, isolated_config: Path):
         mock_send.return_value = True
         write_consent(TelemetryConsent.OPTED_IN, isolated_config)

@@ -1,8 +1,8 @@
-"""Tests for reprompt.core.compress — CompressResult + protected zones."""
+"""Tests for ctxray.core.compress — CompressResult + protected zones."""
 
 from __future__ import annotations
 
-from reprompt.core.compress import CompressResult, compress_text
+from ctxray.core.compress import CompressResult, compress_text
 
 
 class TestCompressResult:
@@ -83,9 +83,9 @@ class TestProtectedZonesFilePaths:
     """File paths must survive compression unchanged."""
 
     def test_file_path_not_compressed(self):
-        text = "basically look at src/reprompt/core/compress.py"
+        text = "basically look at src/ctxray/core/compress.py"
         result = compress_text(text)
-        assert "src/reprompt/core/compress.py" in result.compressed
+        assert "src/ctxray/core/compress.py" in result.compressed
 
     def test_relative_dot_path(self):
         text = "check ./tests/test_compress.py for examples"
@@ -98,9 +98,9 @@ class TestProtectedZonesFilePaths:
         assert "/etc/nginx/nginx.conf" in result.compressed
 
     def test_home_tilde_path(self):
-        text = "look at ~/projects/reprompt/src/cli.py"
+        text = "look at ~/projects/ctxray/src/cli.py"
         result = compress_text(text)
-        assert "~/projects/reprompt/src/cli.py" in result.compressed
+        assert "~/projects/ctxray/src/cli.py" in result.compressed
 
 
 class TestProtectedZonesInlineCode:

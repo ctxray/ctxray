@@ -7,9 +7,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from reprompt.core.digest import build_digest
-from reprompt.core.trends import compute_trends
-from reprompt.storage.db import PromptDB
+from ctxray.core.digest import build_digest
+from ctxray.core.trends import compute_trends
+from ctxray.storage.db import PromptDB
 
 
 def _strip_ansi(text: str) -> str:
@@ -45,8 +45,8 @@ def _store_all_features(db: PromptDB) -> None:
     """Extract and store features for all prompts in db."""
     from dataclasses import asdict
 
-    from reprompt.core.extractors import extract_features
-    from reprompt.core.scorer import score_prompt
+    from ctxray.core.extractors import extract_features
+    from ctxray.core.scorer import score_prompt
 
     for p in db.get_all_prompts():
         dna = extract_features(p["text"], source=p["source"], session_id="test")
@@ -142,7 +142,7 @@ class TestCLISourceFlag:
     def test_insights_has_source_flag(self):
         from typer.testing import CliRunner
 
-        from reprompt.cli import app
+        from ctxray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["insights", "--help"])
@@ -151,7 +151,7 @@ class TestCLISourceFlag:
     def test_trends_has_source_flag(self):
         from typer.testing import CliRunner
 
-        from reprompt.cli import app
+        from ctxray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["trends", "--help"])
@@ -160,7 +160,7 @@ class TestCLISourceFlag:
     def test_digest_has_source_flag(self):
         from typer.testing import CliRunner
 
-        from reprompt.cli import app
+        from ctxray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["digest", "--help"])
@@ -169,7 +169,7 @@ class TestCLISourceFlag:
     def test_style_has_source_flag(self):
         from typer.testing import CliRunner
 
-        from reprompt.cli import app
+        from ctxray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["style", "--help"])

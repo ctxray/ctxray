@@ -6,7 +6,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 runner = CliRunner()
 
@@ -14,7 +14,7 @@ runner = CliRunner()
 def test_chatgpt_import_to_report(fixtures_path: Path, tmp_path: Path, monkeypatch) -> None:
     """Full flow: import ChatGPT → stored in DB → appears in report."""
     db_path = tmp_path / "test.db"
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     # Import
     result = runner.invoke(app, ["import", str(fixtures_path / "chatgpt_conversations.json")])
@@ -34,7 +34,7 @@ def test_chatgpt_import_to_report(fixtures_path: Path, tmp_path: Path, monkeypat
 def test_claude_chat_import_to_report(fixtures_path: Path, tmp_path: Path, monkeypatch) -> None:
     """Full flow: import Claude.ai → stored in DB → appears in report."""
     db_path = tmp_path / "test.db"
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     # Import
     result = runner.invoke(app, ["import", str(fixtures_path / "claude_chat_export.json")])
@@ -54,7 +54,7 @@ def test_claude_chat_import_to_report(fixtures_path: Path, tmp_path: Path, monke
 def test_mixed_import_and_scan(fixtures_path: Path, tmp_path: Path, monkeypatch) -> None:
     """Import + scan coexist: imported and scanned prompts share the same DB."""
     db_path = tmp_path / "test.db"
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     # Import ChatGPT
     result = runner.invoke(app, ["import", str(fixtures_path / "chatgpt_conversations.json")])
@@ -75,7 +75,7 @@ def test_mixed_import_and_scan(fixtures_path: Path, tmp_path: Path, monkeypatch)
 def test_reimport_deduplicates(fixtures_path: Path, tmp_path: Path, monkeypatch) -> None:
     """Importing the same file twice should not create duplicate prompts."""
     db_path = tmp_path / "test.db"
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     # First import
     r1 = runner.invoke(app, ["import", str(fixtures_path / "chatgpt_conversations.json")])

@@ -1,4 +1,4 @@
-"""Tests for `reprompt agent` CLI command."""
+"""Tests for `ctxray agent` CLI command."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 runner = CliRunner()
 
 
 def _create_session_db(tmp_path: Path) -> Path:
     """Create a DB with session data by running through the adapter pipeline."""
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db_path = tmp_path / "test.db"
     db = PromptDB(db_path)
@@ -95,7 +95,7 @@ def _create_session_db(tmp_path: Path) -> Path:
 def test_agent_no_sessions(tmp_path, monkeypatch):
     """agent command with empty DB shows guidance message."""
     db_path = tmp_path / "empty.db"
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["agent"])
     assert result.exit_code == 0
@@ -105,7 +105,7 @@ def test_agent_no_sessions(tmp_path, monkeypatch):
 def test_agent_no_sessions_json(tmp_path, monkeypatch):
     """agent --json with empty DB returns empty JSON."""
     db_path = tmp_path / "empty.db"
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["agent", "--json"])
     assert result.exit_code == 0
@@ -115,7 +115,7 @@ def test_agent_no_sessions_json(tmp_path, monkeypatch):
 def test_agent_with_sessions(tmp_path, monkeypatch):
     """agent command renders report with session data."""
     db_path = _create_session_db(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["agent"])
     assert result.exit_code == 0
@@ -125,7 +125,7 @@ def test_agent_with_sessions(tmp_path, monkeypatch):
 def test_agent_json_output(tmp_path, monkeypatch):
     """agent --json returns valid JSON with expected structure."""
     db_path = _create_session_db(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["agent", "--json"])
     assert result.exit_code == 0
@@ -141,7 +141,7 @@ def test_agent_json_output(tmp_path, monkeypatch):
 def test_agent_loops_only(tmp_path, monkeypatch):
     """agent --loops-only renders only loop section."""
     db_path = _create_session_db(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["agent", "--loops-only"])
     assert result.exit_code == 0
@@ -152,7 +152,7 @@ def test_agent_loops_only(tmp_path, monkeypatch):
 def test_agent_source_filter(tmp_path, monkeypatch):
     """agent --source filters to specific adapter."""
     db_path = _create_session_db(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     # Filter to nonexistent source
     result = runner.invoke(app, ["agent", "--source", "nonexistent"])
@@ -163,7 +163,7 @@ def test_agent_source_filter(tmp_path, monkeypatch):
 def test_agent_last_option(tmp_path, monkeypatch):
     """agent --last N limits sessions analyzed."""
     db_path = _create_session_db(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["agent", "--last", "1", "--json"])
     assert result.exit_code == 0

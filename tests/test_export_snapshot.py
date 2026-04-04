@@ -5,13 +5,13 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from reprompt.core.conversation import (
+from ctxray.core.conversation import (
     Conversation,
     ConversationTurn,
     DistillResult,
     DistillStats,
 )
-from reprompt.output.export import generate_export
+from ctxray.output.export import generate_export
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures" / "export"
 

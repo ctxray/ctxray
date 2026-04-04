@@ -9,7 +9,7 @@ import pytest
 
 requests = pytest.importorskip("requests")
 
-from reprompt.embeddings.ollama import OllamaEmbedder  # noqa: E402
+from ctxray.embeddings.ollama import OllamaEmbedder  # noqa: E402
 
 
 def test_embed_calls_api():

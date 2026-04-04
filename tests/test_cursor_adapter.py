@@ -7,7 +7,7 @@ import sqlite3
 import tempfile
 from pathlib import Path
 
-from reprompt.adapters.cursor import CursorAdapter, _extract_prompts_from_vscdb
+from ctxray.adapters.cursor import CursorAdapter, _extract_prompts_from_vscdb
 
 
 def _make_vscdb(tmp: Path, table: str, rows: list[tuple[str, str | bytes]]) -> Path:

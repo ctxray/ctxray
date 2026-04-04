@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from reprompt.output.terminal import render_privacy
+from ctxray.output.terminal import render_privacy
 
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 

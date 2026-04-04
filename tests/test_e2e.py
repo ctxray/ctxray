@@ -5,10 +5,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from reprompt.config import Settings
-from reprompt.core.pipeline import build_report_data, run_scan
-from reprompt.output.markdown import export_library_markdown
-from reprompt.storage.db import PromptDB
+from ctxray.config import Settings
+from ctxray.core.pipeline import build_report_data, run_scan
+from ctxray.output.markdown import export_library_markdown
+from ctxray.storage.db import PromptDB
 
 
 def _create_claude_sessions(root: Path) -> None:
@@ -195,12 +195,12 @@ def test_cli_scan_and_report(tmp_path, monkeypatch):
     """E2E via CLI: scan -> report -> library."""
     from typer.testing import CliRunner
 
-    from reprompt.cli import app
+    from ctxray.cli import app
 
     sessions_root = tmp_path / "sessions"
     _create_claude_sessions(sessions_root)
     db_path = tmp_path / "cli_test.db"
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     runner = CliRunner()
 
@@ -231,9 +231,9 @@ def test_cli_library_export(tmp_path, monkeypatch):
     """E2E: CLI library command shows deprecation notice (consolidated into template list)."""
     from typer.testing import CliRunner
 
-    from reprompt.cli import app
+    from ctxray.cli import app
 
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
 
     runner = CliRunner()
 
@@ -247,10 +247,10 @@ class TestScienceE2E:
 
     def test_score_compare_insights_flow(self, tmp_path):
         """Full flow: extract → score → store → insights."""
-        from reprompt.core.extractors import extract_features
-        from reprompt.core.insights import compute_insights
-        from reprompt.core.scorer import score_prompt
-        from reprompt.storage.db import PromptDB
+        from ctxray.core.extractors import extract_features
+        from ctxray.core.insights import compute_insights
+        from ctxray.core.scorer import score_prompt
+        from ctxray.storage.db import PromptDB
 
         db = PromptDB(tmp_path / "test.db")
 
@@ -290,7 +290,7 @@ class TestScienceE2E:
         """CLI score command produces valid output."""
         from typer.testing import CliRunner
 
-        from reprompt.cli import app
+        from ctxray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(
@@ -310,7 +310,7 @@ class TestScienceE2E:
         """CLI compare command produces valid comparison."""
         from typer.testing import CliRunner
 
-        from reprompt.cli import app
+        from ctxray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(

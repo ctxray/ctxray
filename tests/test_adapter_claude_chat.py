@@ -6,7 +6,7 @@ import json
 import zipfile
 from pathlib import Path
 
-from reprompt.adapters.claude_chat import ClaudeChatAdapter
+from ctxray.adapters.claude_chat import ClaudeChatAdapter
 
 
 def test_parse_extracts_human_messages(fixtures_path: Path) -> None:

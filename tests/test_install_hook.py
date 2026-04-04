@@ -7,7 +7,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 runner = CliRunner()
 
@@ -24,7 +24,7 @@ def test_install_hook_claude_code(tmp_path, monkeypatch):
     assert "hooks" in settings
     assert "Stop" in settings["hooks"]
     assert any(
-        h.get("command") == "reprompt scan --source claude-code" for h in settings["hooks"]["Stop"]
+        h.get("command") == "ctxray scan --source claude-code" for h in settings["hooks"]["Stop"]
     )
 
 

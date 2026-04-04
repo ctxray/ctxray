@@ -4,35 +4,35 @@ from __future__ import annotations
 
 import json
 
-from reprompt.bridge.manifest import (
+from ctxray.bridge.manifest import (
     generate_chrome_manifest,
     generate_firefox_manifest,
     get_manifest_dir,
 )
 
-HOST_NAME = "dev.reprompt.bridge"
+HOST_NAME = "dev.ctxray.bridge"
 
 
 def test_chrome_manifest_structure() -> None:
     manifest = generate_chrome_manifest(
-        host_path="/usr/local/bin/reprompt-bridge-host",
+        host_path="/usr/local/bin/ctxray-bridge-host",
         extension_id="abcdefghijklmnopqrstuvwxyz123456",
     )
     assert manifest["name"] == HOST_NAME
     assert manifest["type"] == "stdio"
-    assert manifest["path"] == "/usr/local/bin/reprompt-bridge-host"
+    assert manifest["path"] == "/usr/local/bin/ctxray-bridge-host"
     assert len(manifest["allowed_origins"]) == 1
     assert manifest["allowed_origins"][0].startswith("chrome-extension://")
 
 
 def test_firefox_manifest_structure() -> None:
     manifest = generate_firefox_manifest(
-        host_path="/usr/local/bin/reprompt-bridge-host",
+        host_path="/usr/local/bin/ctxray-bridge-host",
     )
     assert manifest["name"] == HOST_NAME
     assert manifest["type"] == "stdio"
     assert "allowed_extensions" in manifest
-    assert manifest["allowed_extensions"] == ["reprompt@reprompt.dev"]
+    assert manifest["allowed_extensions"] == ["ctxray@ctxray.dev"]
 
 
 def test_chrome_manifest_is_valid_json() -> None:

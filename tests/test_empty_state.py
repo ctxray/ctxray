@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 
 @pytest.fixture
@@ -15,7 +15,7 @@ def runner():
 
 def _empty_db(tmp_path, monkeypatch):
     """Point Settings at a fresh (empty) DB path."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "empty.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "empty.db"))
 
 
 def test_report_empty_db_shows_guidance(tmp_path, monkeypatch, runner):
@@ -23,7 +23,7 @@ def test_report_empty_db_shows_guidance(tmp_path, monkeypatch, runner):
     _empty_db(tmp_path, monkeypatch)
     result = runner.invoke(app, ["report"])
     assert result.exit_code == 0
-    assert "reprompt scan" in result.output
+    assert "ctxray scan" in result.output
 
 
 def test_report_empty_db_no_crash(tmp_path, monkeypatch, runner):
@@ -38,7 +38,7 @@ def test_digest_empty_db_shows_guidance(tmp_path, monkeypatch, runner):
     _empty_db(tmp_path, monkeypatch)
     result = runner.invoke(app, ["digest"])
     assert result.exit_code == 0
-    assert "reprompt scan" in result.output
+    assert "ctxray scan" in result.output
 
 
 def test_digest_quiet_empty_db_no_crash(tmp_path, monkeypatch, runner):
@@ -57,7 +57,7 @@ def test_digest_json_empty_db_returns_valid_json(tmp_path, monkeypatch, runner):
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["error"] == "no data"
-    assert "reprompt scan" in data["hint"]
+    assert "ctxray scan" in data["hint"]
 
 
 def test_scan_shows_next_steps_on_first_scan(tmp_path, monkeypatch, runner):
@@ -99,6 +99,6 @@ def test_scan_shows_next_steps_on_first_scan(tmp_path, monkeypatch, runner):
     # Should show next-step suggestions
     assert (
         "Try next" in result.output
-        or "reprompt score" in result.output
-        or "reprompt library" in result.output
+        or "ctxray score" in result.output
+        or "ctxray library" in result.output
     )

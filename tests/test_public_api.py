@@ -1,11 +1,11 @@
-"""Tests for reprompt public API."""
+"""Tests for ctxray public API."""
 
 from __future__ import annotations
 
 
 def test_public_api_score_prompt():
     """Public API score_prompt returns expected keys."""
-    from reprompt import score_prompt
+    from ctxray import score_prompt
 
     result = score_prompt("Refactor the authentication module to use dependency injection")
     assert "total" in result
@@ -16,7 +16,7 @@ def test_public_api_score_prompt():
 
 def test_public_api_compare_prompts():
     """Public API compare_prompts returns winner."""
-    from reprompt import compare_prompts
+    from ctxray import compare_prompts
 
     result = compare_prompts(
         "fix bug",
@@ -27,7 +27,7 @@ def test_public_api_compare_prompts():
 
 def test_public_api_extract_features():
     """Public API extract_features returns PromptDNA."""
-    from reprompt import extract_features
+    from ctxray import extract_features
 
     dna = extract_features("Add comprehensive error handling to the API endpoints")
     assert hasattr(dna, "overall_score")

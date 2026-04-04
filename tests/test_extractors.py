@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from reprompt.core.extractors import extract_features
+from ctxray.core.extractors import extract_features
 
 
 class TestBasicMetrics:

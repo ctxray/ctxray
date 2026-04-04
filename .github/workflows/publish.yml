@@ -22,7 +22,7 @@ jobs:
       - name: Lint
         run: ruff check src/ tests/
       - name: Test
-        run: pytest tests/ -v --cov=reprompt --cov-fail-under=88
+        run: pytest tests/ -v --cov=ctxray --cov-fail-under=88
       - name: Install build tools
         run: pip install build
       - name: Build

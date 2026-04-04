@@ -1,7 +1,7 @@
 """Tests for session type detection."""
 
-from reprompt.core.conversation import Conversation, ConversationTurn
-from reprompt.core.session_type import (
+from ctxray.core.conversation import Conversation, ConversationTurn
+from ctxray.core.session_type import (
     SessionType,
     detect_session_type,
     get_weights_for_type,
@@ -154,19 +154,19 @@ class TestGetWeightsForType:
             )
 
     def test_none_returns_default(self):
-        from reprompt.core.distill import DEFAULT_WEIGHTS
+        from ctxray.core.distill import DEFAULT_WEIGHTS
 
         assert get_weights_for_type(None) == DEFAULT_WEIGHTS
 
     def test_debugging_boosts_error_recovery(self):
         w = get_weights_for_type(SessionType.DEBUGGING)
-        from reprompt.core.distill import DEFAULT_WEIGHTS
+        from ctxray.core.distill import DEFAULT_WEIGHTS
 
         assert w["error_recovery"] > DEFAULT_WEIGHTS["error_recovery"]
 
     def test_implementation_boosts_tool_trigger(self):
         w = get_weights_for_type(SessionType.IMPLEMENTATION)
-        from reprompt.core.distill import DEFAULT_WEIGHTS
+        from ctxray.core.distill import DEFAULT_WEIGHTS
 
         assert w["tool_trigger"] > DEFAULT_WEIGHTS["tool_trigger"]
 

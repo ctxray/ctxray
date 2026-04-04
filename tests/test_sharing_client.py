@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from reprompt.sharing.client import sign_request, upload_share
+from ctxray.sharing.client import sign_request, upload_share
 
 
 class TestSignRequest:
@@ -29,7 +29,7 @@ class TestSignRequest:
 
 
 class TestUploadShare:
-    @patch("reprompt.sharing.client.urlopen")
+    @patch("ctxray.sharing.client.urlopen")
     def test_success_returns_url(self, mock_urlopen):
         mock_response = MagicMock()
         mock_response.status = 200
@@ -46,7 +46,7 @@ class TestUploadShare:
         )
         assert url == "https://getreprompt.dev/w/abc12345"
 
-    @patch("reprompt.sharing.client.urlopen")
+    @patch("ctxray.sharing.client.urlopen")
     def test_401_raises_auth_error(self, mock_urlopen):
         from urllib.error import HTTPError
 
@@ -56,7 +56,7 @@ class TestUploadShare:
         with pytest.raises(RuntimeError, match="auth"):
             upload_share(install_id="a" * 64, report_json="{}")
 
-    @patch("reprompt.sharing.client.urlopen")
+    @patch("ctxray.sharing.client.urlopen")
     def test_network_error_raises(self, mock_urlopen):
         mock_urlopen.side_effect = ConnectionError("offline")
         with pytest.raises(RuntimeError, match="network"):

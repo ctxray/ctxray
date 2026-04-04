@@ -1,6 +1,6 @@
 """Tests for merge-view clustering and canonical selection."""
 
-from reprompt.core.merge_view import build_clusters, name_cluster, score_prompt
+from ctxray.core.merge_view import build_clusters, name_cluster, score_prompt
 
 
 def test_two_similar_prompts_form_cluster():
@@ -90,7 +90,7 @@ def test_clusters_sorted_by_size():
 
 
 def test_render_merge_view_output():
-    from reprompt.output.terminal import render_merge_view
+    from ctxray.output.terminal import render_merge_view
 
     data = {
         "clusters": [
@@ -118,7 +118,7 @@ def test_render_merge_view_output():
 
 
 def test_render_merge_view_empty():
-    from reprompt.output.terminal import render_merge_view
+    from ctxray.output.terminal import render_merge_view
 
     data = {
         "clusters": [],

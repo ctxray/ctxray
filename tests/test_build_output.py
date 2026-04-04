@@ -1,7 +1,7 @@
 """Tests for build terminal output."""
 
-from reprompt.core.build import BuildResult
-from reprompt.output.build_terminal import render_build
+from ctxray.core.build import BuildResult
+from ctxray.output.build_terminal import render_build
 
 
 def _make_result(**kwargs):

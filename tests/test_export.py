@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.core.conversation import (
+from ctxray.core.conversation import (
     Conversation,
     ConversationTurn,
     DistillResult,
@@ -98,7 +98,7 @@ def _make_result(
 
 class TestExportBasic:
     def test_export_contains_header(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(["Fix the bug", "Add tests", "Deploy"])
         output = generate_export(result)
@@ -106,7 +106,7 @@ class TestExportBasic:
         assert "claude-code" in output
 
     def test_export_contains_goal(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(["Implement authentication system", "Add tests"])
         output = generate_export(result)
@@ -114,7 +114,7 @@ class TestExportBasic:
         assert "authentication" in output.lower()
 
     def test_export_contains_current_state(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(
             ["Start work", "Middle work", "Final state of the session"],
@@ -124,7 +124,7 @@ class TestExportBasic:
         assert "## Current State" in output
 
     def test_export_contains_files_changed(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(["Do work"], files_changed=["a.py", "b.py"])
         output = generate_export(result)
@@ -132,14 +132,14 @@ class TestExportBasic:
         assert "`a.py`" in output
 
     def test_export_contains_token_estimate(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(["Do work"])
         output = generate_export(result)
         assert "~" in output and "tokens" in output
 
     def test_export_is_markdown(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(["Fix bug", "Add feature"])
         output = generate_export(result)
@@ -148,7 +148,7 @@ class TestExportBasic:
 
 class TestExportSections:
     def test_key_decisions_uses_semantic_shift(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         high_shift = {
             "position": 0.5,
@@ -176,7 +176,7 @@ class TestExportSections:
         assert "direction" in output.lower() or "approach" in output.lower()
 
     def test_what_was_done_uses_tool_trigger(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         high_tool = {
             "position": 0.5,
@@ -203,7 +203,7 @@ class TestExportSections:
         assert "## What Was Done" in output
 
     def test_no_duplicate_turns_across_sections(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         scores = {
             "position": 0.9,
@@ -226,14 +226,14 @@ class TestExportSections:
 
 class TestExportCurrentState:
     def test_current_state_omitted_for_single_turn(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(["Only one turn"])
         output = generate_export(result)
         assert "## Current State" not in output
 
     def test_current_state_uses_last_important_turn(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(
             ["Start", "Middle", "All tests passing, ready to deploy"],
@@ -245,7 +245,7 @@ class TestExportCurrentState:
 
 class TestExportResume:
     def test_resume_detected_with_forward_keyword(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(
             ["Start work", "Do stuff", "Next we need to add integration tests"],
@@ -256,7 +256,7 @@ class TestExportResume:
         assert "integration tests" in output.lower()
 
     def test_resume_omitted_without_forward_keyword(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(
             ["Start work", "Do stuff", "Thanks that looks good"],
@@ -266,7 +266,7 @@ class TestExportResume:
         assert "## Resume" not in output
 
     def test_resume_detects_chinese_keywords(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         zh_next = "\u63a5\u4e0b\u6765\u9700\u8981\u52a0\u6d4b\u8bd5"
         result_zh = _make_result(
@@ -279,14 +279,14 @@ class TestExportResume:
 
 class TestExportFull:
     def test_full_mode_includes_assistant_summary(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(["Fix the bug", "Add tests"])
         output = generate_export(result, full=True)
         assert "**Result:**" in output
 
     def test_default_mode_excludes_assistant(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(["Fix the bug", "Add tests"])
         output = generate_export(result, full=False)
@@ -295,7 +295,7 @@ class TestExportFull:
 
 class TestExportEdgeCases:
     def test_empty_filtered_turns_fallback(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(
             ["Start", "Middle", "End"],
@@ -308,7 +308,7 @@ class TestExportEdgeCases:
         assert "threshold" in output.lower()
 
     def test_no_project_name(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(["Do work"], project=None)
         result.conversation.project = None
@@ -316,14 +316,14 @@ class TestExportEdgeCases:
         assert "# Session Context" in output
 
     def test_no_files_changed(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         result = _make_result(["Do work"], files_changed=[])
         output = generate_export(result)
         assert "## Files Changed" not in output
 
     def test_files_changed_capped_at_10(self):
-        from reprompt.output.export import generate_export
+        from ctxray.output.export import generate_export
 
         files = [f"file{i}.py" for i in range(20)]
         result = _make_result(["Do work"], files_changed=files)

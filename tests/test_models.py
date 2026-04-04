@@ -1,6 +1,6 @@
 """Tests for core data models."""
 
-from reprompt.core.models import Prompt
+from ctxray.core.models import Prompt
 
 
 def test_prompt_auto_hash():

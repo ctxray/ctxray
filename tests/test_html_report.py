@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.output.html_report import render_html_dashboard
+from ctxray.output.html_report import render_html_dashboard
 
 
 def _sample_report_data():
@@ -163,7 +163,7 @@ def test_digest_rendered():
         "eff_avg": 0.73,
         "current": {"prompt_count": 52, "specificity_score": 0.48},
         "previous": {"prompt_count": 40, "specificity_score": 0.42},
-        "summary": "reprompt: 52 prompts (+12), specificity 0.48 (↑)",
+        "summary": "ctxray: 52 prompts (+12), specificity 0.48 (↑)",
     }
     html = render_html_dashboard(
         _sample_report_data(), _sample_trends_data(), _sample_recommend_data(), digest
@@ -190,7 +190,7 @@ def test_digest_category_delta_rendered():
             "specificity_score": 0.43,
             "category_distribution": {"debug": 10, "implement": 10, "test": 5},
         },
-        "summary": "reprompt: 30 prompts (+5), specificity 0.45 (↑)",
+        "summary": "ctxray: 30 prompts (+5), specificity 0.45 (↑)",
     }
     html = render_html_dashboard(
         _sample_report_data(), _sample_trends_data(), _sample_recommend_data(), digest

@@ -1,4 +1,4 @@
-"""Tests for reprompt demo command."""
+"""Tests for ctxray demo command."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
-from reprompt.demo import generate_demo_sessions
+from ctxray.cli import app
+from ctxray.demo import generate_demo_sessions
 
 runner = CliRunner()
 

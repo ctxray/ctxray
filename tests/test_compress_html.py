@@ -1,4 +1,4 @@
-from reprompt.output.html_report import render_html_dashboard
+from ctxray.output.html_report import render_html_dashboard
 
 
 def test_html_dashboard_shows_compressibility():

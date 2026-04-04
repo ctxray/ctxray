@@ -4,7 +4,7 @@ import json
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 runner = CliRunner()
 
@@ -12,10 +12,10 @@ runner = CliRunner()
 class TestPrivacyE2E:
     def test_full_flow(self, tmp_path, monkeypatch):
         """Scan some prompts, then verify privacy appears in report and standalone."""
-        from reprompt.storage.db import PromptDB
+        from ctxray.storage.db import PromptDB
 
         db_path = tmp_path / "e2e.db"
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
         # Seed DB with prompts from multiple sources
         db = PromptDB(db_path)

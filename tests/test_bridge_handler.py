@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from reprompt.bridge.handler import handle_message
-from reprompt.storage.db import PromptDB
+from ctxray.bridge.handler import handle_message
+from ctxray.storage.db import PromptDB
 
 
 def test_handle_ping(tmp_path: Path) -> None:

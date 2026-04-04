@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from reprompt.adapters.openclaw import OpenClawAdapter
+from ctxray.adapters.openclaw import OpenClawAdapter
 
 # ---------------------------------------------------------------------------
 # detect_installed — new path (primary)
@@ -207,7 +207,7 @@ def _write_meta_jsonl(path: Path, entries: list[dict], name: str = "session.json
 
 
 def test_parse_session_meta_returns_session_meta(tmp_path):
-    from reprompt.core.session_meta import SessionMeta
+    from ctxray.core.session_meta import SessionMeta
 
     session_dir = tmp_path / "proj"
     entries = [

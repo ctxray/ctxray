@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from datetime import date
 
-from reprompt.telemetry.events import (
+from ctxray.telemetry.events import (
     TelemetryEvent,
     bucket_duration,
     bucket_error_ratio,
@@ -77,7 +77,7 @@ class TestTelemetryEvent:
             score_position=14.0,
             score_repetition=10.0,
             score_clarity=10.0,
-            reprompt_version="0.9.1",
+            ctxray_version="0.9.1",
             timestamp_day="2026-03-15",
         )
         assert event.install_id == "a" * 64
@@ -97,7 +97,7 @@ class TestTelemetryEvent:
             score_position=12.0,
             score_repetition=8.0,
             score_clarity=10.0,
-            reprompt_version="0.9.1",
+            ctxray_version="0.9.1",
             timestamp_day="2026-03-15",
         )
         serialized = event.model_dump_json()
@@ -119,7 +119,7 @@ class TestTelemetryEvent:
             score_position=10.0,
             score_repetition=8.0,
             score_clarity=10.0,
-            reprompt_version="0.9.1",
+            ctxray_version="0.9.1",
             timestamp_day="2026-03-15",
             session_duration_bucket="1m-10m",
             error_ratio_bucket="0%",
@@ -145,8 +145,8 @@ class TestTelemetryEvent:
 
 class TestBuildEvent:
     def test_build_event_from_dna_and_scores(self):
-        from reprompt.core.prompt_dna import PromptDNA
-        from reprompt.core.scorer import ScoreBreakdown
+        from ctxray.core.prompt_dna import PromptDNA
+        from ctxray.core.scorer import ScoreBreakdown
 
         dna = PromptDNA(
             prompt_hash="abc123",
@@ -182,8 +182,8 @@ class TestBuildEvent:
         assert event.timestamp_day == date.today().isoformat()
 
     def test_build_event_with_session_meta(self):
-        from reprompt.core.prompt_dna import PromptDNA
-        from reprompt.core.scorer import ScoreBreakdown
+        from ctxray.core.prompt_dna import PromptDNA
+        from ctxray.core.scorer import ScoreBreakdown
 
         dna = PromptDNA(prompt_hash="xyz", source="manual", task_type="implement")
         scores = ScoreBreakdown(

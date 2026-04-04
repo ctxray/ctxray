@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.core.agent import (
+from ctxray.core.agent import (
     AgentReport,
     AggregateAgentReport,
     ErrorLoop,
@@ -12,7 +12,7 @@ from reprompt.core.agent import (
     compute_tool_distribution,
     detect_error_loops,
 )
-from reprompt.core.conversation import Conversation, ConversationTurn
+from ctxray.core.conversation import Conversation, ConversationTurn
 
 
 def _user(idx: int, text: str = "do something", ts: str = "") -> ConversationTurn:

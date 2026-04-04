@@ -6,7 +6,7 @@ import io
 import json
 import struct
 
-from reprompt.bridge.protocol import read_message, write_message
+from ctxray.bridge.protocol import read_message, write_message
 
 
 def test_read_message_basic() -> None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from reprompt.storage.db import PromptDB
+from ctxray.storage.db import PromptDB
 
 
 @pytest.fixture

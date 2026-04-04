@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
-from reprompt.core.conversation import (
+from ctxray.cli import app
+from ctxray.core.conversation import (
     Conversation,
     ConversationTurn,
     DistillResult,
@@ -72,26 +72,26 @@ def _mock_distill_result() -> DistillResult:
 
 
 class TestExportFlag:
-    @patch("reprompt.cli._resolve_distill_sessions")
-    @patch("reprompt.cli._load_conversation")
+    @patch("ctxray.cli._resolve_distill_sessions")
+    @patch("ctxray.cli._load_conversation")
     def test_export_produces_markdown(self, mock_load, mock_resolve):
         mock_result = _mock_distill_result()
         mock_resolve.return_value = [("/fake/path", "claude-code", "test-abc")]
         mock_load.return_value = mock_result.conversation
 
-        with patch("reprompt.core.distill.distill_conversation", return_value=mock_result):
+        with patch("ctxray.core.distill.distill_conversation", return_value=mock_result):
             result = runner.invoke(app, ["distill", "--last", "1", "--export"])
         assert result.exit_code == 0
         assert "# Session Context: myproject" in result.output
 
-    @patch("reprompt.cli._resolve_distill_sessions")
-    @patch("reprompt.cli._load_conversation")
+    @patch("ctxray.cli._resolve_distill_sessions")
+    @patch("ctxray.cli._load_conversation")
     def test_export_json_envelope(self, mock_load, mock_resolve):
         mock_result = _mock_distill_result()
         mock_resolve.return_value = [("/fake/path", "claude-code", "test-abc")]
         mock_load.return_value = mock_result.conversation
 
-        with patch("reprompt.core.distill.distill_conversation", return_value=mock_result):
+        with patch("ctxray.core.distill.distill_conversation", return_value=mock_result):
             result = runner.invoke(app, ["distill", "--last", "1", "--export", "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output)

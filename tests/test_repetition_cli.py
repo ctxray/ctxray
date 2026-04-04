@@ -1,4 +1,4 @@
-"""Tests for `reprompt repetition` CLI command."""
+"""Tests for `ctxray repetition` CLI command."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 runner = CliRunner()
 
 
 def _seed_db(tmp_path: Path) -> Path:
     """Create a DB with cross-session similar prompts."""
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db_path = tmp_path / "test.db"
     db = PromptDB(db_path)
@@ -44,7 +44,7 @@ def _seed_db(tmp_path: Path) -> Path:
 
 def test_repetition_no_data(tmp_path, monkeypatch):
     db_path = tmp_path / "empty.db"
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
     result = runner.invoke(app, ["repetition"])
     assert result.exit_code == 0
     assert "no cross-session" in result.output.lower()
@@ -52,7 +52,7 @@ def test_repetition_no_data(tmp_path, monkeypatch):
 
 def test_repetition_no_data_json(tmp_path, monkeypatch):
     db_path = tmp_path / "empty.db"
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
     result = runner.invoke(app, ["repetition", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
@@ -62,14 +62,14 @@ def test_repetition_no_data_json(tmp_path, monkeypatch):
 
 def test_repetition_with_data(tmp_path, monkeypatch):
     db_path = _seed_db(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
     result = runner.invoke(app, ["repetition"])
     assert result.exit_code == 0
 
 
 def test_repetition_json_output(tmp_path, monkeypatch):
     db_path = _seed_db(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
     result = runner.invoke(app, ["repetition", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
@@ -80,7 +80,7 @@ def test_repetition_json_output(tmp_path, monkeypatch):
 
 def test_repetition_source_filter(tmp_path, monkeypatch):
     db_path = _seed_db(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
     result = runner.invoke(app, ["repetition", "--source", "nonexistent", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
@@ -89,7 +89,7 @@ def test_repetition_source_filter(tmp_path, monkeypatch):
 
 def test_repetition_last_option(tmp_path, monkeypatch):
     db_path = _seed_db(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
     result = runner.invoke(app, ["repetition", "--last", "2", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)

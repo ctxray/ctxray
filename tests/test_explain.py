@@ -1,6 +1,6 @@
 """Tests for prompt explainer."""
 
-from reprompt.core.explain import ExplainResult, explain_prompt
+from ctxray.core.explain import ExplainResult, explain_prompt
 
 
 class TestExplainPrompt:
@@ -74,7 +74,7 @@ class TestExplainPrompt:
 
 class TestExplainOutput:
     def test_render_explain(self):
-        from reprompt.output.explain_terminal import render_explain
+        from ctxray.output.explain_terminal import render_explain
 
         result = explain_prompt("fix the auth bug in login.ts")
         output = render_explain(result)
@@ -82,7 +82,7 @@ class TestExplainOutput:
         assert "Analysis" in output
 
     def test_render_with_strengths(self):
-        from reprompt.output.explain_terminal import render_explain
+        from ctxray.output.explain_terminal import render_explain
 
         result = explain_prompt(
             "Fix the authentication bug in src/auth.ts. Error: JWT expired. Don't change tests."
@@ -92,7 +92,7 @@ class TestExplainOutput:
             assert "working" in output.lower()
 
     def test_render_with_tips(self):
-        from reprompt.output.explain_terminal import render_explain
+        from ctxray.output.explain_terminal import render_explain
 
         result = explain_prompt("fix the bug somewhere")
         output = render_explain(result)

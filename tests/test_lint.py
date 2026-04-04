@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from reprompt.core.lint import (
+from ctxray.core.lint import (
     LintConfig,
     LintViolation,
     format_lint_results,
@@ -164,8 +164,8 @@ class TestLoadLintConfig:
         assert config.short_prompt == 40
         assert config.score_threshold == 0
 
-    def test_reprompt_toml(self, tmp_path: Path):
-        toml_file = tmp_path / ".reprompt.toml"
+    def test_ctxray_toml(self, tmp_path: Path):
+        toml_file = tmp_path / ".ctxray.toml"
         toml_file.write_text(
             "[lint]\nscore-threshold = 60\n\n[lint.rules]\nmin-length = 10\nvague-prompt = false\n"
         )
@@ -180,9 +180,9 @@ class TestLoadLintConfig:
     def test_pyproject_toml(self, tmp_path: Path):
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text(
-            "[tool.reprompt.lint]\n"
+            "[tool.ctxray.lint]\n"
             "score-threshold = 45\n\n"
-            "[tool.reprompt.lint.rules]\n"
+            "[tool.ctxray.lint.rules]\n"
             "short-prompt = 0\n"
             "debug-needs-reference = false\n"
         )
@@ -191,41 +191,41 @@ class TestLoadLintConfig:
         assert config.short_prompt == 0
         assert config.debug_needs_reference is False
 
-    def test_reprompt_toml_takes_precedence(self, tmp_path: Path):
-        """When both exist, .reprompt.toml wins."""
-        (tmp_path / ".reprompt.toml").write_text("[lint]\nscore-threshold = 70\n")
-        (tmp_path / "pyproject.toml").write_text("[tool.reprompt.lint]\nscore-threshold = 30\n")
+    def test_ctxray_toml_takes_precedence(self, tmp_path: Path):
+        """When both exist, .ctxray.toml wins."""
+        (tmp_path / ".ctxray.toml").write_text("[lint]\nscore-threshold = 70\n")
+        (tmp_path / "pyproject.toml").write_text("[tool.ctxray.lint]\nscore-threshold = 30\n")
         config = load_lint_config(start_dir=tmp_path)
         assert config.score_threshold == 70
 
     def test_walks_up_directories(self, tmp_path: Path):
         """Config in parent dir should be found."""
-        (tmp_path / ".reprompt.toml").write_text("[lint]\nscore-threshold = 55\n")
+        (tmp_path / ".ctxray.toml").write_text("[lint]\nscore-threshold = 55\n")
         subdir = tmp_path / "src" / "module"
         subdir.mkdir(parents=True)
         config = load_lint_config(start_dir=subdir)
         assert config.score_threshold == 55
 
-    def test_pyproject_without_reprompt_section(self, tmp_path: Path):
-        """pyproject.toml without [tool.reprompt] should return defaults."""
+    def test_pyproject_without_ctxray_section(self, tmp_path: Path):
+        """pyproject.toml without [tool.ctxray] should return defaults."""
         (tmp_path / "pyproject.toml").write_text("[project]\nname = 'foo'\n")
         config = load_lint_config(start_dir=tmp_path)
         assert config.min_length == 20  # default
 
     def test_invalid_toml_returns_defaults(self, tmp_path: Path):
-        (tmp_path / ".reprompt.toml").write_text("this is not valid toml {{{{")
+        (tmp_path / ".ctxray.toml").write_text("this is not valid toml {{{{")
         config = load_lint_config(start_dir=tmp_path)
         assert config.min_length == 20  # graceful fallback
 
     def test_file_extensions_config(self, tmp_path: Path):
-        (tmp_path / ".reprompt.toml").write_text(
+        (tmp_path / ".ctxray.toml").write_text(
             '[lint.rules]\nfile-extensions = [".py", ".ts", ".vue"]\n'
         )
         config = load_lint_config(start_dir=tmp_path)
         assert config.file_extensions == [".py", ".ts", ".vue"]
 
     def test_disable_all_rules(self, tmp_path: Path):
-        (tmp_path / ".reprompt.toml").write_text(
+        (tmp_path / ".ctxray.toml").write_text(
             "[lint.rules]\n"
             "min-length = 0\n"
             "short-prompt = 0\n"
@@ -237,12 +237,12 @@ class TestLoadLintConfig:
         assert violations == []
 
     def test_model_config_from_toml(self, tmp_path: Path):
-        (tmp_path / ".reprompt.toml").write_text('[lint]\nmodel = "claude"\n')
+        (tmp_path / ".ctxray.toml").write_text('[lint]\nmodel = "claude"\n')
         config = load_lint_config(start_dir=tmp_path)
         assert config.model == "claude"
 
     def test_invalid_model_ignored(self, tmp_path: Path):
-        (tmp_path / ".reprompt.toml").write_text('[lint]\nmodel = "llama"\n')
+        (tmp_path / ".ctxray.toml").write_text('[lint]\nmodel = "llama"\n')
         config = load_lint_config(start_dir=tmp_path)
         assert config.model is None
 
@@ -400,7 +400,7 @@ class TestModelSpecificRules:
         assert "max-tokens" not in rules
 
     def test_token_budget_from_config(self, tmp_path: Path):
-        (tmp_path / ".reprompt.toml").write_text("[lint]\nmax-tokens = 100\n")
+        (tmp_path / ".ctxray.toml").write_text("[lint]\nmax-tokens = 100\n")
         config = load_lint_config(start_dir=tmp_path)
         assert config.max_tokens == 100
 

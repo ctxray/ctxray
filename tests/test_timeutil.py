@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from reprompt.core.timeutil import TimeWindow, parse_period, sliding_windows
+from ctxray.core.timeutil import TimeWindow, parse_period, sliding_windows
 
 
 class TestParsePeriod:

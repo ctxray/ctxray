@@ -6,7 +6,7 @@ import sqlite3
 
 import pytest
 
-from reprompt.storage.db import PromptDB
+from ctxray.storage.db import PromptDB
 
 
 @pytest.fixture

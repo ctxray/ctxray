@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import re
 
-from reprompt.core.persona import PERSONAS
-from reprompt.core.wrapped import WrappedReport
-from reprompt.output.wrapped_html import render_wrapped_html
+from ctxray.core.persona import PERSONAS
+from ctxray.core.wrapped import WrappedReport
+from ctxray.output.wrapped_html import render_wrapped_html
 
 
 def _sample_report() -> WrappedReport:
@@ -85,7 +85,7 @@ class TestRenderWrappedHTML:
     def test_contains_footer_link(self) -> None:
         result = render_wrapped_html(_sample_report())
         assert "getreprompt.dev" in result
-        assert "reprompt" in result.lower()
+        assert "ctxray" in result.lower()
 
     def test_score_color_green_for_72(self) -> None:
         """72.3% should use green (#00C853)."""

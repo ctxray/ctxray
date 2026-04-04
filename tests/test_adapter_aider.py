@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.adapters.aider import AiderAdapter
+from ctxray.adapters.aider import AiderAdapter
 
 
 def test_detect_installed(tmp_path):

@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from reprompt.core.repetition import analyze_repetition
-from reprompt.storage.db import PromptDB
+from ctxray.core.repetition import analyze_repetition
+from ctxray.storage.db import PromptDB
 
 
 @pytest.fixture

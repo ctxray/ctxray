@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from reprompt.core.persona import PERSONAS, Persona, classify_persona
+from ctxray.core.persona import PERSONAS, Persona, classify_persona
 
 EXPECTED_NAMES = {"architect", "debugger", "explorer", "novelist", "sniper", "teacher"}
 
@@ -182,6 +182,6 @@ class TestMathImport:
     """Verify that math is importable from the persona module (needed by Task 2)."""
 
     def test_math_imported_in_module(self):
-        import reprompt.core.persona as mod
+        import ctxray.core.persona as mod
 
         assert hasattr(mod, "math")

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from reprompt.core.extractors_zh import extract_features_zh
+from ctxray.core.extractors_zh import extract_features_zh
 
 
 class TestChineseBasicMetrics:
@@ -224,7 +224,7 @@ class TestChinesePromptDNAShape:
     """Ensure Chinese extraction produces same PromptDNA shape as English."""
 
     def test_feature_vector_same_length(self):
-        from reprompt.core.extractors import extract_features
+        from ctxray.core.extractors import extract_features
 
         en_dna = extract_features("Fix the bug in auth.py", source="test", session_id="s1")
         zh_dna = extract_features_zh("修复 auth.py 中的错误", source="test", session_id="s1")
@@ -244,7 +244,7 @@ class TestChinesePromptDNAShape:
         assert dna.sentence_count > 0
 
     def test_to_dict_roundtrip(self):
-        from reprompt.core.prompt_dna import PromptDNA
+        from ctxray.core.prompt_dna import PromptDNA
 
         dna = extract_features_zh("修复认证模块中的错误", source="test", session_id="s1")
         d = dna.to_dict()
@@ -329,7 +329,7 @@ class TestChineseScoring:
 
     def test_chinese_prompt_scores(self):
         """A well-structured Chinese prompt should produce valid scores."""
-        from reprompt.core.scorer import score_prompt
+        from ctxray.core.scorer import score_prompt
 
         dna = extract_features_zh(
             "你是一个资深Python开发者。\n"
@@ -347,7 +347,7 @@ class TestChineseScoring:
 
     def test_bare_chinese_prompt_low_score(self):
         """A vague Chinese prompt should score low."""
-        from reprompt.core.scorer import score_prompt
+        from ctxray.core.scorer import score_prompt
 
         dna = extract_features_zh(
             "帮我改一下那个东西",
@@ -359,7 +359,7 @@ class TestChineseScoring:
 
     def test_structured_chinese_prompt_high_score(self):
         """A richly structured Chinese prompt should score high."""
-        from reprompt.core.scorer import score_prompt
+        from ctxray.core.scorer import score_prompt
 
         dna = extract_features_zh(
             "你是一个资深后端工程师。\n\n"
@@ -376,7 +376,7 @@ class TestChineseScoring:
 
     def test_score_breakdown_has_suggestions(self):
         """A bare Chinese prompt should receive improvement suggestions."""
-        from reprompt.core.scorer import score_prompt
+        from ctxray.core.scorer import score_prompt
 
         dna = extract_features_zh("改一下代码", source="test", session_id="s1")
         breakdown = score_prompt(dna)
@@ -384,7 +384,7 @@ class TestChineseScoring:
 
     def test_score_specific_chinese_prompts_from_spec(self):
         """Score the specific Chinese test prompts from the task spec."""
-        from reprompt.core.scorer import score_prompt
+        from ctxray.core.scorer import score_prompt
 
         # Complex refactoring prompt with role + constraints + output format
         dna1 = extract_features_zh(

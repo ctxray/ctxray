@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from reprompt.core.repetition import RecurringTopic, RepetitionReport
-from reprompt.output.repetition_terminal import render_repetition_report
+from ctxray.core.repetition import RecurringTopic, RepetitionReport
+from ctxray.output.repetition_terminal import render_repetition_report
 
 
 def _topic(

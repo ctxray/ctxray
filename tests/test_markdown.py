@@ -1,6 +1,6 @@
 """Tests for Markdown export of prompt library."""
 
-from reprompt.output.markdown import export_library_markdown
+from ctxray.output.markdown import export_library_markdown
 
 
 def test_export_has_header():
@@ -15,7 +15,7 @@ def test_export_has_header():
     ]
     md = export_library_markdown(patterns)
     assert "# " in md  # has heading
-    assert "reprompt" in md.lower() or "prompt" in md.lower()
+    assert "ctxray" in md.lower() or "prompt" in md.lower()
 
 
 def test_export_has_pattern_table():

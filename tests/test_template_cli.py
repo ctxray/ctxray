@@ -1,4 +1,4 @@
-"""Tests for reprompt template sub-command group."""
+"""Tests for ctxray template sub-command group."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import tempfile
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 runner = CliRunner()
 
@@ -24,7 +24,7 @@ class TestTemplateSave:
             result = runner.invoke(
                 app,
                 ["template", "save", "Fix the auth bug in login.py"],
-                env={"REPROMPT_DB_PATH": f.name},
+                env={"CTXRAY_DB_PATH": f.name},
             )
         assert result.exit_code == 0
         assert "Saved template" in result.output
@@ -42,7 +42,7 @@ class TestTemplateSave:
                     "--category",
                     "debugging",
                 ],
-                env={"REPROMPT_DB_PATH": f.name},
+                env={"CTXRAY_DB_PATH": f.name},
             )
         assert result.exit_code == 0
         assert "api-debug" in result.output
@@ -52,7 +52,7 @@ class TestTemplateSave:
             result = runner.invoke(
                 app,
                 ["template", "save", "Test prompt", "--json"],
-                env={"REPROMPT_DB_PATH": f.name},
+                env={"CTXRAY_DB_PATH": f.name},
             )
         assert result.exit_code == 0
         data = json.loads(result.output)
@@ -63,7 +63,7 @@ class TestTemplateSave:
 class TestTemplateList:
     def test_list_empty(self):
         with tempfile.NamedTemporaryFile(suffix=".db") as f:
-            result = runner.invoke(app, ["template", "list"], env={"REPROMPT_DB_PATH": f.name})
+            result = runner.invoke(app, ["template", "list"], env={"CTXRAY_DB_PATH": f.name})
         assert result.exit_code == 0
         assert "No templates" in _strip_ansi(result.output)
 
@@ -72,9 +72,9 @@ class TestTemplateList:
             runner.invoke(
                 app,
                 ["template", "save", "Fix the auth bug"],
-                env={"REPROMPT_DB_PATH": f.name},
+                env={"CTXRAY_DB_PATH": f.name},
             )
-            result = runner.invoke(app, ["template", "list"], env={"REPROMPT_DB_PATH": f.name})
+            result = runner.invoke(app, ["template", "list"], env={"CTXRAY_DB_PATH": f.name})
         assert result.exit_code == 0
         assert "1 saved" in _strip_ansi(result.output) or "1" in result.output
 
@@ -83,10 +83,10 @@ class TestTemplateList:
             runner.invoke(
                 app,
                 ["template", "save", "Test prompt"],
-                env={"REPROMPT_DB_PATH": f.name},
+                env={"CTXRAY_DB_PATH": f.name},
             )
             result = runner.invoke(
-                app, ["template", "list", "--json"], env={"REPROMPT_DB_PATH": f.name}
+                app, ["template", "list", "--json"], env={"CTXRAY_DB_PATH": f.name}
             )
         assert result.exit_code == 0
         data = json.loads(result.output)
@@ -98,17 +98,17 @@ class TestTemplateList:
             runner.invoke(
                 app,
                 ["template", "save", "Debug X", "--category", "debugging"],
-                env={"REPROMPT_DB_PATH": f.name},
+                env={"CTXRAY_DB_PATH": f.name},
             )
             runner.invoke(
                 app,
                 ["template", "save", "Explain Y", "--category", "learning"],
-                env={"REPROMPT_DB_PATH": f.name},
+                env={"CTXRAY_DB_PATH": f.name},
             )
             result = runner.invoke(
                 app,
                 ["template", "list", "--category", "debugging", "--json"],
-                env={"REPROMPT_DB_PATH": f.name},
+                env={"CTXRAY_DB_PATH": f.name},
             )
         assert result.exit_code == 0
         data = json.loads(result.output)
@@ -121,12 +121,12 @@ class TestTemplateUse:
             runner.invoke(
                 app,
                 ["template", "save", "Fix {component} in {file}", "--name", "fix-tpl"],
-                env={"REPROMPT_DB_PATH": f.name},
+                env={"CTXRAY_DB_PATH": f.name},
             )
             result = runner.invoke(
                 app,
                 ["template", "use", "fix-tpl", "component=auth", "file=login.py"],
-                env={"REPROMPT_DB_PATH": f.name},
+                env={"CTXRAY_DB_PATH": f.name},
             )
         assert result.exit_code == 0
         assert "Fix auth in login.py" in _strip_ansi(result.output)
@@ -136,7 +136,7 @@ class TestTemplateUse:
             result = runner.invoke(
                 app,
                 ["template", "use", "nonexistent"],
-                env={"REPROMPT_DB_PATH": f.name},
+                env={"CTXRAY_DB_PATH": f.name},
             )
         assert result.exit_code == 1
 
@@ -145,12 +145,12 @@ class TestTemplateUse:
             runner.invoke(
                 app,
                 ["template", "save", "Hello world", "--name", "hw"],
-                env={"REPROMPT_DB_PATH": f.name},
+                env={"CTXRAY_DB_PATH": f.name},
             )
             result = runner.invoke(
                 app,
                 ["template", "use", "hw", "--json"],
-                env={"REPROMPT_DB_PATH": f.name},
+                env={"CTXRAY_DB_PATH": f.name},
             )
         assert result.exit_code == 0
         data = json.loads(result.output)
@@ -160,9 +160,9 @@ class TestTemplateUse:
 
 class TestTemplateDefault:
     def test_template_no_subcommand_shows_list(self):
-        """Running `reprompt template` with no subcommand should show template list."""
+        """Running `ctxray template` with no subcommand should show template list."""
         with tempfile.NamedTemporaryFile(suffix=".db") as f:
-            result = runner.invoke(app, ["template"], env={"REPROMPT_DB_PATH": f.name})
+            result = runner.invoke(app, ["template"], env={"CTXRAY_DB_PATH": f.name})
         assert result.exit_code == 0
         assert (
             "No templates" in _strip_ansi(result.output)

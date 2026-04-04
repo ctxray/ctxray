@@ -6,8 +6,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from reprompt.core.digest import build_digest
-from reprompt.storage.db import PromptDB
+from ctxray.core.digest import build_digest
+from ctxray.storage.db import PromptDB
 
 
 @pytest.fixture
@@ -98,7 +98,7 @@ class TestBuildDigest:
 
 def _make_db_with_session_meta(tmp_path):
     """Helper: DB with session metadata for effectiveness testing."""
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
     db.upsert_session_meta(
@@ -122,11 +122,11 @@ def test_build_digest_includes_eff_avg(tmp_path):
     """build_digest returns eff_avg from session_meta data."""
     from unittest.mock import patch
 
-    from reprompt.core.digest import build_digest
+    from ctxray.core.digest import build_digest
 
     db = _make_db_with_session_meta(tmp_path)
 
-    with patch("reprompt.core.digest.compute_window_snapshot") as mock_snap:
+    with patch("ctxray.core.digest.compute_window_snapshot") as mock_snap:
         mock_snap.return_value = {
             "prompt_count": 5,
             "specificity_score": 0.60,
@@ -143,12 +143,12 @@ def test_build_digest_eff_avg_none_when_no_sessions(tmp_path):
     """build_digest returns eff_avg=None when no session data exists."""
     from unittest.mock import patch
 
-    from reprompt.core.digest import build_digest
-    from reprompt.storage.db import PromptDB
+    from ctxray.core.digest import build_digest
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
 
-    with patch("reprompt.core.digest.compute_window_snapshot") as mock_snap:
+    with patch("ctxray.core.digest.compute_window_snapshot") as mock_snap:
         mock_snap.return_value = {
             "prompt_count": 0,
             "specificity_score": 0.0,
@@ -162,7 +162,7 @@ def test_build_digest_eff_avg_none_when_no_sessions(tmp_path):
 
 def test_render_digest_shows_effectiveness_when_present():
     """render_digest includes effectiveness line when eff_avg is provided."""
-    from reprompt.output.terminal import render_digest
+    from ctxray.output.terminal import render_digest
 
     snap = {"prompt_count": 10, "specificity_score": 0.65, "avg_length": 120.0}
     curr = {**snap, "category_distribution": {}}
@@ -181,7 +181,7 @@ def test_render_digest_shows_effectiveness_when_present():
 
 def test_render_digest_no_crash_without_effectiveness():
     """render_digest works fine when eff_avg is absent or None."""
-    from reprompt.output.terminal import render_digest
+    from ctxray.output.terminal import render_digest
 
     snap = {"prompt_count": 10, "specificity_score": 0.65, "avg_length": 120.0}
     curr = {**snap, "category_distribution": {}}

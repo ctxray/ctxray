@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.core.prompt_dna import PromptDNA
+from ctxray.core.prompt_dna import PromptDNA
 
 
 class TestPromptDNA:

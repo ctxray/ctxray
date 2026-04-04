@@ -1,17 +1,17 @@
-"""Tests for reprompt lint CLI command."""
+"""Tests for ctxray lint CLI command."""
 
 from __future__ import annotations
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 runner = CliRunner()
 
 
 def test_lint_no_prompts(tmp_path, monkeypatch):
     """Lint with no data should exit cleanly."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["lint", "--path", str(tmp_path / "nonexistent")])
     assert result.exit_code == 0
     assert "No prompts found" in result.output
@@ -19,9 +19,9 @@ def test_lint_no_prompts(tmp_path, monkeypatch):
 
 def test_lint_clean_prompts(tmp_path, monkeypatch):
     """Good prompts should produce no errors."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
 
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
     db.insert_prompt(
@@ -46,9 +46,9 @@ def test_lint_clean_prompts(tmp_path, monkeypatch):
 
 def test_lint_bad_prompts_exit_1(tmp_path, monkeypatch):
     """Prompts with errors should exit 1."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
 
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
     db.insert_prompt("fix it", source="test", project="test", session_id="s1", timestamp="")
@@ -61,9 +61,9 @@ def test_lint_json_output(tmp_path, monkeypatch):
     """JSON output should contain violations structure."""
     import json
 
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
 
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
     db.insert_prompt("fix it", source="test", project="test", session_id="s1", timestamp="")
@@ -77,9 +77,9 @@ def test_lint_json_output(tmp_path, monkeypatch):
 
 def test_lint_strict_mode(tmp_path, monkeypatch):
     """Strict mode should exit 1 on warnings too."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
 
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
     # A prompt that triggers warning but not error (short but above min)
@@ -97,9 +97,9 @@ def test_lint_strict_mode(tmp_path, monkeypatch):
 
 def test_lint_score_threshold_pass(tmp_path, monkeypatch):
     """Score threshold with good prompts should pass."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
 
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
     db.insert_prompt(
@@ -119,9 +119,9 @@ def test_lint_score_threshold_pass(tmp_path, monkeypatch):
 
 def test_lint_score_threshold_fail(tmp_path, monkeypatch):
     """Score threshold with vague prompts should fail."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
 
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
     db.insert_prompt(
@@ -141,9 +141,9 @@ def test_lint_score_threshold_json(tmp_path, monkeypatch):
     """Score threshold with JSON output should include score data."""
     import json
 
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
 
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
     db.insert_prompt(
@@ -165,9 +165,9 @@ def test_lint_score_threshold_json(tmp_path, monkeypatch):
 
 def test_lint_score_threshold_zero_is_noop(tmp_path, monkeypatch):
     """Score threshold of 0 (default) should not trigger scoring."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
 
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
     db.insert_prompt(

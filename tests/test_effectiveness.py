@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from reprompt.core.effectiveness import (
+from ctxray.core.effectiveness import (
     compute_effectiveness,
     detect_final_status,
     effectiveness_stars,
 )
-from reprompt.core.session_meta import SessionMeta
+from ctxray.core.session_meta import SessionMeta
 
 
 def _make_meta(**overrides: object) -> SessionMeta:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.core.privacy_scan import scan_prompts
+from ctxray.core.privacy_scan import scan_prompts
 
 
 def _prompt(text: str, source: str = "claude-code", pid: int = 1) -> dict:

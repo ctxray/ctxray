@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from reprompt.adapters.codex import CodexAdapter
+from ctxray.adapters.codex import CodexAdapter
 
 
 def _write_rollout(

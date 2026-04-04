@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from reprompt.adapters.base import BaseAdapter
-from reprompt.core.conversation import ConversationTurn
-from reprompt.core.models import Prompt
+from ctxray.adapters.base import BaseAdapter
+from ctxray.core.conversation import ConversationTurn
+from ctxray.core.models import Prompt
 
 
 class StubAdapter(BaseAdapter):

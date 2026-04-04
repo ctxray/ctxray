@@ -1,6 +1,6 @@
 """Tests for prompt builder."""
 
-from reprompt.core.build import BuildResult, build_prompt
+from ctxray.core.build import BuildResult, build_prompt
 
 
 class TestBuildPrompt:

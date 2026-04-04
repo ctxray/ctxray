@@ -6,7 +6,7 @@ import json
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 runner = CliRunner()
 
@@ -14,32 +14,32 @@ runner = CliRunner()
 def test_help():
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    assert "reprompt" in result.output.lower()
+    assert "ctxray" in result.output.lower()
 
 
 def test_version():
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert "reprompt" in result.output
-    # Check version format (e.g. "reprompt 2.0.1")
-    assert "reprompt " in result.output
+    assert "ctxray" in result.output
+    # Check version format (e.g. "ctxray 2.0.1")
+    assert "ctxray " in result.output
 
 
 def test_status_empty(tmp_path, monkeypatch):
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["status"])
     assert result.exit_code == 0
     assert "0" in result.output
 
 
 def test_scan_no_sources(tmp_path, monkeypatch):
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["scan", "--path", str(tmp_path / "empty")])
     assert result.exit_code == 0
 
 
 def test_scan_with_source(tmp_path, monkeypatch):
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(
         app, ["scan", "--source", "claude-code", "--path", str(tmp_path / "empty")]
     )
@@ -48,41 +48,41 @@ def test_scan_with_source(tmp_path, monkeypatch):
 
 
 def test_report_empty(tmp_path, monkeypatch):
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["report"])
     assert result.exit_code == 0
 
 
 def test_report_json_empty(tmp_path, monkeypatch):
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["report", "--format", "json"])
     assert result.exit_code == 0
 
 
 def test_library_empty(tmp_path, monkeypatch):
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["library"])
     assert result.exit_code == 0
 
 
 def test_purge(tmp_path, monkeypatch):
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["purge"])
     assert result.exit_code == 0
     assert "Purged" in result.output
 
 
 def test_search_no_results(tmp_path, monkeypatch):
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     result = runner.invoke(app, ["search", "nonexistent"])
     assert result.exit_code == 0
     assert "No prompts matching" in result.output
 
 
 def test_search_finds_matching(tmp_path, monkeypatch):
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     # Insert a prompt directly
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
     db.insert_prompt("fix the authentication bug in login handler", source="claude-code")
@@ -95,8 +95,8 @@ def test_search_finds_matching(tmp_path, monkeypatch):
 
 
 def test_search_respects_limit(tmp_path, monkeypatch):
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
-    from reprompt.storage.db import PromptDB
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
+    from ctxray.storage.db import PromptDB
 
     db = PromptDB(tmp_path / "test.db")
     for i in range(5):
@@ -120,7 +120,7 @@ def test_install_hook_registers_in_settings(tmp_path, monkeypatch):
     assert "hooks" in settings
     assert "Stop" in settings["hooks"]
     assert any(
-        h.get("command") == "reprompt scan --source claude-code" for h in settings["hooks"]["Stop"]
+        h.get("command") == "ctxray scan --source claude-code" for h in settings["hooks"]["Stop"]
     )
 
 
@@ -135,7 +135,7 @@ def test_install_hook_idempotent(tmp_path, monkeypatch):
 
     settings = json.loads((tmp_path / ".claude" / "settings.json").read_text())
     stop_hooks = settings["hooks"]["Stop"]
-    matching = [h for h in stop_hooks if h.get("command") == "reprompt scan --source claude-code"]
+    matching = [h for h in stop_hooks if h.get("command") == "ctxray scan --source claude-code"]
     assert len(matching) == 1
 
 
@@ -155,7 +155,7 @@ def test_install_hook_preserves_existing_settings(tmp_path, monkeypatch):
 
 def test_scan_shows_counts(tmp_path, monkeypatch):
     """Scan output should include the count fields."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     # Create a fake session
     sessions = tmp_path / "sessions" / "-Users-test-projects-app"
     sessions.mkdir(parents=True)

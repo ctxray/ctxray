@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.output.sessions_terminal import render_session_detail, render_sessions_table
+from ctxray.output.sessions_terminal import render_session_detail, render_sessions_table
 
 
 def _mock_session(

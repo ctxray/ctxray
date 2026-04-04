@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from reprompt.config import Settings
-from reprompt.core.pipeline import ScanResult, build_report_data, get_adapters, run_scan
+from ctxray.config import Settings
+from ctxray.core.pipeline import ScanResult, build_report_data, get_adapters, run_scan
 
 
 def _create_claude_session(
@@ -303,10 +303,10 @@ def test_run_scan_calls_update_prompt_effectiveness(tmp_path, monkeypatch):
     import json
     from unittest.mock import patch
 
-    from reprompt.config import Settings
-    from reprompt.core.pipeline import run_scan
+    from ctxray.config import Settings
+    from ctxray.core.pipeline import run_scan
 
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
 
     session_dir = tmp_path / "claude_sessions"
     session_dir.mkdir()
@@ -339,7 +339,7 @@ def test_run_scan_calls_update_prompt_effectiveness(tmp_path, monkeypatch):
     settings = Settings()
     settings.db_path = tmp_path / "test.db"
 
-    with patch("reprompt.core.pipeline.PromptDB") as MockDB:
+    with patch("ctxray.core.pipeline.PromptDB") as MockDB:
         mock_db = MockDB.return_value
         mock_db.is_session_processed.return_value = False
         mock_db.insert_prompt.return_value = 1
@@ -358,15 +358,15 @@ def test_build_report_data_calls_compute_pattern_effectiveness(tmp_path, monkeyp
     """build_report_data() calls compute_pattern_effectiveness after upserting patterns."""
     from unittest.mock import patch
 
-    from reprompt.config import Settings
-    from reprompt.core.pipeline import build_report_data
+    from ctxray.config import Settings
+    from ctxray.core.pipeline import build_report_data
 
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
 
     settings = Settings()
     settings.db_path = tmp_path / "test.db"
 
-    with patch("reprompt.core.pipeline.PromptDB") as MockDB:
+    with patch("ctxray.core.pipeline.PromptDB") as MockDB:
         mock_db = MockDB.return_value
         mock_db.get_all_prompts.return_value = []
         mock_db.get_patterns.return_value = []

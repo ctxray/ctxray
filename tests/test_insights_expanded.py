@@ -9,8 +9,8 @@ from datetime import datetime, timedelta, timezone
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
-from reprompt.storage.db import PromptDB
+from ctxray.cli import app
+from ctxray.storage.db import PromptDB
 
 runner = CliRunner()
 
@@ -32,8 +32,8 @@ def _seed_db_with_patterns(db: PromptDB) -> None:
 
     from dataclasses import asdict
 
-    from reprompt.core.extractors import extract_features
-    from reprompt.core.scorer import score_prompt
+    from ctxray.core.extractors import extract_features
+    from ctxray.core.scorer import score_prompt
 
     for p in db.get_all_prompts():
         dna = extract_features(p["text"], source=p["source"], session_id="test")
@@ -68,14 +68,14 @@ def _seed_similar_prompts(db: PromptDB) -> None:
 
 class TestGetEffectivenessInsight:
     def test_returns_none_when_no_patterns(self, tmp_path):
-        from reprompt.core.insights import get_effectiveness_insight
+        from ctxray.core.insights import get_effectiveness_insight
 
         db = PromptDB(tmp_path / "empty.db")
         result = get_effectiveness_insight(db)
         assert result is None
 
     def test_returns_data_with_patterns(self, tmp_path):
-        from reprompt.core.insights import get_effectiveness_insight
+        from ctxray.core.insights import get_effectiveness_insight
 
         db = PromptDB(tmp_path / "test.db")
         _seed_db_with_patterns(db)
@@ -90,14 +90,14 @@ class TestGetEffectivenessInsight:
 
 class TestGetSimilarPromptsInsight:
     def test_returns_none_when_few_prompts(self, tmp_path):
-        from reprompt.core.insights import get_similar_prompts_insight
+        from ctxray.core.insights import get_similar_prompts_insight
 
         db = PromptDB(tmp_path / "empty.db")
         result = get_similar_prompts_insight(db)
         assert result is None
 
     def test_returns_data_with_similar_prompts(self, tmp_path):
-        from reprompt.core.insights import get_similar_prompts_insight
+        from ctxray.core.insights import get_similar_prompts_insight
 
         db = PromptDB(tmp_path / "test.db")
         _seed_similar_prompts(db)
@@ -114,7 +114,7 @@ class TestInsightsExpandedCLI:
         _seed_db_with_patterns(db)
         _seed_similar_prompts(db)
 
-        result = runner.invoke(app, ["insights", "--json"], env={"REPROMPT_DB_PATH": str(db_path)})
+        result = runner.invoke(app, ["insights", "--json"], env={"CTXRAY_DB_PATH": str(db_path)})
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert "effectiveness" in data
@@ -122,7 +122,7 @@ class TestInsightsExpandedCLI:
 
     def test_insights_no_data_still_works(self):
         with tempfile.NamedTemporaryFile(suffix=".db") as f:
-            result = runner.invoke(app, ["insights"], env={"REPROMPT_DB_PATH": f.name})
+            result = runner.invoke(app, ["insights"], env={"CTXRAY_DB_PATH": f.name})
         assert result.exit_code == 0
 
     def test_insights_source_filter(self, tmp_path):
@@ -133,7 +133,7 @@ class TestInsightsExpandedCLI:
         result = runner.invoke(
             app,
             ["insights", "--source", "claude-code", "--json"],
-            env={"REPROMPT_DB_PATH": str(db_path)},
+            env={"CTXRAY_DB_PATH": str(db_path)},
         )
         assert result.exit_code == 0
         data = json.loads(result.output)

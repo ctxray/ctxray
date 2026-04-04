@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.core.rewrite import RewriteResult, rewrite_prompt
+from ctxray.core.rewrite import RewriteResult, rewrite_prompt
 
 
 class TestRewritePrompt:
@@ -164,7 +164,7 @@ class TestRewriteCLI:
     def test_rewrite_command_exists(self):
         from typer.testing import CliRunner
 
-        from reprompt.cli import app
+        from ctxray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["rewrite", "--help"])
@@ -176,7 +176,7 @@ class TestRewriteCLI:
 
         from typer.testing import CliRunner
 
-        from reprompt.cli import app
+        from ctxray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(
@@ -193,7 +193,7 @@ class TestRewriteCLI:
     def test_rewrite_terminal_output(self):
         from typer.testing import CliRunner
 
-        from reprompt.cli import app
+        from ctxray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(

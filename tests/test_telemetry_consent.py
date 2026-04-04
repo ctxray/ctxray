@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from reprompt.telemetry.consent import (
+from ctxray.telemetry.consent import (
     TelemetryConsent,
     generate_install_id,
     get_or_create_salt,
@@ -63,7 +63,7 @@ class TestSalt:
 
     def test_get_or_create_salt_reads_from_existing_toml(self, tmp_path: Path):
         config_path = tmp_path / "config.toml"
-        config_path.write_text('[reprompt]\ntelemetry_salt = "my-fixed-salt"\n')
+        config_path.write_text('[ctxray]\ntelemetry_salt = "my-fixed-salt"\n')
         salt = get_or_create_salt(config_path)
         assert salt == "my-fixed-salt"
 
@@ -80,7 +80,7 @@ class TestConsentPersistence:
 
     def test_write_consent_preserves_other_settings(self, tmp_path: Path):
         config_path = tmp_path / "config.toml"
-        config_path.write_text('[reprompt]\nembedding_backend = "ollama"\n')
+        config_path.write_text('[ctxray]\nembedding_backend = "ollama"\n')
         write_consent(TelemetryConsent.OPTED_OUT, config_path)
         text = config_path.read_text()
         assert "ollama" in text

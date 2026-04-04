@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.core.lang_detect import LanguageInfo, detect_prompt_language
+from ctxray.core.lang_detect import LanguageInfo, detect_prompt_language
 
 
 class TestDetectLanguage:

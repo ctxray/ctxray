@@ -8,8 +8,8 @@ import tempfile
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
-from reprompt.core.conversation import (
+from ctxray.cli import app
+from ctxray.core.conversation import (
     Conversation,
     ConversationTurn,
     DistillResult,
@@ -24,7 +24,7 @@ def _strip_ansi(text: str) -> str:
 
 class TestRenderDistill:
     def test_render_basic(self):
-        from reprompt.output.distill_terminal import render_distill
+        from ctxray.output.distill_terminal import render_distill
 
         turns = [
             ConversationTurn(
@@ -45,7 +45,7 @@ class TestRenderDistill:
         conv = Conversation(
             session_id="abc123",
             source="claude-code",
-            project="reprompt",
+            project="ctxray",
             turns=turns,
             duration_seconds=2700,
         )
@@ -66,7 +66,7 @@ class TestRenderDistill:
         assert "Fix the bug" in output
 
     def test_render_stars(self):
-        from reprompt.output.distill_terminal import render_distill
+        from ctxray.output.distill_terminal import render_distill
 
         turns = [
             ConversationTurn(
@@ -94,7 +94,7 @@ class TestRenderDistill:
         assert output  # Just verify no crash
 
     def test_render_empty(self):
-        from reprompt.output.distill_terminal import render_distill
+        from ctxray.output.distill_terminal import render_distill
 
         conv = Conversation(session_id="t", source="test", project=None, turns=[])
         result = DistillResult(
@@ -107,7 +107,7 @@ class TestRenderDistill:
         assert "0" in output or "No key turns" in output
 
     def test_render_summary_mode(self):
-        from reprompt.output.distill_terminal import render_distill_summary
+        from ctxray.output.distill_terminal import render_distill_summary
 
         result = DistillResult(
             conversation=Conversation(session_id="t", source="test", project="proj", turns=[]),
@@ -128,14 +128,14 @@ class TestDistillCLI:
     def test_distill_no_sessions(self):
         """When no sessions exist, should show helpful message."""
         with tempfile.NamedTemporaryFile(suffix=".db") as f:
-            result = runner.invoke(app, ["distill"], env={"REPROMPT_DB_PATH": f.name})
+            result = runner.invoke(app, ["distill"], env={"CTXRAY_DB_PATH": f.name})
         assert result.exit_code == 0
         assert "No sessions found" in result.output or "scan" in result.output.lower()
 
     def test_distill_json_flag(self):
         """--json flag should produce valid JSON even if empty."""
         with tempfile.NamedTemporaryFile(suffix=".db") as f:
-            result = runner.invoke(app, ["distill", "--json"], env={"REPROMPT_DB_PATH": f.name})
+            result = runner.invoke(app, ["distill", "--json"], env={"CTXRAY_DB_PATH": f.name})
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert isinstance(data, (dict, list))
@@ -156,8 +156,8 @@ class TestDistillSessionType:
 
     def test_render_shows_detected_type(self):
         """When conversation has _detected_type, it should appear in output."""
-        from reprompt.core.session_type import SessionType
-        from reprompt.output.distill_terminal import render_distill
+        from ctxray.core.session_type import SessionType
+        from ctxray.output.distill_terminal import render_distill
 
         turns = [
             ConversationTurn(
@@ -181,7 +181,7 @@ class TestDistillSessionType:
 
     def test_render_no_type_when_absent(self):
         """When conversation has no _detected_type, no type line shown."""
-        from reprompt.output.distill_terminal import render_distill
+        from ctxray.output.distill_terminal import render_distill
 
         turns = [
             ConversationTurn(
@@ -208,8 +208,8 @@ class TestDistillSessionType:
 
     def test_render_shows_implementation_type(self):
         """Implementation type should show correctly."""
-        from reprompt.core.session_type import SessionType
-        from reprompt.output.distill_terminal import render_distill
+        from ctxray.core.session_type import SessionType
+        from ctxray.output.distill_terminal import render_distill
 
         turns = [
             ConversationTurn(

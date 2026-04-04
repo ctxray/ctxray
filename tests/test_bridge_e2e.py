@@ -3,10 +3,10 @@
 Simulates the full pipeline that a browser extension user would trigger:
 1. Extension captures prompts from ChatGPT/Claude.ai/Gemini
 2. Sends them via Native Messaging protocol (4-byte length-prefixed JSON)
-3. reprompt bridge host subprocess receives and stores in DB
+3. ctxray bridge host subprocess receives and stores in DB
 4. CLI commands (extension-status, report) see the stored data
 
-This test spawns a real subprocess (reprompt.bridge.host), sends multi-message
+This test spawns a real subprocess (ctxray.bridge.host), sends multi-message
 sequences through its stdin, and verifies the final DB + CLI state.
 """
 
@@ -21,8 +21,8 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
-from reprompt.storage.db import PromptDB
+from ctxray.cli import app
+from ctxray.storage.db import PromptDB
 
 runner = CliRunner()
 
@@ -51,11 +51,11 @@ def _decode_all(data: bytes) -> list[dict]:
 
 def _run_host(db_path: Path, messages: list[dict], timeout: int = 10) -> list[dict]:
     """Run the bridge host subprocess with a sequence of messages."""
-    env = {**os.environ, "REPROMPT_DB_PATH": str(db_path)}
+    env = {**os.environ, "CTXRAY_DB_PATH": str(db_path)}
     input_data = b"".join(_encode(m) for m in messages)
 
     result = subprocess.run(
-        [sys.executable, "-u", "-m", "reprompt.bridge.host"],
+        [sys.executable, "-u", "-m", "ctxray.bridge.host"],
         input=input_data,
         capture_output=True,
         timeout=timeout,
@@ -241,14 +241,14 @@ class TestExtensionE2EPipeline:
         )
 
         # Now run CLI extension-status pointing at same DB
-        import reprompt.bridge.manifest as manifest_mod
+        import ctxray.bridge.manifest as manifest_mod
 
         # Create a fake manifest so it shows as "registered"
         manifest_dir = tmp_path / "nm"
         manifest_dir.mkdir()
-        (manifest_dir / "dev.reprompt.bridge.json").write_text("{}")
+        (manifest_dir / "dev.ctxray.bridge.json").write_text("{}")
         monkeypatch.setattr(manifest_mod, "get_manifest_dir", lambda browser: manifest_dir)
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
         result = runner.invoke(app, ["extension-status"])
         assert result.exit_code == 0
@@ -257,7 +257,7 @@ class TestExtensionE2EPipeline:
         assert "3" in result.output
 
     def test_cli_report_includes_extension_prompts(self, tmp_path: Path, monkeypatch) -> None:
-        """After sync, reprompt report --format json includes extension-sourced prompts."""
+        """After sync, ctxray report --format json includes extension-sourced prompts."""
         db_path = tmp_path / "e2e_report.db"
 
         # Sync prompts
@@ -266,7 +266,7 @@ class TestExtensionE2EPipeline:
             [{"type": "sync_prompts", "prompts": self.CHATGPT_PROMPTS}],
         )
 
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
         result = runner.invoke(app, ["report", "--format", "json"])
         assert result.exit_code == 0

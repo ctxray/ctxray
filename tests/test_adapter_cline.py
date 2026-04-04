@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.adapters.cline import ClineAdapter
+from ctxray.adapters.cline import ClineAdapter
 
 
 def test_detect_installed(tmp_path):

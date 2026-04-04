@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from reprompt.sharing.clipboard import copy_to_clipboard
+from ctxray.sharing.clipboard import copy_to_clipboard
 
 
 class TestCopyToClipboard:
     @patch("subprocess.run")
     def test_macos_uses_pbcopy(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0)
-        with patch("reprompt.sharing.clipboard.sys") as mock_sys:
+        with patch("ctxray.sharing.clipboard.sys") as mock_sys:
             mock_sys.platform = "darwin"
             result = copy_to_clipboard("https://getreprompt.dev/w/abc")
         assert result is True

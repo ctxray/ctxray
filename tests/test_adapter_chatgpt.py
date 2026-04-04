@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from reprompt.adapters.chatgpt import ChatGPTAdapter
+from ctxray.adapters.chatgpt import ChatGPTAdapter
 
 
 def test_parse_extracts_user_messages(fixtures_path: Path) -> None:

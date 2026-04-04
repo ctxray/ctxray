@@ -1,11 +1,11 @@
 [project]
-name = "reprompt-cli"
-version = "2.5.0"
-description = "Linter for your AI prompts — score, rewrite, and analyze across Claude Code, Cursor, ChatGPT, and more"
+name = "ctxray"
+version = "3.0.0"
+description = "See how you really use AI — X-ray your AI coding sessions locally"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
-keywords = ["prompt", "llm", "ai", "cli", "analytics", "claude-code", "linter", "prompt-engineering", "cursor", "ai-tools"]
+keywords = ["prompt", "llm", "ai", "cli", "analytics", "claude-code", "context-engineering", "cursor", "ai-tools", "ctxray"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -35,20 +35,20 @@ chinese = ["jieba>=0.42"]
 dev = ["pytest>=8.0", "ruff>=0.4", "mypy>=1.0", "pytest-cov>=5.0", "jieba>=0.42"]
 
 [project.scripts]
-reprompt = "reprompt.cli:app"
+ctxray = "ctxray.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/reprompt-dev/reprompt"
-Repository = "https://github.com/reprompt-dev/reprompt"
-Issues = "https://github.com/reprompt-dev/reprompt/issues"
-Changelog = "https://github.com/reprompt-dev/reprompt/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/ctxray/ctxray"
+Repository = "https://github.com/ctxray/ctxray"
+Issues = "https://github.com/ctxray/ctxray/issues"
+Changelog = "https://github.com/ctxray/ctxray/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/reprompt"]
+packages = ["src/ctxray"]
 
 [tool.ruff]
 target-version = "py310"
@@ -59,9 +59,9 @@ select = ["E", "F", "I", "UP"]
 
 [tool.coverage.run]
 omit = [
-    "src/reprompt/mcp.py",
-    "src/reprompt/mcp_main.py",
-    "src/reprompt/embeddings/ollama.py",
+    "src/ctxray/mcp.py",
+    "src/ctxray/mcp_main.py",
+    "src/ctxray/embeddings/ollama.py",
 ]
 
 [tool.pytest.ini_options]

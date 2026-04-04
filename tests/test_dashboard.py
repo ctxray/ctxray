@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
-from reprompt.core.dashboard import DashboardData, build_dashboard_data
+from ctxray.cli import app
+from ctxray.core.dashboard import DashboardData, build_dashboard_data
 
 runner = CliRunner()
 
@@ -21,7 +21,7 @@ class TestZeroState:
         """No AI tools installed -> empty discoveries."""
         db = MagicMock()
         db.get_stats.return_value = {"total_prompts": 0}
-        with patch("reprompt.core.dashboard._discover_sessions") as mock_disc:
+        with patch("ctxray.core.dashboard._discover_sessions") as mock_disc:
             mock_disc.return_value = []
             data = build_dashboard_data(db)
         assert data.has_data is False
@@ -31,7 +31,7 @@ class TestZeroState:
         """AI tools found -> show discoveries."""
         db = MagicMock()
         db.get_stats.return_value = {"total_prompts": 0}
-        with patch("reprompt.core.dashboard._discover_sessions") as mock_disc:
+        with patch("ctxray.core.dashboard._discover_sessions") as mock_disc:
             mock_disc.return_value = [
                 {"adapter": "claude-code", "sessions": 12, "turns_estimate": 847},
                 {"adapter": "cursor", "sessions": 3, "turns_estimate": 124},
@@ -50,9 +50,9 @@ class TestDataState:
         db = MagicMock()
         db.get_stats.return_value = {"total_prompts": 47}
         db.get_prompts_in_range.return_value = [{"source": "claude-code"} for _ in range(47)]
-        with patch("reprompt.core.dashboard._compute_avg_score") as mock_score:
+        with patch("ctxray.core.dashboard._compute_avg_score") as mock_score:
             mock_score.return_value = {"overall": 52, "debug": 31, "implement": 64}
-            with patch("reprompt.core.dashboard._compute_avg_compressibility") as mock_comp:
+            with patch("ctxray.core.dashboard._compute_avg_compressibility") as mock_comp:
                 mock_comp.return_value = 0.23
                 data = build_dashboard_data(db)
         assert data.has_data is True
@@ -64,9 +64,9 @@ class TestDataState:
         db = MagicMock()
         db.get_stats.return_value = {"total_prompts": 100}
         db.get_prompts_in_range.return_value = []
-        with patch("reprompt.core.dashboard._compute_avg_score") as mock_score:
+        with patch("ctxray.core.dashboard._compute_avg_score") as mock_score:
             mock_score.return_value = {"overall": 0}
-            with patch("reprompt.core.dashboard._compute_avg_compressibility") as mock_comp:
+            with patch("ctxray.core.dashboard._compute_avg_compressibility") as mock_comp:
                 mock_comp.return_value = 0.0
                 data = build_dashboard_data(db)
         assert data.has_data is True
@@ -82,9 +82,9 @@ class TestDataState:
             {"session_id": "s2", "source": "test"},
             {"session_id": "s3", "source": "test"},
         ]
-        with patch("reprompt.core.dashboard._compute_avg_score") as mock_score:
+        with patch("ctxray.core.dashboard._compute_avg_score") as mock_score:
             mock_score.return_value = {"overall": 50}
-            with patch("reprompt.core.dashboard._compute_avg_compressibility") as mock_comp:
+            with patch("ctxray.core.dashboard._compute_avg_compressibility") as mock_comp:
                 mock_comp.return_value = 0.1
                 data = build_dashboard_data(db)
         assert data.session_count == 3
@@ -103,9 +103,9 @@ class TestDataState:
             {"session_id": "s2", "cnt": 65},
         ]
         db._conn.return_value = mock_conn
-        with patch("reprompt.core.dashboard._compute_avg_score") as mock_score:
+        with patch("ctxray.core.dashboard._compute_avg_score") as mock_score:
             mock_score.return_value = {"overall": 45}
-            with patch("reprompt.core.dashboard._compute_avg_compressibility") as mock_comp:
+            with patch("ctxray.core.dashboard._compute_avg_compressibility") as mock_comp:
                 mock_comp.return_value = 0.15
                 data = build_dashboard_data(db)
         assert data.long_sessions == 2
@@ -115,7 +115,7 @@ class TestComputeAvgScore:
     """Tests for _compute_avg_score."""
 
     def test_no_features(self):
-        from reprompt.core.dashboard import _compute_avg_score
+        from ctxray.core.dashboard import _compute_avg_score
 
         db = MagicMock()
         db.get_all_features.return_value = []
@@ -123,7 +123,7 @@ class TestComputeAvgScore:
         assert result == {"overall": 0}
 
     def test_basic_average(self):
-        from reprompt.core.dashboard import _compute_avg_score
+        from ctxray.core.dashboard import _compute_avg_score
 
         db = MagicMock()
         db.get_all_features.return_value = [
@@ -137,7 +137,7 @@ class TestComputeAvgScore:
         assert result["implement"] == 40
 
     def test_exception_returns_zero(self):
-        from reprompt.core.dashboard import _compute_avg_score
+        from ctxray.core.dashboard import _compute_avg_score
 
         db = MagicMock()
         db.get_all_features.side_effect = Exception("DB error")
@@ -145,7 +145,7 @@ class TestComputeAvgScore:
         assert result == {"overall": 0}
 
     def test_uses_only_last_50(self):
-        from reprompt.core.dashboard import _compute_avg_score
+        from ctxray.core.dashboard import _compute_avg_score
 
         db = MagicMock()
         # Return 100 features, only first 50 should be used
@@ -161,7 +161,7 @@ class TestComputeAvgCompressibility:
     """Tests for _compute_avg_compressibility."""
 
     def test_no_features(self):
-        from reprompt.core.dashboard import _compute_avg_compressibility
+        from ctxray.core.dashboard import _compute_avg_compressibility
 
         db = MagicMock()
         db.get_all_features.return_value = []
@@ -169,7 +169,7 @@ class TestComputeAvgCompressibility:
         assert result == 0.0
 
     def test_basic_average(self):
-        from reprompt.core.dashboard import _compute_avg_compressibility
+        from ctxray.core.dashboard import _compute_avg_compressibility
 
         db = MagicMock()
         db.get_all_features.return_value = [
@@ -180,7 +180,7 @@ class TestComputeAvgCompressibility:
         assert abs(result - 0.3) < 0.01
 
     def test_exception_returns_zero(self):
-        from reprompt.core.dashboard import _compute_avg_compressibility
+        from ctxray.core.dashboard import _compute_avg_compressibility
 
         db = MagicMock()
         db.get_all_features.side_effect = Exception("DB error")
@@ -188,7 +188,7 @@ class TestComputeAvgCompressibility:
         assert result == 0.0
 
     def test_skips_zero_compressibility(self):
-        from reprompt.core.dashboard import _compute_avg_compressibility
+        from ctxray.core.dashboard import _compute_avg_compressibility
 
         db = MagicMock()
         db.get_all_features.return_value = [
@@ -204,9 +204,9 @@ class TestDiscoverSessions:
     """Tests for _discover_sessions."""
 
     def test_no_adapters_installed(self):
-        from reprompt.core.dashboard import _discover_sessions
+        from ctxray.core.dashboard import _discover_sessions
 
-        with patch("reprompt.core.dashboard.get_adapters") as mock_adapters:
+        with patch("ctxray.core.dashboard.get_adapters") as mock_adapters:
             adapter1 = MagicMock()
             adapter1.detect_installed.return_value = False
             mock_adapters.return_value = [adapter1]
@@ -214,7 +214,7 @@ class TestDiscoverSessions:
         assert result == []
 
     def test_adapter_installed_with_sessions(self, tmp_path):
-        from reprompt.core.dashboard import _discover_sessions
+        from ctxray.core.dashboard import _discover_sessions
 
         # Create a fake session directory with files
         session_dir = tmp_path / "sessions"
@@ -222,7 +222,7 @@ class TestDiscoverSessions:
         (session_dir / "session1.jsonl").write_text("line1\nline2\nline3\n")
         (session_dir / "session2.jsonl").write_text("line1\n")
 
-        with patch("reprompt.core.dashboard.get_adapters") as mock_adapters:
+        with patch("ctxray.core.dashboard.get_adapters") as mock_adapters:
             adapter = MagicMock()
             adapter.name = "test-tool"
             adapter.detect_installed.return_value = True
@@ -237,12 +237,12 @@ class TestDiscoverSessions:
         assert result[0]["sessions"] == 2
 
     def test_adapter_with_discover_sessions(self, tmp_path):
-        from reprompt.core.dashboard import _discover_sessions
+        from ctxray.core.dashboard import _discover_sessions
 
         session_dir = tmp_path / "sessions"
         session_dir.mkdir()
 
-        with patch("reprompt.core.dashboard.get_adapters") as mock_adapters:
+        with patch("ctxray.core.dashboard.get_adapters") as mock_adapters:
             adapter = MagicMock()
             adapter.name = "custom-tool"
             adapter.detect_installed.return_value = True
@@ -264,14 +264,14 @@ class TestDashboardOutput:
     """Tests for Rich terminal rendering."""
 
     def test_render_zero_state_no_crash(self):
-        from reprompt.output.dashboard_terminal import render_dashboard
+        from ctxray.output.dashboard_terminal import render_dashboard
 
         data = DashboardData(has_data=False, discoveries=[])
         output = render_dashboard(data)
-        assert "reprompt" in output.lower()
+        assert "ctxray" in output.lower()
 
     def test_render_zero_state_with_discoveries(self):
-        from reprompt.output.dashboard_terminal import render_dashboard
+        from ctxray.output.dashboard_terminal import render_dashboard
 
         data = DashboardData(
             has_data=False,
@@ -285,7 +285,7 @@ class TestDashboardOutput:
         assert "scan" in output.lower()
 
     def test_render_data_state_no_crash(self):
-        from reprompt.output.dashboard_terminal import render_dashboard
+        from ctxray.output.dashboard_terminal import render_dashboard
 
         data = DashboardData(
             has_data=True,
@@ -299,7 +299,7 @@ class TestDashboardOutput:
         assert "47" in output
 
     def test_render_data_state_score_shown(self):
-        from reprompt.output.dashboard_terminal import render_dashboard
+        from ctxray.output.dashboard_terminal import render_dashboard
 
         data = DashboardData(
             has_data=True,
@@ -312,7 +312,7 @@ class TestDashboardOutput:
         assert "65" in output
 
     def test_render_data_state_compressibility(self):
-        from reprompt.output.dashboard_terminal import render_dashboard
+        from ctxray.output.dashboard_terminal import render_dashboard
 
         data = DashboardData(
             has_data=True,
@@ -325,7 +325,7 @@ class TestDashboardOutput:
         assert "23%" in output
 
     def test_render_data_state_long_sessions(self):
-        from reprompt.output.dashboard_terminal import render_dashboard
+        from ctxray.output.dashboard_terminal import render_dashboard
 
         data = DashboardData(
             has_data=True,
@@ -340,7 +340,7 @@ class TestDashboardOutput:
         assert "distill" in output.lower()
 
     def test_render_data_state_suggestions(self):
-        from reprompt.output.dashboard_terminal import render_dashboard
+        from ctxray.output.dashboard_terminal import render_dashboard
 
         data = DashboardData(
             has_data=True,
@@ -390,22 +390,22 @@ class TestDashboardDataclass:
 
 
 class TestBareRepromptCLI:
-    """Tests for bare `reprompt` (no subcommand) showing dashboard."""
+    """Tests for bare `ctxray` (no subcommand) showing dashboard."""
 
-    def test_bare_reprompt_shows_dashboard(self):
-        """Bare `reprompt` should show dashboard output, not help text."""
+    def test_bare_ctxray_shows_dashboard(self):
+        """Bare `ctxray` should show dashboard output, not help text."""
         with tempfile.NamedTemporaryFile(suffix=".db") as f:
-            result = runner.invoke(app, [], env={"REPROMPT_DB_PATH": f.name})
+            result = runner.invoke(app, [], env={"CTXRAY_DB_PATH": f.name})
         assert result.exit_code == 0
         # Should NOT show help (which contains "Usage:")
-        assert "Usage:" not in result.output or "reprompt" in result.output.lower()
-        # Dashboard renders something (zero-state includes "reprompt")
-        assert "reprompt" in result.output.lower()
+        assert "Usage:" not in result.output or "ctxray" in result.output.lower()
+        # Dashboard renders something (zero-state includes "ctxray")
+        assert "ctxray" in result.output.lower()
 
-    def test_bare_reprompt_json_flag(self):
-        """Bare `reprompt --json` should produce valid JSON dashboard."""
+    def test_bare_ctxray_json_flag(self):
+        """Bare `ctxray --json` should produce valid JSON dashboard."""
         with tempfile.NamedTemporaryFile(suffix=".db") as f:
-            result = runner.invoke(app, ["--json"], env={"REPROMPT_DB_PATH": f.name})
+            result = runner.invoke(app, ["--json"], env={"CTXRAY_DB_PATH": f.name})
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert "has_data" in data
@@ -419,5 +419,5 @@ class TestBareRepromptCLI:
     def test_subcommands_still_work(self):
         """Subcommands like `status` should still work."""
         with tempfile.NamedTemporaryFile(suffix=".db") as f:
-            result = runner.invoke(app, ["status"], env={"REPROMPT_DB_PATH": f.name})
+            result = runner.invoke(app, ["status"], env={"CTXRAY_DB_PATH": f.name})
         assert result.exit_code == 0

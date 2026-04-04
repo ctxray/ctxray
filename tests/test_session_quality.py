@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from reprompt.core.agent import AgentEfficiency, AgentReport
-from reprompt.core.conversation import (
+from ctxray.core.agent import AgentEfficiency, AgentReport
+from ctxray.core.conversation import (
     Conversation,
     ConversationTurn,
     DistillResult,
     DistillStats,
 )
-from reprompt.core.session_quality import (
+from ctxray.core.session_quality import (
     FrustrationSignals,
     SessionQuality,
     _detect_frustration,

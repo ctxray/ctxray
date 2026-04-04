@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from reprompt.core.style import compute_style
+from ctxray.core.style import compute_style
 
 
 def test_compute_style_empty() -> None:
@@ -106,15 +106,15 @@ def test_style_cli_json(tmp_path: Path) -> None:
 
     from typer.testing import CliRunner
 
-    from reprompt.cli import app
-    from reprompt.storage.db import PromptDB
+    from ctxray.cli import app
+    from ctxray.storage.db import PromptDB
 
     runner = CliRunner()
     db = PromptDB(tmp_path / "test.db")
     db.insert_prompt("Fix the auth bug in login.py", source="test", project="p", session_id="s1")
     db.insert_prompt("Add unit tests for user service", source="test", project="p", session_id="s1")
 
-    os.environ["REPROMPT_DB_PATH"] = str(tmp_path / "test.db")
+    os.environ["CTXRAY_DB_PATH"] = str(tmp_path / "test.db")
     try:
         result = runner.invoke(app, ["style", "--json"])
         assert result.exit_code == 0
@@ -122,7 +122,7 @@ def test_style_cli_json(tmp_path: Path) -> None:
         assert data["prompt_count"] == 2
         assert "avg_length" in data
     finally:
-        del os.environ["REPROMPT_DB_PATH"]
+        del os.environ["CTXRAY_DB_PATH"]
 
 
 def test_style_cli_empty() -> None:
@@ -132,15 +132,15 @@ def test_style_cli_empty() -> None:
 
     from typer.testing import CliRunner
 
-    from reprompt.cli import app
+    from ctxray.cli import app
 
     runner = CliRunner()
 
     with tempfile.NamedTemporaryFile(suffix=".db") as f:
-        os.environ["REPROMPT_DB_PATH"] = f.name
+        os.environ["CTXRAY_DB_PATH"] = f.name
         try:
             result = runner.invoke(app, ["style"])
             assert result.exit_code == 0
             assert "No prompts" in result.output
         finally:
-            del os.environ["REPROMPT_DB_PATH"]
+            del os.environ["CTXRAY_DB_PATH"]

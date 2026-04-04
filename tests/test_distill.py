@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.core.conversation import Conversation, ConversationTurn, DistillResult, DistillStats
+from ctxray.core.conversation import Conversation, ConversationTurn, DistillResult, DistillStats
 
 
 def _make_conv(user_texts: list[str], assistant_texts: list[str] | None = None) -> Conversation:
@@ -27,17 +27,17 @@ def _make_conv(user_texts: list[str], assistant_texts: list[str] | None = None) 
 
 class TestPositionSignal:
     def test_first_turn_highest(self):
-        from reprompt.core.distill import _score_position
+        from ctxray.core.distill import _score_position
 
         assert _score_position(0, 10) == 1.0
 
     def test_last_turn_high(self):
-        from reprompt.core.distill import _score_position
+        from ctxray.core.distill import _score_position
 
         assert _score_position(9, 10) == 0.8
 
     def test_middle_turn_lower(self):
-        from reprompt.core.distill import _score_position
+        from ctxray.core.distill import _score_position
 
         score = _score_position(5, 10)
         assert 0.3 < score < 0.8
@@ -45,55 +45,55 @@ class TestPositionSignal:
 
 class TestLengthSignal:
     def test_longer_than_median_capped(self):
-        from reprompt.core.distill import _score_length
+        from ctxray.core.distill import _score_length
 
         assert _score_length(200, 100) == 1.0
 
     def test_shorter_than_median(self):
-        from reprompt.core.distill import _score_length
+        from ctxray.core.distill import _score_length
 
         score = _score_length(50, 100)
         assert score == 0.5
 
     def test_zero_median(self):
-        from reprompt.core.distill import _score_length
+        from ctxray.core.distill import _score_length
 
         assert _score_length(10, 0) == 1.0
 
 
 class TestToolTriggerSignal:
     def test_five_or_more_maxes_out(self):
-        from reprompt.core.distill import _score_tool_trigger
+        from ctxray.core.distill import _score_tool_trigger
 
         assert _score_tool_trigger(5) == 1.0
         assert _score_tool_trigger(10) == 1.0
 
     def test_zero_tool_calls(self):
-        from reprompt.core.distill import _score_tool_trigger
+        from ctxray.core.distill import _score_tool_trigger
 
         assert _score_tool_trigger(0) == 0.0
 
     def test_partial(self):
-        from reprompt.core.distill import _score_tool_trigger
+        from ctxray.core.distill import _score_tool_trigger
 
         assert _score_tool_trigger(2) == 0.4
 
 
 class TestErrorRecoverySignal:
     def test_after_error(self):
-        from reprompt.core.distill import _score_error_recovery
+        from ctxray.core.distill import _score_error_recovery
 
         assert _score_error_recovery(True) == 1.0
 
     def test_no_error(self):
-        from reprompt.core.distill import _score_error_recovery
+        from ctxray.core.distill import _score_error_recovery
 
         assert _score_error_recovery(False) == 0.0
 
 
 class TestDistillConversation:
     def test_basic_distill(self):
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         conv = _make_conv(
             [
@@ -115,7 +115,7 @@ class TestDistillConversation:
         assert 0.0 <= result.stats.retention_ratio <= 1.0
 
     def test_short_turns_scored_lower(self):
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         conv = _make_conv(
             [
@@ -131,7 +131,7 @@ class TestDistillConversation:
         assert user_turns[0].importance > user_turns[2].importance
 
     def test_threshold_filtering(self):
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         conv = _make_conv(["hello"] * 10)
         result_low = distill_conversation(conv, threshold=0.0)
@@ -139,7 +139,7 @@ class TestDistillConversation:
         assert result_low.stats.kept_turns >= result_high.stats.kept_turns
 
     def test_empty_conversation(self):
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         conv = Conversation(session_id="empty", source="test", project=None, turns=[])
         result = distill_conversation(conv, threshold=0.3)
@@ -147,7 +147,7 @@ class TestDistillConversation:
         assert result.stats.total_turns == 0
 
     def test_single_turn_always_kept(self):
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         conv = _make_conv(["Fix the critical production bug immediately"])
         result = distill_conversation(conv, threshold=0.3)
@@ -155,7 +155,7 @@ class TestDistillConversation:
 
     def test_single_turn_kept_even_at_high_threshold(self):
         """Spec guarantee: single-turn conversations always pass any threshold."""
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         conv = _make_conv(["ok"])
         result = distill_conversation(conv, threshold=0.99)
@@ -164,7 +164,7 @@ class TestDistillConversation:
         assert result.stats.kept_turns >= 1
 
     def test_all_below_threshold(self):
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         conv = _make_conv(["ok", "yes", "k"])
         result = distill_conversation(conv, threshold=0.99)
@@ -172,7 +172,7 @@ class TestDistillConversation:
         assert result.filtered_turns == []
 
     def test_tool_trigger_boosts_importance(self):
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         turns = [
             ConversationTurn(
@@ -200,7 +200,7 @@ class TestDistillConversation:
         assert user_turns[0].importance > user_turns[1].importance
 
     def test_error_recovery_boosts_importance(self):
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         turns = [
             ConversationTurn(
@@ -231,7 +231,7 @@ class TestDistillConversation:
 
 class TestFilesChanged:
     def test_extracts_edit_write_paths(self):
-        from reprompt.core.distill import _extract_files_changed
+        from ctxray.core.distill import _extract_files_changed
 
         turns = [
             ConversationTurn(
@@ -253,14 +253,14 @@ class TestFilesChanged:
         assert files == ["src/auth.py", "src/db.py", "tests/test_auth.py"]
 
     def test_empty_turns(self):
-        from reprompt.core.distill import _extract_files_changed
+        from ctxray.core.distill import _extract_files_changed
 
         assert _extract_files_changed([]) == []
 
 
 class TestGenerateSummary:
     def test_summary_basic(self):
-        from reprompt.core.distill import generate_summary
+        from ctxray.core.distill import generate_summary
 
         turns = [
             ConversationTurn(
@@ -306,7 +306,7 @@ class TestGenerateSummary:
         assert len(summary) > 0
 
     def test_summary_includes_files(self):
-        from reprompt.core.distill import generate_summary
+        from ctxray.core.distill import generate_summary
 
         turns = [
             ConversationTurn(
@@ -325,7 +325,7 @@ class TestGenerateSummary:
         assert "src/auth.py" in summary
 
     def test_summary_empty_conversation(self):
-        from reprompt.core.distill import generate_summary
+        from ctxray.core.distill import generate_summary
 
         conv = Conversation(session_id="t", source="test", project=None, turns=[])
         result = DistillResult(
@@ -341,7 +341,7 @@ class TestGenerateSummary:
 class TestDistillEdgeCases:
     def test_conversation_only_assistant_turns(self):
         """Conversation with no user turns should produce empty result."""
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         turns = [
             ConversationTurn(role="assistant", text="hello", timestamp="", turn_index=0),
@@ -352,7 +352,7 @@ class TestDistillEdgeCases:
 
     def test_very_long_conversation(self):
         """50+ turns should not crash or take too long."""
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         turns = []
         for i in range(100):
@@ -380,7 +380,7 @@ class TestDistillEdgeCases:
 
     def test_identical_user_turns(self):
         """All identical turns — uniqueness signal should differentiate."""
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         conv = _make_conv(["fix the bug"] * 5)
         result = distill_conversation(conv, threshold=0.0)
@@ -390,7 +390,7 @@ class TestDistillEdgeCases:
 
     def test_duration_computed(self):
         """Verify duration_seconds works in generate_summary."""
-        from reprompt.core.distill import distill_conversation, generate_summary
+        from ctxray.core.distill import distill_conversation, generate_summary
 
         conv = _make_conv(["implement auth"])
         conv.duration_seconds = 3600
@@ -399,7 +399,7 @@ class TestDistillEdgeCases:
         assert "60min" in result.summary
 
     def test_threshold_zero_keeps_all(self):
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         conv = _make_conv(["a", "b", "c"])
         result = distill_conversation(conv, threshold=0.0)
@@ -407,7 +407,7 @@ class TestDistillEdgeCases:
         assert len(user_kept) == 3
 
     def test_threshold_one_keeps_none(self):
-        from reprompt.core.distill import distill_conversation
+        from ctxray.core.distill import distill_conversation
 
         conv = _make_conv(["short", "tiny", "ok"])
         result = distill_conversation(conv, threshold=1.0)
@@ -422,45 +422,45 @@ class TestPositionGreetingSkip:
 
     def test_greeting_first_turn_no_boost(self):
         """'hey' as first turn should get position=0.0."""
-        from reprompt.core.distill import _score_position_with_text
+        from ctxray.core.distill import _score_position_with_text
 
         assert _score_position_with_text(0, 5, "hey there") == 0.0
 
     def test_chinese_greeting_no_boost(self):
-        from reprompt.core.distill import _score_position_with_text
+        from ctxray.core.distill import _score_position_with_text
 
         assert _score_position_with_text(0, 5, "你好") == 0.0
 
     def test_signoff_last_turn_no_boost(self):
-        from reprompt.core.distill import _score_position_with_text
+        from ctxray.core.distill import _score_position_with_text
 
         assert _score_position_with_text(4, 5, "thanks!") == 0.0
 
     def test_chinese_signoff_no_boost(self):
-        from reprompt.core.distill import _score_position_with_text
+        from ctxray.core.distill import _score_position_with_text
 
         assert _score_position_with_text(4, 5, "谢谢收工") == 0.0
 
     def test_lgtm_signoff_no_boost(self):
-        from reprompt.core.distill import _score_position_with_text
+        from ctxray.core.distill import _score_position_with_text
 
         assert _score_position_with_text(4, 5, "lgtm") == 0.0
 
     def test_substantive_first_turn_keeps_boost(self):
-        from reprompt.core.distill import _score_position_with_text
+        from ctxray.core.distill import _score_position_with_text
 
         score = _score_position_with_text(0, 5, "implement auth module with JWT")
         assert score == 1.0
 
     def test_substantive_last_turn_keeps_boost(self):
-        from reprompt.core.distill import _score_position_with_text
+        from ctxray.core.distill import _score_position_with_text
 
         score = _score_position_with_text(4, 5, "commit the changes and run tests")
         assert score == 0.8
 
     def test_middle_turn_unaffected(self):
         """Middle turns don't check greeting/signoff patterns."""
-        from reprompt.core.distill import _score_position_with_text
+        from ctxray.core.distill import _score_position_with_text
 
         score_greeting = _score_position_with_text(2, 5, "hey")
         score_normal = _score_position_with_text(2, 5, "fix the bug")
@@ -473,13 +473,13 @@ class TestLengthUserOnly:
 
     def test_user_turn_scored(self):
         """User turn length is used for scoring."""
-        from reprompt.core.distill import _score_length
+        from ctxray.core.distill import _score_length
 
         assert _score_length(200, 100.0, role="user") > 0
 
     def test_assistant_turn_zero(self):
         """Assistant turn always gets 0.0 length score."""
-        from reprompt.core.distill import _score_length
+        from ctxray.core.distill import _score_length
 
         assert _score_length(5000, 100.0, role="assistant") == 0.0
 
@@ -488,32 +488,32 @@ class TestErrorRecoveryFilter:
     """Error recovery should filter low-information responses."""
 
     def test_substantive_recovery_scores_high(self):
-        from reprompt.core.distill import _score_error_recovery_with_text
+        from ctxray.core.distill import _score_error_recovery_with_text
 
         score = _score_error_recovery_with_text(True, "try using optional chaining on line 42")
         assert score == 1.0
 
     def test_ok_try_again_filtered(self):
-        from reprompt.core.distill import _score_error_recovery_with_text
+        from ctxray.core.distill import _score_error_recovery_with_text
 
         assert _score_error_recovery_with_text(True, "ok try again") == 0.0
 
     def test_chinese_continue_filtered(self):
-        from reprompt.core.distill import _score_error_recovery_with_text
+        from ctxray.core.distill import _score_error_recovery_with_text
 
         assert _score_error_recovery_with_text(True, "继续") == 0.0
 
     def test_retry_filtered(self):
-        from reprompt.core.distill import _score_error_recovery_with_text
+        from ctxray.core.distill import _score_error_recovery_with_text
 
         assert _score_error_recovery_with_text(True, "retry") == 0.0
 
     def test_short_yes_filtered(self):
-        from reprompt.core.distill import _score_error_recovery_with_text
+        from ctxray.core.distill import _score_error_recovery_with_text
 
         assert _score_error_recovery_with_text(True, "yes") == 0.0
 
     def test_no_error_still_zero(self):
-        from reprompt.core.distill import _score_error_recovery_with_text
+        from ctxray.core.distill import _score_error_recovery_with_text
 
         assert _score_error_recovery_with_text(False, "try using optional chaining") == 0.0

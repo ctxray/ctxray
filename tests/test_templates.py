@@ -3,8 +3,8 @@
 import tempfile
 from pathlib import Path
 
-from reprompt.core.templates import generate_template_name, save_template
-from reprompt.storage.db import PromptDB
+from ctxray.core.templates import generate_template_name, save_template
+from ctxray.storage.db import PromptDB
 
 
 def _make_db():
@@ -79,7 +79,7 @@ def test_get_template_not_found():
 
 
 def test_render_templates_output():
-    from reprompt.output.terminal import render_templates
+    from ctxray.output.terminal import render_templates
 
     items = [
         {
@@ -103,14 +103,14 @@ def test_render_templates_output():
 
 
 def test_render_templates_empty():
-    from reprompt.output.terminal import render_templates
+    from ctxray.output.terminal import render_templates
 
     output = render_templates([])
     assert "No templates" in output
 
 
 def test_render_template_basic():
-    from reprompt.core.templates import render_template
+    from ctxray.core.templates import render_template
 
     text = "Fix the {error_type} in {file_path}"
     result = render_template(text, {"error_type": "TypeError", "file_path": "auth/login.py"})
@@ -118,7 +118,7 @@ def test_render_template_basic():
 
 
 def test_render_template_no_vars():
-    from reprompt.core.templates import render_template
+    from ctxray.core.templates import render_template
 
     text = "Fix the bug in the login flow"
     result = render_template(text, {})
@@ -126,7 +126,7 @@ def test_render_template_no_vars():
 
 
 def test_render_template_missing_var():
-    from reprompt.core.templates import render_template
+    from ctxray.core.templates import render_template
 
     text = "Fix {error} in {file}"
     result = render_template(text, {"error": "TypeError"})
@@ -135,7 +135,7 @@ def test_render_template_missing_var():
 
 
 def test_render_template_extra_vars():
-    from reprompt.core.templates import render_template
+    from ctxray.core.templates import render_template
 
     text = "Fix {error} in code"
     result = render_template(text, {"error": "Bug", "unused": "value"})
@@ -143,7 +143,7 @@ def test_render_template_extra_vars():
 
 
 def test_extract_variables():
-    from reprompt.core.templates import extract_variables
+    from ctxray.core.templates import extract_variables
 
     text = "Fix {error_type} in {file_path} for {project}"
     vars = extract_variables(text)
@@ -151,7 +151,7 @@ def test_extract_variables():
 
 
 def test_extract_variables_none():
-    from reprompt.core.templates import extract_variables
+    from ctxray.core.templates import extract_variables
 
     text = "Fix the bug in login"
     vars = extract_variables(text)

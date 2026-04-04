@@ -1,4 +1,4 @@
-"""Tests for the reprompt compress CLI command and terminal output."""
+"""Tests for the ctxray compress CLI command and terminal output."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import json
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 runner = CliRunner()
 
@@ -41,8 +41,8 @@ def test_compress_command_chinese():
 
 
 def test_render_compress_basic():
-    from reprompt.core.compress import CompressResult
-    from reprompt.output.compress_terminal import render_compress
+    from ctxray.core.compress import CompressResult
+    from ctxray.output.compress_terminal import render_compress
 
     result = CompressResult(
         original="basically check the logs",
@@ -62,8 +62,8 @@ def test_render_compress_basic():
 
 
 def test_render_compress_no_changes():
-    from reprompt.core.compress import CompressResult
-    from reprompt.output.compress_terminal import render_compress
+    from ctxray.core.compress import CompressResult
+    from ctxray.output.compress_terminal import render_compress
 
     result = CompressResult(
         original="hello",
@@ -82,8 +82,8 @@ def test_render_compress_no_changes():
 
 
 def test_render_compress_zero_tokens():
-    from reprompt.core.compress import CompressResult
-    from reprompt.output.compress_terminal import render_compress
+    from ctxray.core.compress import CompressResult
+    from ctxray.output.compress_terminal import render_compress
 
     result = CompressResult(
         original="",
@@ -100,8 +100,8 @@ def test_render_compress_zero_tokens():
 
 
 def test_render_compress_long_text_truncated():
-    from reprompt.core.compress import CompressResult
-    from reprompt.output.compress_terminal import render_compress
+    from ctxray.core.compress import CompressResult
+    from ctxray.output.compress_terminal import render_compress
 
     long_text = "a" * 300
     result = CompressResult(

@@ -1,4 +1,4 @@
-"""Tests for `reprompt sessions` CLI command."""
+"""Tests for `ctxray sessions` CLI command."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
+from ctxray.cli import app
 
 runner = CliRunner()
 
 
 def _create_db_with_quality(tmp_path: Path) -> Path:
     """Create a DB with session metadata and quality scores."""
-    from reprompt.storage.db import PromptDB
+    from ctxray.storage.db import PromptDB
 
     db_path = tmp_path / "test.db"
     db = PromptDB(db_path)
@@ -77,7 +77,7 @@ def _create_db_with_quality(tmp_path: Path) -> Path:
 def test_sessions_no_data(tmp_path, monkeypatch):
     """sessions command with empty DB shows guidance."""
     db_path = tmp_path / "empty.db"
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["sessions"])
     assert result.exit_code == 0
@@ -87,7 +87,7 @@ def test_sessions_no_data(tmp_path, monkeypatch):
 def test_sessions_no_data_json(tmp_path, monkeypatch):
     """sessions --json with empty DB returns empty list."""
     db_path = tmp_path / "empty.db"
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["sessions", "--json"])
     assert result.exit_code == 0
@@ -97,7 +97,7 @@ def test_sessions_no_data_json(tmp_path, monkeypatch):
 def test_sessions_with_data(tmp_path, monkeypatch):
     """sessions command renders table with scored sessions."""
     db_path = _create_db_with_quality(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["sessions"])
     assert result.exit_code == 0
@@ -109,7 +109,7 @@ def test_sessions_with_data(tmp_path, monkeypatch):
 def test_sessions_json_output(tmp_path, monkeypatch):
     """sessions --json returns valid JSON with quality fields."""
     db_path = _create_db_with_quality(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["sessions", "--json"])
     assert result.exit_code == 0
@@ -123,7 +123,7 @@ def test_sessions_json_output(tmp_path, monkeypatch):
 def test_sessions_source_filter(tmp_path, monkeypatch):
     """sessions --source filters to specific adapter."""
     db_path = _create_db_with_quality(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["sessions", "--source", "cursor", "--json"])
     assert result.exit_code == 0
@@ -135,7 +135,7 @@ def test_sessions_source_filter(tmp_path, monkeypatch):
 def test_sessions_last_option(tmp_path, monkeypatch):
     """sessions --last N limits results."""
     db_path = _create_db_with_quality(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["sessions", "--last", "1", "--json"])
     assert result.exit_code == 0
@@ -146,7 +146,7 @@ def test_sessions_last_option(tmp_path, monkeypatch):
 def test_sessions_detail(tmp_path, monkeypatch):
     """sessions --detail shows single session breakdown."""
     db_path = _create_db_with_quality(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["sessions", "--detail", "sess-good"])
     assert result.exit_code == 0
@@ -158,7 +158,7 @@ def test_sessions_detail(tmp_path, monkeypatch):
 def test_sessions_detail_prefix_match(tmp_path, monkeypatch):
     """sessions --detail with prefix matches session ID."""
     db_path = _create_db_with_quality(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["sessions", "--detail", "sess-g"])
     assert result.exit_code == 0
@@ -168,7 +168,7 @@ def test_sessions_detail_prefix_match(tmp_path, monkeypatch):
 def test_sessions_detail_not_found(tmp_path, monkeypatch):
     """sessions --detail with unknown ID shows error."""
     db_path = _create_db_with_quality(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["sessions", "--detail", "nonexistent"])
     assert result.exit_code == 1
@@ -177,7 +177,7 @@ def test_sessions_detail_not_found(tmp_path, monkeypatch):
 def test_sessions_detail_json(tmp_path, monkeypatch):
     """sessions --detail --json returns single session as JSON."""
     db_path = _create_db_with_quality(tmp_path)
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(db_path))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(db_path))
 
     result = runner.invoke(app, ["sessions", "--detail", "sess-good", "--json"])
     assert result.exit_code == 0

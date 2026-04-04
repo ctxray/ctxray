@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from reprompt.core.conversation import Conversation, ConversationTurn
-from reprompt.core.distill import DEFAULT_WEIGHTS, distill_conversation
+from ctxray.core.conversation import Conversation, ConversationTurn
+from ctxray.core.distill import DEFAULT_WEIGHTS, distill_conversation
 
 
 def _make_conv(user_texts: list[str], assistant_texts: list[str] | None = None) -> Conversation:

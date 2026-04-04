@@ -8,13 +8,13 @@ import pytest
 
 pytest.importorskip("fastmcp")
 
-from reprompt.storage.db import PromptDB
+from ctxray.storage.db import PromptDB
 
 
 @pytest.fixture()
 def mcp_db(tmp_path, monkeypatch):
     """Set up a test DB and point MCP tools at it."""
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
     db = PromptDB(tmp_path / "test.db")
     db.insert_prompt(
         "fix the auth bug in the login handler",
@@ -36,7 +36,7 @@ def mcp_db(tmp_path, monkeypatch):
 
 
 def test_search_prompts_keyword_found(mcp_db):
-    from reprompt.mcp import search_prompts
+    from ctxray.mcp import search_prompts
 
     result = search_prompts(query="auth")
     data = json.loads(result)
@@ -45,14 +45,14 @@ def test_search_prompts_keyword_found(mcp_db):
 
 
 def test_search_prompts_keyword_not_found(mcp_db):
-    from reprompt.mcp import search_prompts
+    from ctxray.mcp import search_prompts
 
     result = search_prompts(query="nonexistent_xyz")
     assert "No prompts" in result
 
 
 def test_search_prompts_keyword_with_limit(mcp_db):
-    from reprompt.mcp import search_prompts
+    from ctxray.mcp import search_prompts
 
     result = search_prompts(query="the", limit=2)
     data = json.loads(result)
@@ -63,14 +63,14 @@ def test_search_prompts_keyword_with_limit(mcp_db):
 
 
 def test_search_prompts_patterns_empty(mcp_db):
-    from reprompt.mcp import search_prompts
+    from ctxray.mcp import search_prompts
 
     result = search_prompts()
     assert "No patterns yet" in result
 
 
 def test_search_prompts_patterns_category_empty(mcp_db):
-    from reprompt.mcp import search_prompts
+    from ctxray.mcp import search_prompts
 
     result = search_prompts(category="debug")
     assert "No patterns in category 'debug'" in result
@@ -93,7 +93,7 @@ def _insert_pattern(db, text, freq, cat, avg_len):
 
 def test_search_prompts_patterns_with_data(mcp_db):
     """When patterns exist, returns them as JSON."""
-    from reprompt.mcp import search_prompts
+    from ctxray.mcp import search_prompts
 
     _insert_pattern(mcp_db, "fix the bug", 5, "debug", 20)
     _insert_pattern(mcp_db, "add tests", 3, "test", 15)
@@ -106,7 +106,7 @@ def test_search_prompts_patterns_with_data(mcp_db):
 
 def test_search_prompts_patterns_category_filter(mcp_db):
     """Category param filters patterns."""
-    from reprompt.mcp import search_prompts
+    from ctxray.mcp import search_prompts
 
     _insert_pattern(mcp_db, "fix the bug", 5, "debug", 20)
     _insert_pattern(mcp_db, "add tests", 3, "test", 15)
@@ -119,7 +119,7 @@ def test_search_prompts_patterns_category_filter(mcp_db):
 
 def test_search_prompts_patterns_top_sort(mcp_db):
     """top=True sorts by frequency descending."""
-    from reprompt.mcp import search_prompts
+    from ctxray.mcp import search_prompts
 
     _insert_pattern(mcp_db, "low freq", 1, "debug", 10)
     _insert_pattern(mcp_db, "high freq", 10, "implement", 25)
@@ -134,8 +134,8 @@ def test_search_prompts_patterns_top_sort(mcp_db):
 
 
 def test_scan_sessions_empty(tmp_path, monkeypatch):
-    monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
-    from reprompt.mcp import scan_sessions
+    monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
+    from ctxray.mcp import scan_sessions
 
     result = json.loads(scan_sessions(source="claude-code"))
     # May find real sessions on dev machine; just verify structure
@@ -144,14 +144,14 @@ def test_scan_sessions_empty(tmp_path, monkeypatch):
 
 
 def test_resource_status(mcp_db):
-    from reprompt.mcp import resource_status
+    from ctxray.mcp import resource_status
 
     result = json.loads(resource_status())
     assert "total_prompts" in result
 
 
 def test_resource_library(mcp_db):
-    from reprompt.mcp import resource_library
+    from ctxray.mcp import resource_library
 
     result = json.loads(resource_library())
     assert isinstance(result, list)
@@ -161,7 +161,7 @@ def test_mcp_serve_cli(tmp_path, monkeypatch):
     """mcp-serve command exists and shows error without fastmcp if needed."""
     from typer.testing import CliRunner
 
-    from reprompt.cli import app
+    from ctxray.cli import app
 
     runner = CliRunner()
     result = runner.invoke(app, ["mcp-serve", "--help"])
@@ -173,7 +173,7 @@ def test_tool_count():
     """Verify the MCP server exposes exactly 7 tools."""
     import asyncio
 
-    from reprompt.mcp import mcp as _mcp
+    from ctxray.mcp import mcp as _mcp
 
     tools = asyncio.run(_mcp.list_tools())
     names = [t.name for t in tools]
@@ -184,7 +184,7 @@ def test_tool_count():
 
 
 def test_score_prompt_has_tier():
-    from reprompt.mcp import score_prompt
+    from ctxray.mcp import score_prompt
 
     result = json.loads(score_prompt("fix the auth bug in login.ts"))
     assert "tier" in result
@@ -192,7 +192,7 @@ def test_score_prompt_has_tier():
 
 
 def test_score_prompt_has_strengths():
-    from reprompt.mcp import score_prompt
+    from ctxray.mcp import score_prompt
 
     result = json.loads(score_prompt("fix the auth bug in login.ts"))
     assert "strengths" in result
@@ -200,14 +200,14 @@ def test_score_prompt_has_strengths():
 
 
 def test_score_prompt_has_lint():
-    from reprompt.mcp import score_prompt
+    from ctxray.mcp import score_prompt
 
     result = json.loads(score_prompt("fix it"))
     assert "lint_issues" in result
 
 
 def test_score_prompt_has_rewrite():
-    from reprompt.mcp import score_prompt
+    from ctxray.mcp import score_prompt
 
     result = json.loads(score_prompt("I was wondering if you could maybe fix the auth bug"))
     assert "rewritten" in result
@@ -215,7 +215,7 @@ def test_score_prompt_has_rewrite():
 
 
 def test_score_prompt_with_model():
-    from reprompt.mcp import score_prompt
+    from ctxray.mcp import score_prompt
 
     result = json.loads(score_prompt("fix the auth bug", model="claude"))
     assert "total" in result
@@ -223,7 +223,7 @@ def test_score_prompt_with_model():
 
 
 def test_score_prompt_suggestions_have_points():
-    from reprompt.mcp import score_prompt
+    from ctxray.mcp import score_prompt
 
     result = json.loads(score_prompt("fix the auth bug"))
     if result["suggestions"]:
@@ -234,7 +234,7 @@ def test_score_prompt_suggestions_have_points():
 
 
 def test_build_prompt_from_parts():
-    from reprompt.mcp import build_prompt_from_parts
+    from ctxray.mcp import build_prompt_from_parts
 
     result = json.loads(
         build_prompt_from_parts(
@@ -252,7 +252,7 @@ def test_build_prompt_from_parts():
 
 
 def test_build_prompt_from_parts_minimal():
-    from reprompt.mcp import build_prompt_from_parts
+    from ctxray.mcp import build_prompt_from_parts
 
     result = json.loads(build_prompt_from_parts(task="fix the bug"))
     assert "prompt" in result

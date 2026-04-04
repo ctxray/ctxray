@@ -21,9 +21,9 @@ def _mock_openai():
 @pytest.fixture()
 def _openai_embedder_cls(_mock_openai):
     """Import OpenAIEmbedder with mocked openai."""
-    mod_key = "reprompt.embeddings.openai_embed"
+    mod_key = "ctxray.embeddings.openai_embed"
     sys.modules.pop(mod_key, None)
-    from reprompt.embeddings.openai_embed import OpenAIEmbedder
+    from ctxray.embeddings.openai_embed import OpenAIEmbedder
 
     return OpenAIEmbedder
 
@@ -120,14 +120,14 @@ def test_inherits_cosine_similarity(_openai_embedder_cls):
 
 def test_import_error_when_not_installed():
     """When openai is not installed, ImportError should be helpful."""
-    mod_key = "reprompt.embeddings.openai_embed"
+    mod_key = "ctxray.embeddings.openai_embed"
     sys.modules.pop(mod_key, None)
 
     with patch.dict(sys.modules, {"openai": None}):
-        from reprompt.embeddings.openai_embed import OpenAIEmbedder
+        from ctxray.embeddings.openai_embed import OpenAIEmbedder
 
         embedder = OpenAIEmbedder(api_key="sk-test")
-        with pytest.raises(ImportError, match="pip install reprompt-cli\\[openai\\]"):
+        with pytest.raises(ImportError, match="pip install ctxray\\[openai\\]"):
             embedder.embed(["test"])
 
     # Clean up

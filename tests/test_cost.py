@@ -1,6 +1,6 @@
 """Tests for token cost estimation."""
 
-from reprompt.core.cost import (
+from ctxray.core.cost import (
     estimate_cost,
     estimate_tokens,
     format_cost,

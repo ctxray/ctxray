@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from reprompt.storage.db import PromptDB
+from ctxray.storage.db import PromptDB
 
 
 def test_get_prompts_in_range(tmp_path):

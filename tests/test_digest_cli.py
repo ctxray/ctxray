@@ -6,8 +6,8 @@ import json
 
 from typer.testing import CliRunner
 
-from reprompt.cli import app
-from reprompt.output.terminal import render_digest, render_digest_history
+from ctxray.cli import app
+from ctxray.output.terminal import render_digest, render_digest_history
 
 runner = CliRunner()
 
@@ -31,7 +31,7 @@ class TestRenderDigest:
             },
             "count_delta": 0,
             "spec_delta": 0.0,
-            "summary": "reprompt: 0 prompts (+0), specificity 0.00 (→)",
+            "summary": "ctxray: 0 prompts (+0), specificity 0.00 (→)",
         }
         output = render_digest(data)
         assert "digest" in output.lower()
@@ -54,7 +54,7 @@ class TestRenderDigest:
             },
             "count_delta": 5,
             "spec_delta": 0.07,
-            "summary": "reprompt: 42 prompts (+5), specificity 0.72 (↑)",
+            "summary": "ctxray: 42 prompts (+5), specificity 0.72 (↑)",
         }
         output = render_digest(data)
         assert "42" in output
@@ -77,7 +77,7 @@ class TestRenderDigest:
             },
             "count_delta": 2,
             "spec_delta": 0.15,
-            "summary": "reprompt: 20 prompts (+2), specificity 0.75 (↑)",
+            "summary": "ctxray: 20 prompts (+2), specificity 0.75 (↑)",
         }
         output = render_digest(data)
         assert "↑" in output
@@ -99,7 +99,7 @@ class TestRenderDigest:
             },
             "count_delta": 5,
             "spec_delta": 0.05,
-            "summary": "reprompt: 30 prompts (+5), specificity 0.65 (↑)",
+            "summary": "ctxray: 30 prompts (+5), specificity 0.65 (↑)",
         }
         output = render_digest(data)
         assert "implement" in output
@@ -116,7 +116,7 @@ class TestRenderDigest:
                 "generated_at": "2026-03-10T08:00:00+00:00",
                 "window_start": "2026-03-03T00:00:00+00:00",
                 "window_end": "2026-03-10T00:00:00+00:00",
-                "summary": "reprompt: 42 prompts (+5), specificity 0.62 (↑)",
+                "summary": "ctxray: 42 prompts (+5), specificity 0.62 (↑)",
             }
         ]
         output = render_digest_history(rows, "7d")
@@ -140,7 +140,7 @@ class TestRenderDigest:
             },
             "count_delta": -10,
             "spec_delta": -0.10,
-            "summary": "reprompt: 10 prompts (-10), specificity 0.50 (↓)",
+            "summary": "ctxray: 10 prompts (-10), specificity 0.50 (↓)",
         }
         output = render_digest(data)
         assert "-10" in output
@@ -150,29 +150,29 @@ class TestRenderDigest:
 class TestDigestCommand:
     def test_digest_command_exits_cleanly(self, tmp_path, monkeypatch):
         """digest command exits 0 with empty DB."""
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
         result = runner.invoke(app, ["digest"])
         assert result.exit_code == 0
 
     def test_digest_command_quiet_mode(self, tmp_path, monkeypatch):
         """--quiet prints a single-line summary."""
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
         result = runner.invoke(app, ["digest", "--quiet"])
         assert result.exit_code == 0
         lines = [ln for ln in result.output.strip().splitlines() if ln]
         assert len(lines) == 1
-        assert "reprompt:" in lines[0]
+        assert "ctxray:" in lines[0]
 
     def test_digest_command_json(self, tmp_path, monkeypatch):
         """--format json returns valid JSON with expected keys."""
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
         result = runner.invoke(app, ["digest", "--format", "json"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         # Empty DB returns an error hint; non-empty returns digest keys
         if "error" in data:
             assert data["error"] == "no data"
-            assert "reprompt scan" in data["hint"]
+            assert "ctxray scan" in data["hint"]
         else:
             assert "current" in data
             assert "previous" in data
@@ -180,7 +180,7 @@ class TestDigestCommand:
 
     def test_digest_command_custom_period(self, tmp_path, monkeypatch):
         """digest accepts --period flag."""
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
         result = runner.invoke(app, ["digest", "--period", "30d"])
         assert result.exit_code == 0
 
@@ -188,9 +188,9 @@ class TestDigestCommand:
         """digest terminal output contains recognizable sections."""
         from datetime import datetime, timedelta, timezone
 
-        from reprompt.storage.db import PromptDB
+        from ctxray.storage.db import PromptDB
 
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
         db = PromptDB(tmp_path / "test.db")
         now = datetime.now(timezone.utc)
         for i in range(5):
@@ -206,14 +206,14 @@ class TestDigestCommand:
 
     def test_digest_history_flag_empty(self, tmp_path, monkeypatch):
         """--history with empty DB prints a no-history message."""
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
         result = runner.invoke(app, ["digest", "--history"])
         assert result.exit_code == 0
         assert "history" in result.output.lower()
 
     def test_digest_history_flag_json(self, tmp_path, monkeypatch):
         """--history --format json returns a JSON list."""
-        monkeypatch.setenv("REPROMPT_DB_PATH", str(tmp_path / "test.db"))
+        monkeypatch.setenv("CTXRAY_DB_PATH", str(tmp_path / "test.db"))
         result = runner.invoke(app, ["digest", "--history", "--format", "json"])
         assert result.exit_code == 0
         data = json.loads(result.output)
@@ -230,7 +230,7 @@ class TestDigestCommand:
         assert result.exit_code == 0
         data = json.loads((claude_dir / "settings.json").read_text())
         commands = [h.get("command") for h in data["hooks"]["Stop"] if isinstance(h, dict)]
-        assert "reprompt digest --quiet" in commands
+        assert "ctxray digest --quiet" in commands
 
     def test_install_hook_with_digest_when_hook_already_exists(self, tmp_path, monkeypatch):
         """--with-digest still adds digest hook even when scan hook already installed."""
@@ -246,4 +246,4 @@ class TestDigestCommand:
         assert result.exit_code == 0
         data = json.loads((claude_dir / "settings.json").read_text())
         commands = [h.get("command") for h in data["hooks"]["Stop"] if isinstance(h, dict)]
-        assert "reprompt digest --quiet" in commands
+        assert "ctxray digest --quiet" in commands
