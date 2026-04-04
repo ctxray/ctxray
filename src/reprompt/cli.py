@@ -43,14 +43,14 @@ def _copy_to_clip(text: str, quiet: bool = False) -> None:
 
 app = typer.Typer(
     name="reprompt",
-    help="Discover, analyze, and evolve your best prompts from AI coding sessions.",
+    help="Linter for your AI prompts — score, rewrite, and analyze across 9 AI tools.",
     no_args_is_help=False,
     rich_markup_mode="rich",
     epilog=(
         "Quick start:\n\n"
+        '  reprompt check "prompt"  Score + lint + rewrite in one command\n\n'
         "  reprompt scan            Discover prompts from your AI tools\n\n"
-        "  reprompt                 See your dashboard\n\n"
-        '  reprompt score "prompt"  Score any prompt instantly'
+        "  reprompt                 See your dashboard"
     ),
 )
 console = Console()

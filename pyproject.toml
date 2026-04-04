@@ -1,11 +1,11 @@
 [project]
 name = "reprompt-cli"
 version = "2.5.0"
-description = "Discover, analyze, and optimize your prompts from AI coding sessions"
+description = "Linter for your AI prompts — score, rewrite, and analyze across Claude Code, Cursor, ChatGPT, and more"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
-keywords = ["prompt", "llm", "ai", "cli", "analytics", "claude-code"]
+keywords = ["prompt", "llm", "ai", "cli", "analytics", "claude-code", "linter", "prompt-engineering", "cursor", "ai-tools"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",

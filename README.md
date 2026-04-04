@@ -1,12 +1,22 @@
 # `re:prompt`
 
-**Grammarly for Prompts** -- research-backed scoring, rule-based rewriting, and cross-tool analytics for your AI conversations. No LLM needed, <50ms per prompt.
+**Linter for your AI prompts** — research-backed scoring, rule-based rewriting, and cross-tool analytics for your AI conversations. No LLM needed, <50ms per prompt.
 
 [![PyPI version](https://img.shields.io/pypi/v/reprompt-cli)](https://pypi.org/project/reprompt-cli/)
 [![Python 3.10+](https://img.shields.io/pypi/pyversions/reprompt-cli)](https://pypi.org/project/reprompt-cli/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://img.shields.io/badge/tests-1892_passing-brightgreen)](https://github.com/reprompt-dev/reprompt/actions)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://github.com/reprompt-dev/reprompt)
+
+## Quick start
+
+```bash
+pip install reprompt-cli
+
+reprompt check "fix the bug in auth.ts"   # score + lint + rewrite in one command
+reprompt scan                              # auto-detect prompts from your AI tools
+reprompt                                   # see your dashboard
+```
 
 ---
 
@@ -22,136 +32,64 @@
 
 <img src="docs/screenshots/rewrite.svg" alt="reprompt rewrite — before/after" width="800">
 
+<details>
+<summary>More screenshots</summary>
+
 ### `reprompt build` -- assemble prompts from components
 
 <img src="docs/screenshots/build.svg" alt="reprompt build — structured prompt assembly" width="800">
 
-<details>
-<summary>What a bad prompt looks like</summary>
+### What a bad prompt looks like
 
 <img src="docs/screenshots/check-bad.svg" alt="reprompt check — weak prompt" width="800">
 </details>
 
 ## What it does
 
-### Analyze
+### Score, lint, and rewrite
 
 | Command | Description |
 |---------|-------------|
-| `reprompt` | Instant dashboard -- prompts, sessions, avg score, top categories |
-| `reprompt scan` | Auto-discover prompts from 9 AI tools |
 | `reprompt check "prompt"` | **Full diagnostic** -- score + lint + rewrite preview in one command |
 | `reprompt score "prompt"` | Research-backed 0-100 scoring with 30+ features |
+| `reprompt rewrite "prompt"` | Rule-based prompt improvement -- filler removal, restructuring, hedging cleanup |
+| `reprompt build "task"` | Build prompts from components -- task, context, files, errors, constraints |
+| `reprompt compress "prompt"` | 4-layer prompt compression (40-60% token savings typical) |
 | `reprompt compare "a" "b"` | Side-by-side prompt analysis (or `--best-worst` for auto-selection) |
-| `reprompt insights` | Personal patterns vs research-optimal benchmarks |
-| `reprompt style` | Prompting fingerprint with `--trends` for evolution tracking |
-| `reprompt agent` | Agent workflow analysis -- error loops, tool patterns, session efficiency |
-| `reprompt sessions` | Session quality scores with frustration signal detection |
-| `reprompt repetition` | Cross-session repetition detection -- spot recurring prompts |
-| `reprompt patterns` | **Personal prompt weaknesses** -- recurring gaps by task type |
-| `reprompt projects` | Per-project quality breakdown -- sessions, scores, frustration signals |
+| `reprompt lint` | Configurable linter with CI/GitHub Action support |
 
-### Optimize
+### Understand your AI interactions
 
 | Command | Description |
 |---------|-------------|
-| `reprompt build "task"` | **Build prompts from components** -- task, context, files, errors, constraints. Model-aware (Claude/GPT/Gemini) |
-| `reprompt rewrite "prompt"` | **Rewrite prompts to score higher** -- filler removal, restructuring, hedging cleanup |
-| `reprompt compress "prompt"` | 4-layer prompt compression (40-60% token savings typical) |
+| `reprompt insights` | Personal patterns vs research-optimal benchmarks |
+| `reprompt sessions` | Session quality scores with frustration signal detection |
+| `reprompt agent` | Agent workflow analysis -- error loops, tool patterns, session efficiency |
+| `reprompt repetition` | Cross-session repetition detection -- spot recurring prompts |
+| `reprompt patterns` | Personal prompt weaknesses -- recurring gaps by task type |
 | `reprompt distill` | Extract important turns from conversations with 6-signal scoring |
-| `reprompt distill --export` | Recover context when a session runs out -- paste into new session |
-| `reprompt lint` | Configurable prompt quality linter with CI/GitHub Action support |
-| `reprompt init` | Generate `.reprompt.toml` config for your project |
+| `reprompt projects` | Per-project quality breakdown -- sessions, scores, frustration signals |
+
+<details>
+<summary>All commands</summary>
 
 ### Manage
 
 | Command | Description |
 |---------|-------------|
+| `reprompt` | Instant dashboard -- prompts, sessions, avg score, top categories |
+| `reprompt scan` | Auto-discover prompts from 9 AI tools |
 | `reprompt privacy` | See what data you sent where -- file paths, errors, PII exposure |
 | `reprompt privacy --deep` | Scan for sensitive content: API keys, tokens, passwords, PII |
 | `reprompt report` | Full analytics: hot phrases, clusters, patterns (`--html` for dashboard) |
 | `reprompt digest` | Weekly summary comparing current vs previous period |
 | `reprompt wrapped` | Prompt DNA report -- persona, scores, shareable card |
 | `reprompt template save\|list\|use` | Save and reuse your best prompts |
+| `reprompt style` | Prompting fingerprint with `--trends` for evolution tracking |
+| `reprompt distill --export` | Recover context when a session runs out -- paste into new session |
+| `reprompt init` | Generate `.reprompt.toml` config for your project |
 
-## Prompt Science
-
-Scoring is calibrated against 10 peer-reviewed papers covering 30+ features across 5 dimensions:
-
-| Dimension | What it measures | Key papers |
-|-----------|-----------------|------------|
-| **Structure** | Markdown, code blocks, explicit constraints | Prompt Report ([2406.06608](https://arxiv.org/abs/2406.06608)) |
-| **Context** | File paths, error messages, I/O specs, edge cases | Zi+ ([2508.03678](https://arxiv.org/abs/2508.03678)), Google ([2512.14982](https://arxiv.org/abs/2512.14982)) |
-| **Position** | Instruction placement relative to context | Stanford ([2307.03172](https://arxiv.org/abs/2307.03172)), Veseli+ ([2508.07479](https://arxiv.org/abs/2508.07479)), Chowdhury ([2603.10123](https://arxiv.org/abs/2603.10123)) |
-| **Repetition** | Redundancy that degrades model attention | Google ([2512.14982](https://arxiv.org/abs/2512.14982)) |
-| **Clarity** | Readability, sentence length, ambiguity | SPELL (EMNLP 2023), PEEM ([2603.10477](https://arxiv.org/abs/2603.10477)) |
-
-Cross-validated findings that inform our engine:
-
-- **Position bias is architectural** — present at initialization, not learned. Front-loading instructions is effective for prompts under 50% of context window (3 papers agree)
-- **Moderate compression improves output** — rule-based filler removal doesn't just save tokens, it enhances LLM performance ([2505.00019](https://arxiv.org/abs/2505.00019))
-- **Prompt quality is independently measurable** — prompt-only scoring predicts output quality without seeing the response (ACL 2025, [2503.10084](https://arxiv.org/abs/2503.10084))
-
-All analysis runs locally in <1ms per prompt. No LLM calls, no network requests.
-
-## How it works
-
-```
-                          ┌─────────────────────────┐
-                          │     reprompt check       │  ← single entry point
-                          └────────┬────────────────┘
-                                   │
-               ┌───────────────────┼───────────────────┐
-               ▼                   ▼                   ▼
-        ┌─────────────┐   ┌──────────────┐   ┌──────────────┐
-        │  Score (0-100) │   │   Lint       │   │   Rewrite    │
-        │  30+ features  │   │   rule-based │   │   4 layers   │
-        │  5 dimensions  │   │   CI-ready   │   │   no LLM     │
-        └──────┬──────┘   └──────┬───────┘   └──────┬───────┘
-               │                  │                   │
-               └───────────────────┼───────────────────┘
-                                   ▼
-                          ┌──────────────────┐
-                          │  Unified Report   │
-                          │  score + issues + │
-                          │  rewritten prompt │
-                          └──────────────────┘
-
- Data sources:
- ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
- │Claude Code│ │  Cursor  │ │  Aider   │ │ ChatGPT  │ │ 5 more.. │
- └─────┬────┘ └─────┬────┘ └─────┬────┘ └─────┬────┘ └─────┬────┘
-       └─────────────┴───────────┴─────────────┴─────────────┘
-                                 │
-                    scan → dedup → store → analyze
-                                 │
-              ┌──────────────────┼──────────────────┐
-              ▼                  ▼                  ▼
-        ┌──────────┐     ┌──────────────┐    ┌──────────┐
-        │ insights │     │  patterns    │    │ sessions │
-        │ style    │     │  repetition  │    │ projects │
-        │ digest   │     │  privacy     │    │ agent    │
-        └──────────┘     └──────────────┘    └──────────┘
-```
-
-**Key design decisions:**
-- **Pure rules, no LLM** -- scoring and rewriting use regex + TF-IDF + research heuristics. Deterministic, private, <1ms per prompt.
-- **Adapter pattern** -- each AI tool gets a parser that normalizes to a common `Prompt` model. Adding a new tool = one file.
-- **Two-layer dedup** -- SHA-256 for exact matches, TF-IDF cosine similarity for near-dupes. Handles the "same prompt, slightly different wording" problem.
-- **Research-calibrated** -- 10 peer-reviewed papers inform the scoring weights. Not vibes, not benchmarks-on-benchmarks.
-
-## Conversation Distillation
-
-`reprompt distill` scores every turn in a conversation using 6 signals:
-
-- **Position** -- first/last turns carry framing and conclusions
-- **Length** -- substantial turns contain more information
-- **Tool trigger** -- turns that cause tool calls are action-driving
-- **Error recovery** -- turns that follow errors show problem-solving
-- **Semantic shift** -- topic changes mark conversation boundaries
-- **Uniqueness** -- novel phrasing vs repetitive follow-ups
-
-Session type (debugging, feature-dev, exploration, refactoring) is auto-detected and signal weights adapt accordingly.
+</details>
 
 ## Supported AI tools
 
@@ -175,14 +113,6 @@ pip install reprompt-cli[chinese]   # + Chinese prompt analysis (jieba)
 pip install reprompt-cli[mcp]       # + MCP server for Claude Code / Continue.dev / Zed
 ```
 
-### Quick start
-
-```bash
-reprompt check "your prompt here"   # full diagnostic — score + lint + rewrite
-reprompt scan                       # discover prompts from installed AI tools
-reprompt                            # see your dashboard
-```
-
 ### Auto-scan after every session
 
 ```bash
@@ -191,7 +121,7 @@ reprompt install-hook               # adds post-session hook to Claude Code
 
 ### Browser extension
 
-Capture prompts from ChatGPT, Claude.ai, and Gemini directly in your browser. Live score badge shows prompt quality as you type — click "Rewrite & Apply" to improve your prompt and replace the text directly in the input box.
+Capture prompts from ChatGPT, Claude.ai, and Gemini directly in your browser. Live score badge shows prompt quality as you type -- click "Rewrite & Apply" to improve your prompt and replace the text directly in the input box.
 
 1. **Install the extension** from [Chrome Web Store](https://chromewebstore.google.com/detail/reprompt/ojdccpagaanchmkninlbgbgemdcjckhn) or [Firefox Add-ons](https://addons.mozilla.org/addon/reprompt-cli/)
 2. **Connect to the CLI:** `reprompt install-extension`
@@ -222,22 +152,27 @@ jobs:
           comment-on-pr: true   # post quality report as PR comment
 ```
 
+<details>
+<summary>PR comment report example</summary>
+
 When `comment-on-pr: true`, every PR gets a quality report:
 
 ```
-## reprompt lint 🟢 Passed
+## reprompt lint Passed
 
 | Metric          | Value          |
 |-----------------|----------------|
 | Prompts checked | 12             |
 | Errors          | 0              |
 | Warnings        | 2              |
-| Avg Score       | 62/100 ✅ (threshold: 50) |
+| Avg Score       | 62/100 (threshold: 50) |
 
-📋 2 violation(s) [click to expand]
+2 violation(s) [click to expand]
 ```
 
-The comment updates on each push — no duplicates. Uses `GITHUB_TOKEN` (no extra secrets needed).
+The comment updates on each push -- no duplicates. Uses `GITHUB_TOKEN` (no extra secrets needed).
+
+</details>
 
 #### pre-commit
 
@@ -275,6 +210,100 @@ short-prompt = 40          # warning if < 40 chars (0 = off)
 vague-prompt = true        # error on "fix it" etc (false = off)
 debug-needs-reference = true
 ```
+
+<details>
+<summary>Prompt Science -- research foundation</summary>
+
+## Prompt Science
+
+Scoring is calibrated against 10 peer-reviewed papers covering 30+ features across 5 dimensions:
+
+| Dimension | What it measures | Key papers |
+|-----------|-----------------|------------|
+| **Structure** | Markdown, code blocks, explicit constraints | Prompt Report ([2406.06608](https://arxiv.org/abs/2406.06608)) |
+| **Context** | File paths, error messages, I/O specs, edge cases | Zi+ ([2508.03678](https://arxiv.org/abs/2508.03678)), Google ([2512.14982](https://arxiv.org/abs/2512.14982)) |
+| **Position** | Instruction placement relative to context | Stanford ([2307.03172](https://arxiv.org/abs/2307.03172)), Veseli+ ([2508.07479](https://arxiv.org/abs/2508.07479)), Chowdhury ([2603.10123](https://arxiv.org/abs/2603.10123)) |
+| **Repetition** | Redundancy that degrades model attention | Google ([2512.14982](https://arxiv.org/abs/2512.14982)) |
+| **Clarity** | Readability, sentence length, ambiguity | SPELL (EMNLP 2023), PEEM ([2603.10477](https://arxiv.org/abs/2603.10477)) |
+
+Cross-validated findings that inform our engine:
+
+- **Position bias is architectural** -- present at initialization, not learned. Front-loading instructions is effective for prompts under 50% of context window (3 papers agree)
+- **Moderate compression improves output** -- rule-based filler removal doesn't just save tokens, it enhances LLM performance ([2505.00019](https://arxiv.org/abs/2505.00019))
+- **Prompt quality is independently measurable** -- prompt-only scoring predicts output quality without seeing the response (ACL 2025, [2503.10084](https://arxiv.org/abs/2503.10084))
+
+All analysis runs locally in <1ms per prompt. No LLM calls, no network requests.
+
+</details>
+
+<details>
+<summary>How it works -- architecture</summary>
+
+## How it works
+
+```
+                          ┌─────────────────────────┐
+                          │     reprompt check       │  <- single entry point
+                          └────────┬────────────────┘
+                                   │
+               ┌───────────────────┼───────────────────┐
+               v                   v                   v
+        ┌─────────────┐   ┌──────────────┐   ┌──────────────┐
+        │  Score (0-100) │   │   Lint       │   │   Rewrite    │
+        │  30+ features  │   │   rule-based │   │   4 layers   │
+        │  5 dimensions  │   │   CI-ready   │   │   no LLM     │
+        └──────┬──────┘   └──────┬───────┘   └──────┬───────┘
+               │                  │                   │
+               └───────────────────┼───────────────────┘
+                                   v
+                          ┌──────────────────┐
+                          │  Unified Report   │
+                          │  score + issues + │
+                          │  rewritten prompt │
+                          └──────────────────┘
+
+ Data sources:
+ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+ │Claude Code│ │  Cursor  │ │  Aider   │ │ ChatGPT  │ │ 5 more.. │
+ └─────┬────┘ └─────┬────┘ └─────┬────┘ └─────┬────┘ └─────┬────┘
+       └─────────────┴───────────┴─────────────┴─────────────┘
+                                 │
+                    scan -> dedup -> store -> analyze
+                                 │
+              ┌──────────────────┼──────────────────┐
+              v                  v                  v
+        ┌──────────┐     ┌──────────────┐    ┌──────────┐
+        │ insights │     │  patterns    │    │ sessions │
+        │ style    │     │  repetition  │    │ projects │
+        │ digest   │     │  privacy     │    │ agent    │
+        └──────────┘     └──────────────┘    └──────────┘
+```
+
+**Key design decisions:**
+- **Pure rules, no LLM** -- scoring and rewriting use regex + TF-IDF + research heuristics. Deterministic, private, <1ms per prompt.
+- **Adapter pattern** -- each AI tool gets a parser that normalizes to a common `Prompt` model. Adding a new tool = one file.
+- **Two-layer dedup** -- SHA-256 for exact matches, TF-IDF cosine similarity for near-dupes. Handles the "same prompt, slightly different wording" problem.
+- **Research-calibrated** -- 10 peer-reviewed papers inform the scoring weights. Not vibes, not benchmarks-on-benchmarks.
+
+</details>
+
+<details>
+<summary>Conversation Distillation</summary>
+
+## Conversation Distillation
+
+`reprompt distill` scores every turn in a conversation using 6 signals:
+
+- **Position** -- first/last turns carry framing and conclusions
+- **Length** -- substantial turns contain more information
+- **Tool trigger** -- turns that cause tool calls are action-driving
+- **Error recovery** -- turns that follow errors show problem-solving
+- **Semantic shift** -- topic changes mark conversation boundaries
+- **Uniqueness** -- novel phrasing vs repetitive follow-ups
+
+Session type (debugging, feature-dev, exploration, refactoring) is auto-detected and signal weights adapt accordingly.
+
+</details>
 
 ## Privacy
 
