@@ -87,6 +87,7 @@ Full setup: [GitHub Action](#ci-integration) · [pre-commit](#pre-commit) · [`.
 |---------|-------------|
 | `ctxray wrapped` | AI coding persona + shareable card |
 | `ctxray insights` | Personal patterns vs research-optimal benchmarks |
+| `ctxray tools` | **Cross-tool comparison** — how your Claude Code / Cursor / ChatGPT habits differ |
 | `ctxray sessions` | Session quality scores with frustration signal detection |
 | `ctxray agent` | Agent workflow analysis — error loops, tool patterns, efficiency |
 | `ctxray repetition` | Cross-session repetition detection — spot recurring prompts |

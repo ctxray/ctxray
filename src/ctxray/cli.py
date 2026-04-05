@@ -2366,6 +2366,45 @@ def projects(
 
 
 @app.command(rich_help_panel="Discover")
+def tools(
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
+) -> None:
+    """Compare your prompting patterns across AI tools.
+
+    Side-by-side breakdown of Claude Code, Cursor, ChatGPT, etc. —
+    prompt count, avg length, quality scores, file-ref rates, error context.
+
+    Examples:
+
+        ctxray tools              # compare all AI tools you've used
+
+        ctxray tools --json       # machine-readable output
+    """
+    import dataclasses
+    import json as json_mod
+
+    from ctxray.config import Settings
+    from ctxray.core.tools_comparison import build_tool_comparison
+    from ctxray.output.tools_terminal import render_tool_comparison
+    from ctxray.storage.db import PromptDB
+
+    settings = Settings()
+    db = PromptDB(settings.db_path)
+    comparison = build_tool_comparison(db)
+
+    if json_output:
+        output = json_mod.dumps(dataclasses.asdict(comparison), indent=2, default=str)
+        print(output)
+    else:
+        output = render_tool_comparison(comparison)
+        print(output, end="")
+
+    if copy:
+        _copy_to_clip(output, quiet=json_output)
+
+
+@app.command(rich_help_panel="Discover")
 def sessions(
     last: int = typer.Option(10, "--last", help="Show N most recent sessions"),
     source: str = typer.Option(
