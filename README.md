@@ -25,6 +25,24 @@ ctxray privacy                 # what sensitive data you've exposed
 
 ![ctxray demo](docs/demo.gif)
 
+## For teams
+
+Drop ctxray into your CI pipeline as a prompt quality gate. Rule-based, <50ms per prompt, no LLM calls, no API keys, no data leaves your infrastructure.
+
+```yaml
+# .github/workflows/prompt-quality.yml
+- uses: ctxray/ctxray@main
+  with:
+    score-threshold: 50
+    comment-on-pr: true
+```
+
+- **Deterministic** — same prompt, same score, every run. Works in `pre-commit` and CI budgets.
+- **Air-gapped by default** — no external API calls, runs in offline/private networks.
+- **Independent** — MIT licensed, no vendor lock-in. Promptfoo joined OpenAI. Humanloop joined Anthropic. ctxray is open-source infrastructure that stays yours.
+
+Full setup: [GitHub Action](#ci-integration) · [pre-commit](#pre-commit) · [`.ctxray.toml`](#project-configuration)
+
 ## What you'll discover
 
 ### Your AI coding persona
