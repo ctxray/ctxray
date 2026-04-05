@@ -1,6 +1,6 @@
-"""ctxray — Discover, analyze, and evolve your best prompts from AI coding sessions."""
+"""ctxray — See how you really use AI."""
 
-__version__ = "2.5.0"
+__version__ = "3.0.0"
 
 __all__ = [
     "__version__",

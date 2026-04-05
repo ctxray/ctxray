@@ -12,10 +12,10 @@ Set TypingSpeed 40ms
 
 # activate venv so ctxray is on PATH (hidden from viewer)
 Hide
-Type "export PATH=/Users/chris/projects/ctxray/.venv/bin:$PATH"
+Type "export PATH=/Users/chris/projects/reprompt/.venv/bin:$PATH"
 Enter
 Sleep 500ms
-Type "cd /Users/chris/projects/ctxray"
+Type "cd /Users/chris/projects/reprompt"
 Enter
 Sleep 500ms
 Type "clear"
