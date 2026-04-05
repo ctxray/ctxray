@@ -51,7 +51,7 @@ runs:
     - name: Set up uv
       uses: astral-sh/setup-uv@v7
 
-    - name: Install reprompt
+    - name: Install ctxray
       shell: bash
       env:
         INPUT_VERSION: ${{ inputs.version }}
@@ -75,7 +75,7 @@ runs:
         if [ -n "$INPUT_PATH" ]; then
           SCAN_ARGS="$SCAN_ARGS --path $INPUT_PATH"
         fi
-        reprompt scan $SCAN_ARGS || true
+        ctxray scan $SCAN_ARGS || true
 
     - name: Run lint
       id: lint
@@ -103,7 +103,7 @@ runs:
 
         # Always get JSON for outputs + PR comment
         JSON_RESULT=$(ctxray lint --json $LINT_ARGS 2>/dev/null || echo '{"errors":0,"warnings":0}')
-        echo "$JSON_RESULT" > /tmp/reprompt-lint.json
+        echo "$JSON_RESULT" > /tmp/ctxray-lint.json
 
         echo "errors=$(echo "$JSON_RESULT" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("errors",0))')" >> "$GITHUB_OUTPUT"
         echo "warnings=$(echo "$JSON_RESULT" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("warnings",0))')" >> "$GITHUB_OUTPUT"
@@ -128,7 +128,7 @@ runs:
         COMMENT=$(python3 << 'PYEOF'
         import json, os
 
-        with open("/tmp/reprompt-lint.json") as f:
+        with open("/tmp/ctxray-lint.json") as f:
             data = json.load(f)
 
         errors = data.get("errors", 0)
@@ -146,7 +146,7 @@ runs:
             status = "🟢 **Passed**"
 
         lines = []
-        lines.append("<!-- reprompt-lint -->")
+        lines.append("<!-- ctxray-lint -->")
         lines.append("## ctxray lint " + status)
         lines.append("")
         lines.append(f"| Metric | Value |")
@@ -186,7 +186,7 @@ runs:
 
         # Find existing comment to update (avoid duplicates)
         EXISTING=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
-          --jq '.[] | select(.body | contains("<!-- reprompt-lint -->")) | .id' \
+          --jq '.[] | select(.body | contains("<!-- ctxray-lint -->")) | .id' \
           2>/dev/null | head -1)
 
         if [ -n "$EXISTING" ]; then

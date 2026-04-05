@@ -1,4 +1,4 @@
-"""Generate SVG screenshots of reprompt commands for marketing.
+"""Generate SVG screenshots of ctxray commands for marketing.
 
 Renders directly via Rich Console to preserve colors in SVG export.
 """
@@ -8,10 +8,10 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 
-from reprompt.core.build import build_prompt
-from reprompt.core.check import check_prompt
-from reprompt.core.rewrite import rewrite_prompt
-from reprompt.core.scorer import get_tier, tier_color
+from ctxray.core.build import build_prompt
+from ctxray.core.check import check_prompt
+from ctxray.core.rewrite import rewrite_prompt
+from ctxray.core.scorer import get_tier, tier_color
 
 OUT = Path("docs/screenshots")
 OUT.mkdir(parents=True, exist_ok=True)
@@ -152,7 +152,7 @@ bad = check_prompt(
     "middleware because it seems to be kind of broken when users try to "
     "log in with expired tokens"
 )
-export("check-bad", lambda c: render_check_to_console(c, bad), "reprompt check")
+export("check-bad", lambda c: render_check_to_console(c, bad), "ctxray check")
 
 # 2. check — good prompt
 good = check_prompt(
@@ -161,7 +161,7 @@ good = check_prompt(
     "verifyToken line 42. Users get 401 errors after 1 hour sessions. "
     "Don't modify existing refresh token tests."
 )
-export("check-good", lambda c: render_check_to_console(c, good), "reprompt check")
+export("check-good", lambda c: render_check_to_console(c, good), "ctxray check")
 
 # 3. rewrite
 rw = rewrite_prompt(
@@ -169,7 +169,7 @@ rw = rewrite_prompt(
     "middleware because it seems to be kind of broken when users try to "
     "log in with expired tokens"
 )
-export("rewrite", lambda c: render_rewrite_to_console(c, rw), "reprompt rewrite")
+export("rewrite", lambda c: render_rewrite_to_console(c, rw), "ctxray rewrite")
 
 # 4. build
 built = build_prompt(
@@ -178,6 +178,6 @@ built = build_prompt(
     error="TypeError: Cannot read property 'exp' of undefined",
     constraints=["don't modify refresh token tests", "keep backward compatibility"],
 )
-export("build", lambda c: render_build_to_console(c, built), "reprompt build")
+export("build", lambda c: render_build_to_console(c, built), "ctxray build")
 
 print(f"\nDone! {len(list(OUT.glob('*.svg')))} SVGs in {OUT}/")
