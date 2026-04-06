@@ -1,7 +1,7 @@
 [project]
 name = "ctxray"
 version = "3.0.0"
-description = "See how you really use AI — X-ray your AI coding sessions locally"
+description = "Context intelligence for AI coding sessions — see how you really use AI, locally"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
