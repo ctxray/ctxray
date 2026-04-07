@@ -44,8 +44,8 @@ def upload_share(
         data=report_json.encode("utf-8"),
         headers={
             "Content-Type": "application/json",
-            "X-Reprompt-Install": install_id,
-            "X-Reprompt-Signature": signature,
+            "X-Ctxray-Install": install_id,
+            "X-Ctxray-Signature": signature,
             "User-Agent": "ctxray/1.0",
         },
         method="PUT",
