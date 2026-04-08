@@ -123,66 +123,26 @@ runs:
         GH_TOKEN: ${{ github.token }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
         REPO: ${{ github.repository }}
+        INPUT_SOURCE: ${{ inputs.source }}
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_SCORE_THRESHOLD: ${{ inputs.score-threshold }}
       run: |
-        # Build markdown comment from lint JSON
-        COMMENT=$(python3 << 'PYEOF'
-        import json, os
+        # Generate PR comment markdown via ctxray CLI
+        COMMENT_ARGS="--format github"
+        if [ -n "$INPUT_SOURCE" ]; then
+          COMMENT_ARGS="$COMMENT_ARGS --source $INPUT_SOURCE"
+        fi
+        if [ -n "$INPUT_PATH" ]; then
+          COMMENT_ARGS="$COMMENT_ARGS --path $INPUT_PATH"
+        fi
+        if [ "$INPUT_SCORE_THRESHOLD" != "0" ]; then
+          COMMENT_ARGS="$COMMENT_ARGS --score-threshold $INPUT_SCORE_THRESHOLD"
+        fi
 
-        with open("/tmp/ctxray-lint.json") as f:
-            data = json.load(f)
-
-        errors = data.get("errors", 0)
-        warnings = data.get("warnings", 0)
-        total = data.get("total_prompts", 0)
-        score = data.get("score", {})
-        violations = data.get("violations", [])
-
-        # Status badge
-        if errors > 0:
-            status = "🔴 **Failed**"
-        elif warnings > 0:
-            status = "🟡 **Passed with warnings**"
-        else:
-            status = "🟢 **Passed**"
-
-        lines = []
-        lines.append("<!-- ctxray-lint -->")
-        lines.append("## ctxray lint " + status)
-        lines.append("")
-        lines.append(f"| Metric | Value |")
-        lines.append(f"|--------|-------|")
-        lines.append(f"| Prompts checked | {total} |")
-        lines.append(f"| Errors | {errors} |")
-        lines.append(f"| Warnings | {warnings} |")
-
-        if score:
-            avg = score.get("avg_score", 0)
-            threshold = score.get("threshold", 0)
-            passed = "✅" if score.get("pass") else "❌"
-            lines.append(f"| Avg Score | {avg}/100 {passed} (threshold: {threshold}) |")
-            lines.append(f"| Score Range | {score.get('min_score', 0)} — {score.get('max_score', 0)} |")
-
-        # Violations (collapsible)
-        if violations:
-            lines.append("")
-            lines.append(f"<details><summary>📋 {len(violations)} violation(s)</summary>")
-            lines.append("")
-            lines.append("| Severity | Rule | Message |")
-            lines.append("|----------|------|---------|")
-            for v in violations[:20]:
-                sev = "🔴" if v["severity"] == "error" else "🟡"
-                lines.append(f"| {sev} | `{v['rule']}` | {v['message']} |")
-            if len(violations) > 20:
-                lines.append(f"| | | ... and {len(violations) - 20} more |")
-            lines.append("")
-            lines.append("</details>")
-
-        lines.append("")
-        lines.append("*Run `ctxray lint` locally for full details — [docs](https://github.com/ctxray/ctxray)*")
-
-        print("\n".join(lines))
-        PYEOF
-        )
+        COMMENT=$(ctxray lint $COMMENT_ARGS 2>/dev/null || echo "<!-- ctxray-lint -->
+        ### 🔬 ctxray · ⚠️ Report generation failed
+        ---
+        <sub>Analyzed by <a href=\"https://github.com/ctxray/ctxray\">ctxray</a></sub>")
 
         # Find existing comment to update (avoid duplicates)
         EXISTING=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
@@ -190,11 +150,9 @@ runs:
           2>/dev/null | head -1)
 
         if [ -n "$EXISTING" ]; then
-          # Update existing comment
           gh api "repos/$REPO/issues/$PR_NUMBER/comments/$EXISTING" \
             -X PATCH -f body="$COMMENT" > /dev/null
         else
-          # Create new comment
           gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
             -f body="$COMMENT" > /dev/null
         fi

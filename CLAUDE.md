@@ -106,6 +106,7 @@ src/ctxray/
     ├── rewrite_terminal.py # Rich output for rewrite command (score delta, changes, suggestions)
     ├── build_terminal.py   # Rich output for build command (tier, components, suggestions)
     ├── check_terminal.py   # Rich output for check command (score + lint + rewrite unified)
+    ├── github_pr.py        # GitHub PR comment markdown (viral distribution surface)
     └── projects_terminal.py # Rich output for project-level quality comparison
 ```
 
@@ -143,7 +144,7 @@ ctxray-extension (private)   ← Browser extension: Chrome/Firefox prompt captur
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (CTXRAY_ prefix) > TOML (~/.config/ctxray/config.toml) > defaults
-- Tests: pytest, 1892+ tests, 95% coverage target
+- Tests: pytest, 1910+ tests, 95% coverage target
 - CI integration: `lint --score-threshold N` for score-based gating, `.pre-commit-hooks.yaml`, GitHub Action with `score-threshold` input
 - Lint config: `.ctxray.toml` or `[tool.ctxray.lint]` in pyproject.toml (walks up from CWD)
 

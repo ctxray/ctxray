@@ -833,6 +833,9 @@ def lint(
     ),
     path: str = typer.Option(None, help="Path to scan for session files"),
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON"),
+    format: str = typer.Option(
+        None, "--format", "-f", help="Output format: github (PR comment markdown)"
+    ),
     fail_on_warning: bool = typer.Option(False, "--strict", help="Exit 1 on warnings too"),
     score_threshold: int = typer.Option(
         0, "--score-threshold", help="Fail if avg prompt score < threshold (CI mode)"
@@ -861,6 +864,9 @@ def lint(
 
     CI mode: use --score-threshold to fail if average score is below a threshold.
 
+    PR comments: use --format github to generate a branded quality report
+    for GitHub PR comments (used by the ctxray GitHub Action).
+
     Examples:
 
         ctxray lint                                    # lint stored prompts
@@ -870,6 +876,8 @@ def lint(
         ctxray lint --score-threshold 50               # fail if avg score < 50 (CI mode)
 
         ctxray lint --strict --json                    # strict mode with JSON output
+
+        ctxray lint --format github --score-threshold 50   # PR comment markdown
     """
     import json as json_mod
 
@@ -924,42 +932,95 @@ def lint(
 
     violations = lint_prompts(texts, config=lint_config)
 
-    # Score threshold mode (CI integration)
+    # Scoring: enabled by --score-threshold OR --format github
+    use_github_format = format and format.lower() == "github"
+    needs_scoring = effective_threshold > 0 or use_github_format
     score_data = None
-    if effective_threshold > 0:
-        from ctxray.core.extractors import extract_features
-        from ctxray.core.scorer import score_prompt
+    if needs_scoring:
+        from collections import Counter
 
-        scores = []
+        from ctxray.core.extractors import extract_features
+        from ctxray.core.scorer import ScoreBreakdown, get_tier, score_prompt
+
+        breakdowns: list[ScoreBreakdown] = []
         for t in texts:
             dna = extract_features(t, source="lint", session_id="lint-ci")
-            scores.append(score_prompt(dna).total)
-        avg_score = sum(scores) / len(scores) if scores else 0
+            breakdowns.append(score_prompt(dna))
+
+        totals = [b.total for b in breakdowns]
+        avg_score = sum(totals) / len(totals) if totals else 0
+
         score_data = {
             "avg_score": round(avg_score, 1),
-            "min_score": min(scores) if scores else 0,
-            "max_score": max(scores) if scores else 0,
+            "min_score": round(min(totals), 1) if totals else 0,
+            "max_score": round(max(totals), 1) if totals else 0,
             "threshold": effective_threshold,
-            "pass": avg_score >= effective_threshold,
+            "pass": avg_score >= effective_threshold if effective_threshold > 0 else True,
         }
 
-    if json_output:
-        data = {
-            "total_prompts": len(texts),
-            "violations": [
-                {
-                    "rule": v.rule,
-                    "severity": v.severity,
-                    "message": v.message,
-                    "prompt": v.prompt_text[:100],
-                }
-                for v in violations
-            ],
-            "errors": sum(1 for v in violations if v.severity == "error"),
-            "warnings": sum(1 for v in violations if v.severity == "warning"),
+        # Per-dimension averages
+        n = len(breakdowns) or 1
+        score_data["dimensions"] = {
+            "clarity": {"avg": round(sum(b.clarity for b in breakdowns) / n, 1), "max": 25},
+            "context": {"avg": round(sum(b.context for b in breakdowns) / n, 1), "max": 25},
+            "position": {"avg": round(sum(b.position for b in breakdowns) / n, 1), "max": 20},
+            "structure": {"avg": round(sum(b.structure for b in breakdowns) / n, 1), "max": 15},
+            "repetition": {"avg": round(sum(b.repetition for b in breakdowns) / n, 1), "max": 15},
         }
-        if score_data:
-            data["score"] = score_data
+
+        # Tier distribution
+        tier_counts = Counter(get_tier(b.total) for b in breakdowns)
+        score_data["tiers"] = {
+            label: tier_counts.get(label.upper(), 0)
+            for label in ["Expert", "Strong", "Good", "Basic", "Draft"]
+        }
+
+        # Aggregate top suggestions (dedup by message, count occurrences)
+        suggestion_counts: Counter[str] = Counter()
+        suggestion_map: dict[str, dict] = {}
+        for b in breakdowns:
+            for s in b.suggestions:
+                suggestion_counts[s.message] += 1
+                if s.message not in suggestion_map:
+                    suggestion_map[s.message] = {
+                        "message": s.message,
+                        "points": s.points,
+                        "paper": s.paper,
+                        "impact": s.impact,
+                        "count": 0,
+                    }
+        for msg, count in suggestion_counts.most_common(5):
+            suggestion_map[msg]["count"] = count
+        score_data["top_suggestions"] = [
+            suggestion_map[msg] for msg, _ in suggestion_counts.most_common(5)
+        ]
+
+    # Build structured data (shared by --json and --format github)
+    violation_dicts = [
+        {
+            "rule": v.rule,
+            "severity": v.severity,
+            "message": v.message,
+            "prompt": v.prompt_text[:100],
+        }
+        for v in violations
+    ]
+    data = {
+        "total_prompts": len(texts),
+        "violations": violation_dicts,
+        "errors": sum(1 for v in violations if v.severity == "error"),
+        "warnings": sum(1 for v in violations if v.severity == "warning"),
+    }
+    if score_data:
+        data["score"] = score_data
+
+    # Output
+    if use_github_format:
+        from ctxray.output.github_pr import generate_pr_comment
+
+        output = generate_pr_comment(data)
+        print(output, end="")
+    elif json_output:
         print(json_mod.dumps(data, indent=2))
     else:
         lint_output = format_lint_results(violations, len(texts))
@@ -973,7 +1034,9 @@ def lint(
             )
 
     if copy:
-        if json_output:
+        if use_github_format:
+            _copy_to_clip(output, quiet=True)
+        elif json_output:
             _copy_to_clip(json_mod.dumps(data, indent=2), quiet=True)
         else:
             _copy_to_clip(lint_output)
