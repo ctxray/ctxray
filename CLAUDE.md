@@ -144,7 +144,7 @@ ctxray-extension (private)   ← Browser extension: Chrome/Firefox prompt captur
 - Pattern upsert (not clear+re-insert) for stable IDs
 - Prompts starting with `<` are filtered (system-injected XML)
 - Config: env vars (CTXRAY_ prefix) > TOML (~/.config/ctxray/config.toml) > defaults
-- Tests: pytest, 1910+ tests, 95% coverage target
+- Tests: pytest, 1936+ tests, 95% coverage target
 - CI integration: `lint --score-threshold N` for score-based gating, `.pre-commit-hooks.yaml`, GitHub Action with `score-threshold` input
 - Lint config: `.ctxray.toml` or `[tool.ctxray.lint]` in pyproject.toml (walks up from CWD)
 
