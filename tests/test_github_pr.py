@@ -123,9 +123,11 @@ class TestCelebrateMode:
         result = generate_pr_comment(_scored_data(avg_score=75))
         assert "75" in result
 
-    def test_shows_sparkle(self):
+    def test_no_decorative_emoji(self):
         result = generate_pr_comment(_scored_data(avg_score=75))
-        assert "✨" in result
+        assert "✨" not in result
+        assert "🎉" not in result
+        assert "🚀" not in result
 
     def test_shows_strong_tier(self):
         result = generate_pr_comment(_scored_data(avg_score=75))
@@ -148,13 +150,15 @@ class TestCelebrateMode:
         assert "█" in result
         assert "░" in result
 
-    def test_shows_well_structured_message(self):
+    def test_no_editorial_language(self):
+        """No coaching phrases like 'well-structured' — just data."""
         result = generate_pr_comment(_scored_data(avg_score=75))
-        assert "well-structured" in result
+        assert "well-structured" not in result
+        assert "push even higher" not in result
 
-    def test_suggestions_label(self):
+    def test_suggestions_neutral_label(self):
         result = generate_pr_comment(_scored_data(avg_score=75))
-        assert "push even higher" in result
+        assert "suggestion" in result
 
     def test_prompt_count(self):
         result = generate_pr_comment(_scored_data(avg_score=75))
@@ -182,11 +186,11 @@ class TestEncourageMode:
         assert "Good" not in result
         assert "Basic" not in result
 
-    def test_shows_quick_wins(self):
+    def test_shows_suggestions(self):
         result = generate_pr_comment(_scored_data(avg_score=60))
-        assert "quick wins" in result
+        assert "suggestion" in result
 
-    def test_no_sparkle(self):
+    def test_no_decorative_emoji(self):
         result = generate_pr_comment(_scored_data(avg_score=60))
         assert "✨" not in result
 
@@ -213,11 +217,11 @@ class TestMinimalMode:
         assert "Basic" not in result
         assert "Draft" not in result
 
-    def test_shows_suggestions_available(self):
+    def test_shows_suggestions(self):
         result = generate_pr_comment(_scored_data(avg_score=35))
-        assert "suggestions available" in result
+        assert "suggestion" in result
 
-    def test_no_sparkle(self):
+    def test_no_decorative_emoji(self):
         result = generate_pr_comment(_scored_data(avg_score=35))
         assert "✨" not in result
 
@@ -302,6 +306,20 @@ class TestNoShaming:
             assert "Draft" not in result
             assert "DRAFT" not in result
 
+    def test_no_decorative_emoji_anywhere(self):
+        """Decorative emoji (✨🎉🚀🎊) should never appear — reads as AI-generated."""
+        for score in [10, 35, 55, 75, 90]:
+            result = generate_pr_comment(_scored_data(avg_score=score, threshold=0))
+            for emoji in ["✨", "🎉", "🚀", "🎊"]:
+                assert emoji not in result, f"{emoji} appeared at score {score}"
+
+    def test_no_editorial_language_anywhere(self):
+        """No coaching phrases at any score level."""
+        for score in [35, 55, 75, 90]:
+            result = generate_pr_comment(_scored_data(avg_score=score, threshold=0))
+            for phrase in ["well-structured", "push even higher", "quick wins", "great job"]:
+                assert phrase not in result, f"'{phrase}' appeared at score {score}"
+
 
 # ── Suggestions ──
 
@@ -338,6 +356,17 @@ class TestSuggestions:
         result = generate_pr_comment(_scored_data(avg_score=35))
         assert "View suggestions" in result
 
+    def test_singular_suggestion(self):
+        """'1 suggestion' not '1 suggestions'."""
+        data = _scored_data(avg_score=75, with_suggestions=False)
+        data["score"]["top_suggestions"] = [
+            {"message": "Add constraints", "points": 5, "paper": "", "count": 1, "impact": "med"},
+        ]
+        result = generate_pr_comment(data)
+        assert "1 suggestion" in result
+        # Should not have "1 suggestions" (plural)
+        assert "1 suggestions" not in result
+
 
 # ── Lint Items ──
 
@@ -351,7 +380,7 @@ class TestLintItems:
             ],
         )
         result = generate_pr_comment(data)
-        assert "items to review" in result
+        assert "item to review" in result  # singular for 1 item
 
     def test_items_collapsible(self):
         data = _base_data(
@@ -450,7 +479,7 @@ class TestEdgeCases:
 
     def test_boundary_70_is_celebrate(self):
         result = generate_pr_comment(_scored_data(avg_score=70))
-        assert "✨" in result
+        assert "70" in result  # score shown
         assert "Strong" in result
 
     def test_boundary_69_is_encourage(self):

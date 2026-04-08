@@ -6,8 +6,9 @@ psychology — celebrate good scores, encourage medium, stay minimal on low.
 Design principles:
 - Public PR comments should never shame. Low scores → fewer details, not red marks.
 - ❌ never appears for quality scores. Only ⚠️ for CI gate failures the user chose.
-- "Violation" → "item to review". "Failed" → "below target". Coach language.
-- Viral mechanic: ctxray branding appears at every score level, always neutral or positive.
+- Neutral-warm tone: state facts, offer suggestions, avoid editorial ("well-structured").
+- Exactly 5 functional emoji (🔬 ✅ ⚠️ 💡 📋), no decorative emoji (✨ 🎉 🚀).
+- Viral mechanic: ctxray branding appears at every score level, always neutral.
 
 Display tiers:
 - Score ≥ 70 (celebrate): show score + tier + dimensions + suggestions
@@ -54,6 +55,11 @@ def _add_dimensions(lines: list[str], score: dict) -> None:
         cells.append(f"{avg_dim:.0f}/{max_val} {bar}")
     lines.append("| " + " | ".join(cells) + " |")
     lines.append("")
+
+
+def _pl(n: int, word: str) -> str:
+    """Pluralize: 1 suggestion, 2 suggestions."""
+    return f"{n} {word}" if n == 1 else f"{n} {word}s"
 
 
 def _add_suggestions(lines: list[str], suggestions: list[dict], label: str) -> None:
@@ -109,12 +115,12 @@ def generate_pr_comment(data: dict) -> str:
         if avg >= 70:
             # ── CELEBRATE: score + tier + dimensions ──
             tier = "Expert" if avg >= 85 else "Strong"
-            lines.append(f"**{avg:.0f}**/100 {tier} — your prompts are well-structured ✨")
+            lines.append(f"**{avg:.0f}**/100 {tier}")
             lines.append("")
             _add_dimensions(lines, score)
             parts = [f"**{total}** prompts analyzed"]
             if suggestions:
-                parts.append(f"💡 {len(suggestions)} suggestions to push even higher")
+                parts.append(f"💡 {_pl(len(suggestions), 'suggestion')}")
             lines.append(" · ".join(parts))
             lines.append("")
             _add_suggestions(lines, suggestions, "View suggestions")
@@ -124,9 +130,8 @@ def generate_pr_comment(data: dict) -> str:
             _add_dimensions(lines, score)
             parts = [f"**{total}** prompts analyzed"]
             if suggestions:
-                n = len(suggestions)
                 total_pts = sum(s.get("points", 0) for s in suggestions[:5])
-                hint = f"💡 {n} quick wins available"
+                hint = f"💡 {_pl(len(suggestions), 'suggestion')}"
                 if total_pts:
                     hint += f" (+{total_pts} pts potential)"
                 parts.append(hint)
@@ -138,7 +143,7 @@ def generate_pr_comment(data: dict) -> str:
             # ── MINIMAL: just count + suggestions, no score, no dimensions ──
             parts = [f"**{total}** prompts analyzed"]
             if suggestions:
-                parts.append(f"💡 {len(suggestions)} suggestions available")
+                parts.append(f"💡 {_pl(len(suggestions), 'suggestion')}")
             lines.append(" · ".join(parts))
             lines.append("")
             _add_suggestions(lines, suggestions, "View suggestions")
@@ -161,7 +166,7 @@ def generate_pr_comment(data: dict) -> str:
 
     # ── Lint items (collapsible, neutral language) ──
     if violations:
-        lines.append(f"<details><summary>📋 {len(violations)} items to review</summary>")
+        lines.append(f"<details><summary>📋 {_pl(len(violations), 'item')} to review</summary>")
         lines.append("")
         lines.append("| | Rule | Message |")
         lines.append("|-|------|---------|")
