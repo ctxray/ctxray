@@ -150,6 +150,13 @@ class TestCelebrateMode:
         assert "█" in result
         assert "░" in result
 
+    def test_no_dimension_numbers(self):
+        """Bars only — no '21/25' or '8/15' grading numbers."""
+        result = generate_pr_comment(_scored_data(avg_score=75))
+        assert "/25" not in result
+        assert "/20" not in result
+        assert "/15" not in result
+
     def test_no_editorial_language(self):
         """No coaching phrases like 'well-structured' — just data."""
         result = generate_pr_comment(_scored_data(avg_score=75))
@@ -319,6 +326,13 @@ class TestNoShaming:
             result = generate_pr_comment(_scored_data(avg_score=score, threshold=0))
             for phrase in ["well-structured", "push even higher", "quick wins", "great job"]:
                 assert phrase not in result, f"'{phrase}' appeared at score {score}"
+
+    def test_no_dimension_scores_anywhere(self):
+        """Dimension bars must never show numbers like '8/15' — only visual bars."""
+        for score in [55, 75, 90]:
+            result = generate_pr_comment(_scored_data(avg_score=score, threshold=0))
+            for suffix in ["/25", "/20", "/15"]:
+                assert suffix not in result, f"'{suffix}' appeared at score {score}"
 
 
 # ── Suggestions ──

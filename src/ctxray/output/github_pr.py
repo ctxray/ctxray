@@ -34,14 +34,22 @@ DIMENSION_ORDER = [
 
 
 def _bar(value: float, max_val: int, width: int = 10) -> str:
-    """Unicode progress bar for markdown."""
+    """Unicode progress bar for markdown.
+
+    Shows only visual proportion — no numbers. This is deliberate:
+    "8/15" triggers grading psychology; a half-filled bar is just a shape.
+    """
     filled = round(value / max_val * width) if max_val > 0 else 0
     filled = max(0, min(filled, width))
     return "█" * filled + "░" * (width - filled)
 
 
 def _add_dimensions(lines: list[str], score: dict) -> None:
-    """Add the 5-dimension score table."""
+    """Add the 5-dimension visual bar table.
+
+    Bars only — no scores. The visual shows relative strengths at a glance;
+    the suggestions section below tells the user exactly what to improve.
+    """
     dims = score.get("dimensions")
     if not dims:
         return
@@ -51,8 +59,7 @@ def _add_dimensions(lines: list[str], score: dict) -> None:
     cells = []
     for key, _, max_val in DIMENSION_ORDER:
         avg_dim = dims.get(key, {}).get("avg", 0)
-        bar = _bar(avg_dim, max_val)
-        cells.append(f"{avg_dim:.0f}/{max_val} {bar}")
+        cells.append(_bar(avg_dim, max_val))
     lines.append("| " + " | ".join(cells) + " |")
     lines.append("")
 
