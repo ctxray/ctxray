@@ -110,7 +110,7 @@ def tier_color(score: float) -> str:
         return "bold yellow"
     if score >= 30:
         return "yellow"
-    return "bold red"
+    return "dim"
 
 
 def score_prompt(dna: PromptDNA) -> ScoreBreakdown:

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 def render_rewrite(result: RewriteResult) -> str:
     """Render a rewrite result as a Rich-formatted string."""
     buf = StringIO()
-    console = Console(file=buf, width=100, record=True)
+    console = Console(file=buf, width=100, record=True, force_terminal=True)
 
     # Score change header — tier-first display
     delta = result.score_delta
@@ -65,7 +65,7 @@ def render_rewrite(result: RewriteResult) -> str:
 def render_rewrite_diff(result: RewriteResult) -> str:
     """Render a unified diff between original and rewritten prompt."""
     buf = StringIO()
-    console = Console(file=buf, width=100, record=True)
+    console = Console(file=buf, width=100, record=True, force_terminal=True)
 
     orig_lines = result.original.splitlines(keepends=True)
     new_lines = result.rewritten.splitlines(keepends=True)

@@ -23,7 +23,7 @@ def _score_style(score: float) -> str:
 def render_tool_comparison(comparison: ToolComparison) -> str:
     """Render side-by-side tool comparison with insights."""
     buf = StringIO()
-    console = Console(file=buf, width=100, record=True)
+    console = Console(file=buf, width=100, record=True, force_terminal=True)
 
     if not comparison.tools:
         console.print("\n  [dim]No tool data yet. Run [bold]ctxray scan[/bold] first.[/dim]\n")

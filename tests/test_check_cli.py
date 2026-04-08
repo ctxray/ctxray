@@ -13,6 +13,12 @@ class TestCheckCLI:
     def test_basic_check(self):
         result = runner.invoke(app, ["check", "fix the auth bug in login.ts"])
         assert result.exit_code == 0
+        # Coach mode for low-scoring prompts shows suggestions, not dimensions
+        assert "Improve" in result.output or "Rewritten" in result.output
+
+    def test_basic_check_verbose(self):
+        result = runner.invoke(app, ["check", "fix the auth bug in login.ts", "--verbose"])
+        assert result.exit_code == 0
         assert "Clarity" in result.output
 
     def test_check_json(self):
@@ -34,8 +40,8 @@ class TestCheckCLI:
         result = runner.invoke(app, ["check", "fix bug", "--max-tokens", "1"])
         assert result.exit_code == 0
 
-    def test_check_shows_dimensions(self):
-        result = runner.invoke(app, ["check", "fix the auth bug in login.ts"])
+    def test_check_shows_dimensions_verbose(self):
+        result = runner.invoke(app, ["check", "fix the auth bug in login.ts", "--verbose"])
         assert result.exit_code == 0
         assert "Context" in result.output
         assert "Position" in result.output

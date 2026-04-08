@@ -74,23 +74,54 @@ class TestCheckPrompt:
 
 
 class TestCheckOutput:
-    def test_render_check(self):
+    def test_render_check_verbose(self):
+        """Verbose mode shows full details including tier and dimensions."""
         from ctxray.output.check_terminal import render_check
 
         result = check_prompt(
             "I was wondering if you could maybe help me fix the auth bug in login.ts"
         )
-        output = render_check(result)
+        output = render_check(result, verbose=True)
         assert result.tier in output
         assert "Clarity" in output
         assert "Context" in output
+
+    def test_render_coach_mode_hides_score(self):
+        """Low-scoring prompts (< 50) hide score and tier in default mode."""
+        from ctxray.output.check_terminal import render_check
+
+        result = check_prompt("fix it")
+        output = render_check(result)
+        # Coach mode: no tier label, no score number, leads with suggestions
+        if result.total < 50:
+            assert "DRAFT" not in output
+            assert "BASIC" not in output
+            assert "Clarity" not in output
+
+    def test_render_coach_mode_shows_suggestions(self):
+        """Low-scoring prompts still show suggestions and rewrite."""
+        from ctxray.output.check_terminal import render_check
+
+        result = check_prompt("fix it")
+        output = render_check(result)
+        assert "Improve" in output or "Lint" in output or "Rewritten" in output
+
+    def test_render_encourage_hides_numbers(self):
+        """Mid-scoring prompts (50-69) show bars without numbers."""
+        from ctxray.output.check_terminal import render_check
+
+        result = check_prompt("Fix the auth bug in src/auth/middleware.ts where JWT expires")
+        output = render_check(result)
+        if 50 <= result.total < 70:
+            assert result.tier in output
+            assert f"{result.total:.0f}" not in output
 
     def test_render_with_lint(self):
         from ctxray.output.check_terminal import render_check
 
         result = check_prompt("fix it")
         output = render_check(result)
-        assert "Lint" in output or "DRAFT" in output
+        assert "Lint" in output or "Improve" in output
 
     def test_render_with_rewrite(self):
         from ctxray.output.check_terminal import render_check

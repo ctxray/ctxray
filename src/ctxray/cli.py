@@ -1057,6 +1057,7 @@ def check(
     file: str = typer.Option("", "--file", "-f", help="Read prompt from file"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     copy: bool = typer.Option(False, "--copy", help="Copy rewritten prompt to clipboard"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show full score details"),
 ) -> None:
     """Full prompt diagnostic — score + lint + rewrite in one command.
 
@@ -1100,7 +1101,7 @@ def check(
     else:
         from ctxray.output.check_terminal import render_check
 
-        typer.echo(render_check(result))
+        typer.echo(render_check(result, verbose=verbose))
 
     if copy:
         _copy_to_clip(result.rewritten, quiet=json_output)

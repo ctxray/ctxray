@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 def render_build(result: BuildResult) -> str:
     """Render a build result as a Rich-formatted string."""
     buf = StringIO()
-    console = Console(file=buf, width=100, record=True)
+    console = Console(file=buf, width=100, record=True, force_terminal=True)
 
     # Score + tier header
     color = tier_color(result.score)
