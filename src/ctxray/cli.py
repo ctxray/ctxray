@@ -1011,6 +1011,8 @@ def lint(
         "errors": sum(1 for v in violations if v.severity == "error"),
         "warnings": sum(1 for v in violations if v.severity == "warning"),
     }
+    if model:
+        data["model"] = model
     if score_data:
         data["score"] = score_data
 
@@ -1052,8 +1054,11 @@ def lint(
 @app.command(rich_help_panel="Analyze")
 def check(
     text: str = typer.Argument(..., help="Prompt text to check (use '-' for stdin)"),
-    model: str = typer.Option("", "--model", "-m", help="Target model (claude/gpt/gemini)"),
+    model: str = typer.Option("", "--model", "-m", help="Target model (claude/gpt/gemini/small)"),
     max_tokens: int = typer.Option(0, "--max-tokens", help="Token budget (0 = disabled)"),
+    threshold: int = typer.Option(
+        0, "--threshold", "-t", help="Quality threshold (0 = default 43, experimentally validated)"
+    ),
     file: str = typer.Option("", "--file", "-f", help="Read prompt from file"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     copy: bool = typer.Option(False, "--copy", help="Copy rewritten prompt to clipboard"),
@@ -1064,18 +1069,22 @@ def check(
     Runs all quality checks and shows a unified report with score breakdown,
     strengths, suggestions, lint issues, and auto-rewrite preview.
 
+    Threshold (--threshold): below this score, prompts have ~83% failure rate.
+    Above it, ~94% success. Default 43 is experimentally validated.
+
     Examples:
 
         ctxray check "fix the auth bug in login.ts"
 
         ctxray check "refactor the middleware" --model claude
 
-        ctxray check "help me debug this crash" --json
+        ctxray check "help me debug this crash" --threshold 50
     """
     text = _resolve_text(text, file)
-    from ctxray.core.check import check_prompt
+    from ctxray.core.check import DEFAULT_THRESHOLD, check_prompt
 
-    result = check_prompt(text, model=model, max_tokens=max_tokens)
+    effective_threshold = threshold if threshold > 0 else DEFAULT_THRESHOLD
+    result = check_prompt(text, model=model, max_tokens=max_tokens, threshold=effective_threshold)
 
     if json_output:
         import json as json_mod
@@ -1083,6 +1092,9 @@ def check(
         data = {
             "total": result.total,
             "tier": result.tier,
+            "threshold": result.threshold,
+            "threshold_pass": result.threshold_pass,
+            "missing_features": result.missing_features,
             "clarity": result.clarity,
             "context": result.context,
             "position": result.position,
@@ -1163,18 +1175,25 @@ def explain(
 def score(
     text: str = typer.Argument(..., help="Prompt text to score (use '-' for stdin)"),
     file: str = typer.Option("", "--file", "-f", help="Read prompt from file"),
+    model: str = typer.Option("", "--model", "-m", help="Target model (claude/gpt/gemini/small)"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     copy: bool = typer.Option(False, "--copy", help="Copy result to clipboard"),
 ) -> None:
     """Score a prompt using research-backed analysis.
 
+    Model-specific scoring (--model):
+      claude  — Compression tolerance bonus
+      gpt     — CoT penalty for o-series reasoning models
+      gemini  — Verbose penalty (focus loss on long prompts)
+      small   — Over-complexity penalty for <3B models (E8: 64% drop validated)
+
     Examples:
 
         ctxray score "Fix the auth bug in login.ts where JWT expires"
 
-        ctxray score --file prompt.txt --json
+        ctxray score "Fix bug" --model claude
 
-        ctxray score "Fix bug" --copy
+        ctxray score --file prompt.txt --json
     """
     text = _resolve_text(text, file)
     from ctxray.core.cost import estimate_cost, format_cost, model_for_source
@@ -1182,7 +1201,7 @@ def score(
     from ctxray.core.scorer import score_prompt
 
     dna = extract_features(text, source="manual", session_id="score-cli")
-    breakdown = score_prompt(dna)
+    breakdown = score_prompt(dna, model=model)
     dna.overall_score = breakdown.total
 
     cost_usd = estimate_cost(dna.token_count, source="manual")
@@ -1285,23 +1304,32 @@ def score(
 def compress(
     text: str = typer.Argument(..., help="Prompt text to compress (use '-' for stdin)"),
     file: str = typer.Option("", "--file", "-f", help="Read prompt from file"),
+    safe: bool = typer.Option(
+        False,
+        "--safe",
+        help="Safe mode: only char normalization + structure cleanup. "
+        "Skips phrase simplification and filler deletion which can hurt small models.",
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     copy: bool = typer.Option(False, "--copy", help="Copy compressed text to clipboard"),
 ) -> None:
     """Compress a prompt by removing filler words and simplifying phrases.
 
+    Use --safe when targeting small models (< 3B params). Experimentally
+    validated: aggressive compression drops quality by 61% on 1.5B models.
+
     Examples:
 
         ctxray compress "Can you please help me refactor this code?"
 
-        ctxray compress --file prompt.txt --json
+        ctxray compress "verbose prompt" --safe      # safe for small models
 
-        ctxray compress "verbose prompt here" --copy
+        ctxray compress --file prompt.txt --json
     """
     text = _resolve_text(text, file)
     from ctxray.core.compress import compress_text
 
-    result = compress_text(text)
+    result = compress_text(text, safe=safe)
 
     if json_output:
         import json as json_mod
@@ -1386,7 +1414,7 @@ def build(
     example: str = typer.Option("", "--example", help="Example input/output"),
     output_format: str = typer.Option("", "--output-format", help="Expected response format"),
     role: str = typer.Option("", "--role", "-r", help="AI role/persona"),
-    model: str = typer.Option("", "--model", "-m", help="Target model (claude/gpt/gemini)"),
+    model: str = typer.Option("", "--model", "-m", help="Target model (claude/gpt/gemini/small)"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     copy: bool = typer.Option(False, "--copy", help="Copy built prompt to clipboard"),
 ) -> None:
@@ -1742,6 +1770,7 @@ def compare(
     prompt_a: str | None = typer.Argument(None, help="First prompt"),
     prompt_b: str | None = typer.Argument(None, help="Second prompt"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    model: str = typer.Option("", "--model", "-m", help="Target model (claude/gpt/gemini/small)"),
     best_worst: bool = typer.Option(
         False, "--best-worst", help="Auto-select best and worst from DB"
     ),
@@ -1800,8 +1829,8 @@ def compare(
 
     dna_a = extract_features(prompt_a, source="manual", session_id="compare-a")
     dna_b = extract_features(prompt_b, source="manual", session_id="compare-b")
-    score_a = score_prompt(dna_a)
-    score_b = score_prompt(dna_b)
+    score_a = score_prompt(dna_a, model=model)
+    score_b = score_prompt(dna_b, model=model)
 
     def _build_data(dna: PromptDNA, sc: ScoreBreakdown) -> dict[str, object]:
         return {

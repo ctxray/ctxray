@@ -261,44 +261,20 @@ class TestModelSpecificRules:
         rules = [v.rule for v in violations]
         assert not any(r.startswith("claude-") or r.startswith("gpt-") for r in rules)
 
-    def test_claude_suggests_xml_for_long_prompts(self):
+    def test_claude_no_format_rules_v3(self):
+        """v3: Claude format preferences removed (cross-validated, no evidence)."""
         config = LintConfig(min_length=0, short_prompt=0, model="claude")
         violations = lint_prompt(self.LONG_PLAIN, config=config)
         rules = [v.rule for v in violations]
-        assert "claude-prefer-xml" in rules
-
-    def test_claude_no_hint_when_xml_present(self):
-        config = LintConfig(min_length=0, short_prompt=0, model="claude")
-        text = "<instructions>Fix the auth bug in login.ts</instructions> " * 5
-        violations = lint_prompt(text, config=config)
-        rules = [v.rule for v in violations]
         assert "claude-prefer-xml" not in rules
 
-    def test_claude_no_hint_when_markdown_present(self):
-        config = LintConfig(min_length=0, short_prompt=0, model="claude")
-        text = "## Instructions\nFix the authentication middleware " * 5
-        violations = lint_prompt(text, config=config)
-        rules = [v.rule for v in violations]
-        assert "claude-prefer-xml" not in rules
-
-    def test_gpt_warns_on_xml_tags(self):
+    def test_gpt_no_format_rules_v3(self):
+        """v3: GPT XML/markdown preferences removed (cross-validated, no evidence)."""
         config = LintConfig(min_length=0, short_prompt=0, model="gpt")
         text = "<instructions>Fix the auth bug</instructions> and more context here please"
         violations = lint_prompt(text, config=config)
         rules = [v.rule for v in violations]
-        assert "gpt-avoid-xml" in rules
-
-    def test_gpt_suggests_markdown_for_long_prompts(self):
-        config = LintConfig(min_length=0, short_prompt=0, model="gpt")
-        violations = lint_prompt(self.LONG_PLAIN, config=config)
-        rules = [v.rule for v in violations]
-        assert "gpt-prefer-markdown" in rules
-
-    def test_gpt_no_markdown_hint_when_headers_present(self):
-        config = LintConfig(min_length=0, short_prompt=0, model="gpt")
-        text = "## Context\nFix the authentication middleware " * 5
-        violations = lint_prompt(text, config=config)
-        rules = [v.rule for v in violations]
+        assert "gpt-avoid-xml" not in rules
         assert "gpt-prefer-markdown" not in rules
 
     def test_gpt_json_instruction_warning(self):
@@ -336,9 +312,11 @@ class TestModelSpecificRules:
         assert not any(r.startswith("claude-") for r in rules)
 
     def test_hint_severity(self):
-        config = LintConfig(min_length=0, short_prompt=0, model="claude")
-        violations = lint_prompt(self.LONG_PLAIN, config=config)
-        hint_violations = [v for v in violations if v.rule == "claude-prefer-xml"]
+        """Test hint severity using CoT rule (format hints removed in v3)."""
+        config = LintConfig(min_length=0, short_prompt=0, model="gpt")
+        text = "Think step by step about how to fix the authentication issue in the middleware"
+        violations = lint_prompt(text, config=config)
+        hint_violations = [v for v in violations if v.rule == "gpt-no-cot-reasoning"]
         assert hint_violations[0].severity == "hint"
 
     def test_gemini_broad_negative_warning(self):
@@ -406,7 +384,7 @@ class TestModelSpecificRules:
 
     def test_format_results_with_hints(self):
         v = LintViolation(
-            rule="claude-prefer-xml", severity="hint", message="test", prompt_text="x"
+            rule="gpt-no-cot-reasoning", severity="hint", message="test", prompt_text="x"
         )
         result = format_lint_results([v], 1)
         assert "hint" in result

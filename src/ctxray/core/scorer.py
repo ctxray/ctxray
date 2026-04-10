@@ -8,10 +8,12 @@ Scores a PromptDNA feature vector on a 0-100 scale across five categories:
   4. Structure (0-15): role, constraints, examples, output format
   5. Repetition (0-15): keyword reinforcement (Google Research)
 
-Weight rationale: clarity and context are what normal developers can
-improve immediately; structure and repetition are advanced techniques
-that provide additional lift. This ensures a clear, specific prompt
-scores 55-65 without requiring markdown or role definitions.
+Model-specific scoring:
+  When a target model is specified, adjustments are applied after base
+  scoring. Research basis:
+  - PromptBridge arXiv:2512.01420 (27-39% cross-model transfer loss)
+  - CompactPrompt arXiv:2510.18043 (compression helps Claude, not GPT)
+  - IFEval++ arXiv:2512.14754 (format sensitivity varies by model)
 
 Research references:
 - Position weights from the U-curve in arXiv:2307.03172 (30% degradation)
@@ -24,6 +26,102 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from ctxray.core.prompt_dna import PromptDNA
+
+# ── Model-specific scoring profiles ──
+# Adjustments applied AFTER base scoring. Positive = bonus, negative = penalty.
+#
+# Calibration history:
+#   v1 (2026-04-08): Official model guides + published research
+#   v2 (2026-04-09): Local experiments (E2: format, E3v4: position, E4.5: compression)
+#   v3 (2026-04-09): Cross-validated on 4 models × PC GPU + literature review
+#     - Format bonuses REMOVED: 96-call cross-validation + Delimiter Hypothesis
+#     - compression_bonus reduced to +1.0 (CompactPrompt paper)
+#     - Position weight 20/100 confirmed by E3v4 U-curve (37% middle loss)
+#   v4 (2026-04-09): Model capacity matching (E8: 96 calls, 4 models)
+#     - Over-complexity penalty for small models: maximal prompts drop 64% on 1.5B
+#     - Threshold: complexity_score > 0.5 hurts <2B models
+#     - Optimal complexity = "role + constraints" (not maximal)
+
+
+@dataclass(frozen=True)
+class ScoringProfile:
+    """Model-specific scoring adjustments.
+
+    Only adjustments with experimental or documented evidence are included.
+    Format preferences (XML/Markdown) were removed in v3 — cross-validated
+    on 4 models (96 calls) showing zero signal, consistent with published
+    research (2411.10541, Systima.ai Delimiter Hypothesis).
+    """
+
+    name: str
+    description: str = ""
+    # Technique adjustments (documented by model providers)
+    cot_penalty: float = 0.0  # penalty if "think step by step" (o-series official docs)
+    compression_bonus: float = 0.0  # bonus if prompt is lean (CompactPrompt paper)
+    # Length adjustments (documented by model providers)
+    verbose_penalty_per_100w: float = 0.0  # penalty per 100 words over threshold
+    verbose_threshold: int = 500  # word count above which verbose penalty kicks in
+    # Complexity capacity (E8: 96 calls, 4 models on PC GPU)
+    # Small models (<2B) drop 64% at high complexity. Threshold: complexity_score > 0.5.
+    over_complexity_penalty: float = 0.0  # penalty when complexity exceeds model capacity
+    complexity_threshold: float = 1.0  # complexity_score above which penalty applies
+
+
+PROFILES: dict[str, ScoringProfile] = {
+    "generic": ScoringProfile(name="generic"),
+    "claude": ScoringProfile(
+        name="claude",
+        description="Anthropic Claude — compression helps (E7 k=3 + CompactPrompt)",
+        # E7 k=1 showed "compression hurts" but k=3 stabilized to "compression HELPS"
+        # (+0.26 normal, +0.37 safe). Consistent with CompactPrompt paper.
+        # k=1 noise was caused by Haiku's high variance at capability boundary.
+        compression_bonus=1.0,
+    ),
+    "gpt": ScoringProfile(
+        name="gpt",
+        description="OpenAI GPT — o-series penalized by explicit CoT (official docs)",
+        cot_penalty=-3.0,
+    ),
+    "gemini": ScoringProfile(
+        name="gemini",
+        description="Google Gemini — loses focus on long prompts (official prompting guide)",
+        verbose_penalty_per_100w=-1.0,
+        verbose_threshold=300,
+    ),
+    "small": ScoringProfile(
+        name="small",
+        description="Small models (<3B) — over-complex prompts hurt (E8: 64% drop at maximal)",
+        over_complexity_penalty=-5.0,  # E8: 0.78→0.28 at maximal on 1.5B
+        complexity_threshold=0.5,  # E8: "role+constraints" optimal, beyond hurts
+    ),
+}
+
+VALID_MODELS: frozenset[str] = frozenset(PROFILES.keys()) - {"generic"}
+
+
+def _compute_model_adjustment(dna: PromptDNA, profile: ScoringProfile) -> float:
+    """Compute model-specific score adjustment from profile rules."""
+    adj = 0.0
+
+    # CoT penalty (for reasoning models like o-series)
+    if dna.has_step_by_step and profile.cot_penalty:
+        adj += profile.cot_penalty
+
+    # Compression bonus (only for models with paper evidence)
+    if profile.compression_bonus and dna.compressibility < 0.15:
+        adj += profile.compression_bonus
+
+    # Verbose penalty
+    if profile.verbose_penalty_per_100w and dna.word_count > profile.verbose_threshold:
+        excess_hundreds = (dna.word_count - profile.verbose_threshold) / 100
+        adj += profile.verbose_penalty_per_100w * excess_hundreds
+
+    # Over-complexity penalty for small models (E8 validated)
+    if profile.over_complexity_penalty and dna.complexity_score > profile.complexity_threshold:
+        adj += profile.over_complexity_penalty
+
+    return adj
+
 
 # ── Position scoring calibrated to Lost in the Middle U-curve ──
 # Position 0.0 (start) → ~75% accuracy → score 1.0
@@ -113,8 +211,13 @@ def tier_color(score: float) -> str:
     return "dim"
 
 
-def score_prompt(dna: PromptDNA) -> ScoreBreakdown:
+def score_prompt(dna: PromptDNA, *, model: str = "") -> ScoreBreakdown:
     """Score a PromptDNA and return a detailed breakdown.
+
+    Args:
+        dna: Feature vector from extract_features()
+        model: Target model for model-specific adjustments (claude/gpt/gemini).
+               Empty string uses generic (universal) scoring.
 
     Returns ScoreBreakdown with total in [0, 100] and per-category scores.
     """
@@ -323,7 +426,15 @@ def score_prompt(dna: PromptDNA) -> ScoreBreakdown:
 
     # ── Total ──
     total = structure + context + position + repetition + clarity
-    total = round(min(total, 100.0), 1)
+
+    # ── Model-specific adjustment ──
+    model_adjustment = 0.0
+    if model:
+        profile = PROFILES.get(model, PROFILES["generic"])
+        model_adjustment = _compute_model_adjustment(dna, profile)
+        total += model_adjustment
+
+    total = round(min(max(total, 0.0), 100.0), 1)
 
     return ScoreBreakdown(
         total=total,

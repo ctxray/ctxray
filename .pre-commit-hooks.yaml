@@ -18,8 +18,26 @@
 
 - id: ctxray-lint-score
   name: ctxray lint (score gate)
-  description: Check AI prompt quality — fail if avg score below threshold
-  entry: ctxray lint --score-threshold 50
+  description: Fail if avg score below 43 — experimentally validated quality threshold
+  entry: ctxray lint --score-threshold 43
+  language: python
+  pass_filenames: false
+  always_run: true
+  additional_dependencies: ["ctxray"]
+
+- id: ctxray-lint-claude
+  name: ctxray lint (Claude)
+  description: Claude-specific prompt quality rules + score gate
+  entry: ctxray lint --model claude --score-threshold 43
+  language: python
+  pass_filenames: false
+  always_run: true
+  additional_dependencies: ["ctxray"]
+
+- id: ctxray-lint-gpt
+  name: ctxray lint (GPT)
+  description: GPT-specific prompt quality rules + score gate
+  entry: ctxray lint --model gpt --score-threshold 43
   language: python
   pass_filenames: false
   always_run: true

@@ -59,6 +59,7 @@ def _render_celebrate(console: Console, result: CheckResult) -> None:
         f" · [{color}]{result.total:.0f}[/{color}]"
         f"  [dim]({result.word_count} words, ~{result.token_count} tokens)[/dim]\n"
     )
+    _render_threshold(console, result)
     _render_dimensions(console, result, show_numbers=True)
     _render_strengths(console, result)
     _render_suggestions(console, result)
@@ -73,6 +74,7 @@ def _render_encourage(console: Console, result: CheckResult) -> None:
         f"\n  [{color}]{result.tier}[/{color}]"
         f"  [dim]({result.word_count} words, ~{result.token_count} tokens)[/dim]\n"
     )
+    _render_threshold(console, result)
     _render_dimensions(console, result, show_numbers=False)
     _render_strengths(console, result)
     _render_suggestions(console, result)
@@ -83,7 +85,9 @@ def _render_encourage(console: Console, result: CheckResult) -> None:
 def _render_coach(console: Console, result: CheckResult) -> None:
     """Score < 50: skip score/tier/dimensions, lead with actionable content."""
     console.print(f"\n  [dim]({result.word_count} words, ~{result.token_count} tokens)[/dim]\n")
-    # Lead with suggestions — the most helpful part
+    # Lead with threshold status and missing features
+    _render_threshold(console, result)
+    # Then suggestions — the most helpful part
     _render_suggestions(console, result)
     _render_lint(console, result)
     _render_rewrite(console, result)
@@ -105,6 +109,20 @@ def _render_full(console: Console, result: CheckResult) -> None:
 
 
 # ── Shared rendering components ──
+
+
+def _render_threshold(console: Console, result: CheckResult) -> None:
+    """Render threshold pass/fail indicator with missing features diagnostic."""
+    if result.threshold_pass:
+        console.print(f"  [green]PASS[/green] [dim]Quality threshold ({result.threshold})[/dim]")
+    else:
+        console.print(
+            f"  [red]BELOW THRESHOLD[/red] [dim]Score {result.total:.0f} < {result.threshold}[/dim]"
+        )
+        if result.missing_features:
+            console.print("  [bold]Add these to pass:[/bold]")
+            for feat in result.missing_features[:4]:  # top 4 most impactful
+                console.print(f"  [yellow]+[/yellow] {feat}")
 
 
 def _render_dimensions(console: Console, result: CheckResult, *, show_numbers: bool) -> None:

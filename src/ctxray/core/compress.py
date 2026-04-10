@@ -599,11 +599,18 @@ def _layer3_structure(text: str, zh_ratio: float) -> tuple[str, list[str]]:
     return text, changes
 
 
-def compress_text(text: str) -> CompressResult:
+def compress_text(text: str, *, safe: bool = False) -> CompressResult:
     """Compress a prompt while preserving technical content.
 
     Applies four layers in order: Layer 0 -> Layer 2 -> Layer 1 -> Layer 3.
     Code blocks, inline code, URLs, and file paths are protected from modification.
+
+    Args:
+        text: Prompt to compress.
+        safe: If True, only run safe layers (L0 char normalization + L3 structure
+              cleanup). Skips L1 (filler deletion) and L2 (phrase simplification)
+              which are experimentally shown to hurt small models
+              (E4.5: qwen2.5-coder:1.5b drops 0.89→0.28 with aggressive compression).
     """
     if not text:
         return CompressResult(
@@ -629,16 +636,18 @@ def compress_text(text: str) -> CompressResult:
 
     # Apply layers in spec order: 0 -> 2 -> 1 -> 3
     # IMPORTANT: Layer 2 (simplification) runs BEFORE Layer 1 (deletion) per spec
+    # Safe mode: skip L1+L2 (experimentally validated: these hurt small models)
     all_changes: list[str] = []
 
     working_text, changes = _layer0_char_normalize(working_text, zh_ratio)
     all_changes.extend(changes)
 
-    working_text, changes = _layer2_simplification(working_text, zh_ratio)
-    all_changes.extend(changes)
+    if not safe:
+        working_text, changes = _layer2_simplification(working_text, zh_ratio)
+        all_changes.extend(changes)
 
-    working_text, changes = _layer1_deletion(working_text, zh_ratio)
-    all_changes.extend(changes)
+        working_text, changes = _layer1_deletion(working_text, zh_ratio)
+        all_changes.extend(changes)
 
     working_text, changes = _layer3_structure(working_text, zh_ratio)
     all_changes.extend(changes)

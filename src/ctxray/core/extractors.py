@@ -55,6 +55,8 @@ _STEP_BY_STEP_RE = re.compile(
     r"(?i)(?:step[- ]by[- ]step|think through|one at a time|let'?s think|chain of thought)"
 )
 _SECTION_RE = re.compile(r"^#{1,4}\s+\S", re.MULTILINE)
+_XML_TAG_RE = re.compile(r"</?[a-zA-Z][a-zA-Z0-9_-]*(?:\s[^>]*)?>")
+_MD_HEADER_RE = _SECTION_RE  # reuse same pattern
 _SENTENCE_RE = re.compile(r"[.!?]+(?:\s|$)")
 
 # [Zi+ 2508.03678] Specificity drivers from PartialOrderEval
@@ -154,6 +156,12 @@ def extract_features(
     has_step_by_step = bool(_STEP_BY_STEP_RE.search(stripped))
     section_count = len(_SECTION_RE.findall(stripped))
 
+    # -- Format detection (for model-specific scoring) --
+    # Detect XML outside code blocks
+    _text_no_code = _CODE_BLOCK_RE.sub("", stripped)
+    has_xml_tags = bool(_XML_TAG_RE.search(_text_no_code))
+    has_markdown_headers = section_count > 0
+
     # -- Code blocks --
     code_blocks = _CODE_BLOCK_RE.findall(stripped)
     code_block_count = len(code_blocks)
@@ -229,6 +237,8 @@ def extract_features(
         opening_quality=round(opening_quality, 4),
         complexity_score=round(complexity_score, 4),
         ambiguity_score=round(ambiguity_score, 4),
+        has_xml_tags=has_xml_tags,
+        has_markdown_headers=has_markdown_headers,
         extractor_tier=1,
         locale="en",
     )

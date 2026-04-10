@@ -26,7 +26,7 @@ else:
         import tomli as tomllib  # type: ignore[no-redefine]
 
 # Valid model targets
-VALID_MODELS = {"claude", "gpt", "gemini"}
+VALID_MODELS = {"claude", "gpt", "gemini", "small"}
 
 
 @dataclass
@@ -270,53 +270,18 @@ _BROAD_NEGATIVE_RE = re.compile(
 def _check_model_rules(text: str, model: str) -> list[LintViolation]:
     """Return model-specific lint violations and hints."""
     violations: list[LintViolation] = []
-    has_xml = bool(_XML_TAG_RE.search(text))
-    has_md_headers = bool(_MD_HEADER_RE.search(text))
     word_count = len(text.split())
 
     if model == "claude":
-        # Claude: XML tags are preferred for structured prompts
-        if not has_xml and word_count > 50 and not has_md_headers:
-            violations.append(
-                LintViolation(
-                    rule="claude-prefer-xml",
-                    severity="hint",
-                    message=(
-                        "Claude handles XML tags well for structured prompts — "
-                        "try <context>, <instructions>, <constraints>"
-                    ),
-                    prompt_text=text,
-                )
-            )
+        # v3: XML preference removed (no quantitative evidence from Anthropic,
+        # cross-validated on 4 models showing zero format signal,
+        # consistent with Format Sensitivity paper 2411.10541)
+        pass
 
     elif model == "gpt":
-        # GPT: XML tags may be echoed verbatim; prefer markdown
-        if has_xml:
-            violations.append(
-                LintViolation(
-                    rule="gpt-avoid-xml",
-                    severity="warning",
-                    message=(
-                        "GPT may echo XML tags verbatim — "
-                        "use markdown headers (## Context, ## Instructions) instead"
-                    ),
-                    prompt_text=text,
-                )
-            )
-        # GPT: markdown headers are preferred
-        if not has_md_headers and word_count > 50:
-            violations.append(
-                LintViolation(
-                    rule="gpt-prefer-markdown",
-                    severity="hint",
-                    message=(
-                        "Long prompts for GPT benefit from markdown headers — "
-                        "use ## sections for clarity"
-                    ),
-                    prompt_text=text,
-                )
-            )
-        # GPT: JSON mode needs explicit instruction
+        # v3: XML/markdown format preferences removed (cross-validated,
+        # Delimiter Hypothesis study: XML 98.4% = MD 98.4%)
+        # Kept: JSON mode instruction (this is about API behavior, not quality)
         if _JSON_MODE_RE.search(text) is None and "json" in text.lower():
             violations.append(
                 LintViolation(

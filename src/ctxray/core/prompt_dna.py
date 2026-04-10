@@ -84,6 +84,11 @@ class PromptDNA:
     overall_score: float = 0.0
     compressibility: float = 0.0  # 0.0-1.0: how much filler can be removed
 
+    # ── Format Detection (for model-specific scoring) ──
+    # [PromptBridge 2512.01420] Format preferences are model-dependent
+    has_xml_tags: bool = False  # <tag>...</tag> structural markup
+    has_markdown_headers: bool = False  # ## Section headers
+
     # ── Metadata ──
     extractor_tier: int = 1  # which tier of extractors was used
     locale: str = "en"  # detected language: "en", "zh", "ja", "ko"

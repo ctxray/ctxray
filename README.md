@@ -7,7 +7,7 @@ X-ray your AI coding sessions across Claude Code, Cursor, ChatGPT, and 6 more to
 [![PyPI version](https://img.shields.io/pypi/v/ctxray)](https://pypi.org/project/ctxray/)
 [![Python 3.10+](https://img.shields.io/pypi/pyversions/ctxray)](https://pypi.org/project/ctxray/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-1892_passing-brightgreen)](https://github.com/ctxray/ctxray/actions)
+[![Tests](https://img.shields.io/badge/tests-1955_passing-brightgreen)](https://github.com/ctxray/ctxray/actions)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://github.com/ctxray/ctxray)
 
 ## Quick start
@@ -33,7 +33,8 @@ Drop ctxray into your CI as a prompt quality gate. No LLM, no API key, no networ
 # .github/workflows/prompt-quality.yml
 - uses: ctxray/ctxray@main
   with:
-    score-threshold: 50
+    score-threshold: 43    # experimentally validated quality threshold
+    model: claude          # model-specific rules (claude/gpt/gemini)
     comment-on-pr: true
 ```
 
@@ -43,7 +44,8 @@ repos:
   - repo: https://github.com/ctxray/ctxray
     rev: v3.0.0
     hooks:
-      - id: ctxray-lint
+      - id: ctxray-lint-score   # fail below quality threshold
+      # or: id: ctxray-lint-claude  # Claude-specific rules + threshold
 ```
 
 - **Deterministic** — same prompt, same score, every run. No flaky LLM-based checks.
@@ -69,6 +71,14 @@ Full setup: [GitHub Action](#ci-integration) · [pre-commit](#pre-commit) · [`.
 ### Full prompt diagnostic
 
 `ctxray check "your prompt"` scores, lints, and rewrites in one command — no LLM, <50ms.
+
+Experimentally validated: prompts scoring below **43** have an **83% failure rate**. Above it, **94% succeed**. ctxray tells you which side you're on and what to fix.
+
+```bash
+ctxray check "fix the auth bug in login.ts"        # threshold pass/fail + diagnostics
+ctxray check "fix bug" --model claude               # model-specific scoring for Claude
+ctxray check "refactor middleware" --threshold 50    # custom threshold for stricter teams
+```
 
 <img src="docs/screenshots/check-good.svg" alt="ctxray check — good prompt" width="800">
 
@@ -110,8 +120,9 @@ Full setup: [GitHub Action](#ci-integration) · [pre-commit](#pre-commit) · [`.
 
 | Command | Description |
 |---------|-------------|
-| `ctxray check "prompt"` | **Full diagnostic** — score + lint + rewrite in one command |
+| `ctxray check "prompt"` | **Full diagnostic** — score + lint + rewrite + threshold pass/fail |
 | `ctxray score "prompt"` | Research-backed 0-100 scoring with 30+ features |
+| `ctxray score "prompt" --model claude` | **Model-specific scoring** — Claude, GPT, or Gemini adjustments |
 | `ctxray rewrite "prompt"` | Rule-based improvement — filler removal, restructuring, hedging cleanup |
 | `ctxray build "task"` | Build prompts from components — task, context, files, errors, constraints |
 | `ctxray compress "prompt"` | 4-layer prompt compression (40-60% token savings typical) |
@@ -186,7 +197,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ctxray/ctxray@main
         with:
-          score-threshold: 50
+          score-threshold: 43     # experimentally validated (below = 83% failure rate)
+          model: claude           # optional: model-specific rules
           strict: true
           comment-on-pr: true
 ```
@@ -199,13 +211,17 @@ repos:
   - repo: https://github.com/ctxray/ctxray
     rev: v3.0.0
     hooks:
-      - id: ctxray-lint
+      - id: ctxray-lint-score     # quality threshold gate (score >= 43)
+      # - id: ctxray-lint-claude  # Claude-specific rules + threshold
+      # - id: ctxray-lint-gpt    # GPT-specific rules + threshold
 ```
 
 #### Direct CLI
 
 ```bash
-ctxray lint --score-threshold 50  # exit 1 if avg score < 50
+ctxray lint --score-threshold 43  # exit 1 below experimentally validated threshold
+ctxray lint --score-threshold 50  # or set your own bar
+ctxray lint --model claude        # model-specific lint rules
 ctxray lint --strict              # exit 1 on warnings
 ctxray lint --json                # machine-readable output
 ```
@@ -219,7 +235,8 @@ ctxray init   # generates .ctxray.toml with all rules documented
 ```toml
 # .ctxray.toml (or [tool.ctxray.lint] in pyproject.toml)
 [lint]
-score-threshold = 50
+score-threshold = 43   # experimentally validated quality threshold
+model = "claude"       # model-specific rules (claude/gpt/gemini)
 
 [lint.rules]
 min-length = 20
@@ -248,6 +265,10 @@ Cross-validated findings that inform our engine:
 - **Position bias is architectural** — present at initialization, not learned. Front-loading instructions is effective for prompts under 50% of context window (3 papers agree)
 - **Moderate compression improves output** — rule-based filler removal doesn't just save tokens, it enhances LLM performance ([2505.00019](https://arxiv.org/abs/2505.00019))
 - **Prompt quality is independently measurable** — prompt-only scoring predicts output quality without seeing the response (ACL 2025, [2503.10084](https://arxiv.org/abs/2503.10084))
+- **Quality threshold at score ~43** — our own experiment (30 prompts, 5 tiers, 2 models) found a step function: below 43, 83% failure rate; above 43, 94% success (Pearson r=0.56, Spearman ρ=0.64)
+- **Format preferences are model-dependent** — XML benefits Claude, Markdown benefits GPT, but having *any* structure matters more than the specific format ([PromptBridge 2512.01420](https://arxiv.org/abs/2512.01420))
+
+Model-specific scoring (`--model claude/gpt/gemini`) applies research-backed adjustments for each model's known preferences and sensitivities.
 
 All analysis runs locally in <1ms per prompt. No LLM calls, no network requests.
 

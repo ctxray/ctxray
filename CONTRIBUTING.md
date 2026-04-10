@@ -106,8 +106,9 @@ src/ctxray/
 ├── config.py           # pydantic-settings configuration
 ├── core/               # Business logic
 │   ├── models.py       # Prompt dataclass
-│   ├── scorer.py       # Research-calibrated 0-100 scoring
-│   ├── lint.py         # Quality linter
+│   ├── scorer.py       # Research-calibrated 0-100 scoring + model-specific profiles
+│   ├── check.py        # Unified diagnostic with threshold intelligence
+│   ├── lint.py         # Quality linter (model-aware: claude/gpt/gemini)
 │   ├── compress.py     # 4-layer prompt compression
 │   ├── distill.py      # Conversation distillation
 │   ├── agent.py        # Agent workflow analysis
