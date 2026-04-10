@@ -60,6 +60,18 @@ uv run python experiments/validate.py e9 \
     --host http://gpu-box.local:11434
 ```
 
+## Preview your contribution alongside baseline
+
+After running `validate.py e9 --model-name <yours>`, drop the output JSON
+into `experiments/contributed/` and run:
+
+```bash
+uv run python experiments/aggregate.py
+```
+
+You'll see a markdown table with your model merged into the cross-model
+comparison. Useful to sanity-check your run before opening an issue or PR.
+
 ## Sharing results
 
 The output JSON contains **zero PII** — just model name, pass rates, ctxray
