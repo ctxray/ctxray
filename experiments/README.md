@@ -63,7 +63,8 @@ uv run python experiments/validate.py e9 \
 ## Sharing results
 
 The output JSON contains **zero PII** — just model name, pass rates, ctxray
-scores, and prompt lengths. Two ways to contribute:
+scores, and prompt lengths. Full details + schema + submission process:
+**[contributed/README.md](contributed/README.md)**. The short version:
 
 1. **Paste the JSON into a GitHub issue** titled
    `Contributed E9 run: <model-name>` — fastest, lowest friction
@@ -71,7 +72,9 @@ scores, and prompt lengths. Two ways to contribute:
    the commit history
 
 We'll aggregate contributed runs into a public leaderboard + dataset.
-Contributors are credited by GitHub handle.
+Contributors are credited by GitHub handle. See
+[`contributed/example_gemma3_1b.json`](contributed/example_gemma3_1b.json)
+for an example output.
 
 ## Open questions a single contributed run can help answer
 
