@@ -16,7 +16,17 @@ Usage:
     uv run python experiments/validate.py e4                # Compression tolerance
     uv run python experiments/validate.py e9                # Specificity gradient (PC GPU)
     uv run python experiments/validate.py all               # All experiments (local)
-    uv run python experiments/validate.py e0 --model qwen3  # Specific model
+    uv run python experiments/validate.py e0 --model qwen3  # Pre-defined model key
+
+External contributors — run against any Ollama model you have locally:
+    uv run python experiments/validate.py e9 --model-name mistral:7b
+    uv run python experiments/validate.py e9 --model-name phi4:14b --host http://localhost:11434
+
+    --model-name   any name accepted by `ollama run` (e.g. mistral:7b, phi4:14b)
+    --host         Ollama API base URL (default: http://localhost:11434)
+
+    Results go to .output/experiments/e9_specificity_custom_<name>.json.
+    See experiments/README.md for how to share results.
 """
 
 from __future__ import annotations
@@ -92,6 +102,10 @@ MODELS: dict[str, dict[str, str]] = {
     },
     "gpu_gemma26b": {
         "name": "gemma4:26b",
+        "host": PC_GPU_HOST,
+    },
+    "gpu_phi4_14b": {
+        "name": "phi4:14b",
         "host": PC_GPU_HOST,
     },
 }
@@ -315,7 +329,7 @@ def run_e0(model_key: str) -> dict:
         "draft_avg": draft_avg,
         "strong_avg": strong_avg,
     }
-    _save(output, f"e0_{model_key}.json")
+    _save(output, f"e0_{_output_tag(model_key)}.json")
     return output
 
 
@@ -381,7 +395,7 @@ def run_e1(model_key: str) -> dict:
         "pearson_r": pearson_r,
         "spearman_rho": spearman_rho,
     }
-    _save(output, f"e1_{model_key}.json")
+    _save(output, f"e1_{_output_tag(model_key)}.json")
     return output
 
 
@@ -809,15 +823,22 @@ def run_e9(model_keys: list[str], k: int = 3) -> dict:
             print(f"  {avg:>12.2f}", end="")
         print()
 
+    # Serialize with real model names (not internal keys) so contributed
+    # runs are self-describing and can be aggregated without the MODELS dict.
+    serialized_models = [MODELS[mk]["name"] for mk in model_keys]
     output = {
         "experiment": "e9_specificity",
         "k": k,
-        "models": model_keys,
+        "models": serialized_models,
         "total_calls": len(results) * k,
         "results": results,
     }
-    # Use model-range suffix to avoid overwriting previous runs
-    if any("26b" in MODELS[mk]["name"] or "27b" in MODELS[mk]["name"] for mk in model_keys):
+    # Use model-range suffix to avoid overwriting previous runs.
+    # Custom contributor runs get their own sanitized-name suffix so multiple
+    # contributions coexist in .output/experiments/.
+    if len(model_keys) == 1 and MODELS[model_keys[0]].get("is_custom"):
+        suffix = _output_tag(model_keys[0])
+    elif any("26b" in MODELS[mk]["name"] or "27b" in MODELS[mk]["name"] for mk in model_keys):
         suffix = "frontier"
     elif any("9b" in MODELS[mk]["name"] or "8b" in MODELS[mk]["name"] for mk in model_keys):
         suffix = "midrange"
@@ -825,6 +846,156 @@ def run_e9(model_keys: list[str], k: int = 3) -> dict:
         suffix = "small"
     _save(output, f"e9_specificity_{suffix}.json")
     return output
+
+
+# ---------------------------------------------------------------------------
+# E10: Specificity Decomposition (10 tasks × 6 levels, checkpoint-resumable)
+# ---------------------------------------------------------------------------
+
+
+def _save_e10_checkpoint(
+    path: Path,
+    results: list[dict],
+    model_keys: list[str],
+    k: int,
+) -> None:
+    """Write E10 checkpoint atomically (tmp then rename)."""
+    data = {
+        "experiment": "e10_specificity",
+        "k": k,
+        "models": model_keys,
+        "total_cells": len(results),
+        "completed_cells": results,
+    }
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+    tmp.replace(path)
+
+
+def run_e10(
+    model_keys: list[str],
+    *,
+    k: int = 10,
+    checkpoint_path: Path | None = None,
+) -> dict:
+    """E10: Specificity decomposition — 10 tasks × 6 levels with resume.
+
+    Decomposes the old E9 full_spec level into three additive variants:
+      - task_io_constraints: task_io + explicit evaluation-order constraints
+      - task_io_edge       : task_io + edge case mentions
+      - full_spec          : task_io + both
+
+    Writes the checkpoint after every completed (model, task, level) cell so
+    an interrupted run can resume without reprocessing completed cells.
+    """
+    from data_e10 import (
+        E10_ALL_TASKS,
+        E10_LEVELS,
+        E10_PROMPTS,
+        E10_TAGS,
+        get_e10_prompts,
+    )
+
+    if checkpoint_path is None:
+        # Custom contributor runs get their own checkpoint so they don't
+        # collide with the built-in multi-model E10 run.
+        if len(model_keys) == 1 and MODELS[model_keys[0]].get("is_custom"):
+            checkpoint_path = (
+                OUTPUT_DIR / f"e10_checkpoint_{_output_tag(model_keys[0])}.json"
+            )
+        else:
+            checkpoint_path = OUTPUT_DIR / "e10_checkpoint.json"
+
+    # Resume from existing checkpoint if present
+    completed: set[tuple[str, str, str]] = set()
+    all_results: list[dict] = []
+    if checkpoint_path.exists():
+        try:
+            existing = json.loads(checkpoint_path.read_text())
+            all_results = list(existing.get("completed_cells", []))
+            completed = {
+                (r["model"], r["task"], r["level"]) for r in all_results
+            }
+            print(f"  Resuming from checkpoint: {len(completed)} cells already done")
+        except Exception as e:  # noqa: BLE001
+            print(f"  Warning: checkpoint load failed ({e}); starting fresh")
+
+    e10_prompts = get_e10_prompts()
+    total_cells = len(model_keys) * len(e10_prompts)
+
+    print(f"\n{'=' * 60}")
+    print(f"  E10: Specificity Decomposition (k={k})")
+    print(f"  Models: {', '.join(MODELS[mk]['name'] for mk in model_keys)}")
+    print(f"  {len(E10_ALL_TASKS)} tasks × {len(E10_LEVELS)} levels × k={k}")
+    print(f"  Total cells: {total_cells} (remaining: {total_cells - len(completed)})")
+    print(f"  Checkpoint: {checkpoint_path}")
+    print(f"{'=' * 60}\n")
+
+    if not completed:
+        # First run: print ctxray scores once as sanity check
+        print("  ctxray scores per (task, level):")
+        for task in E10_ALL_TASKS:
+            tag = E10_TAGS[task.name]
+            for level in E10_LEVELS:
+                prompt = E10_PROMPTS[task.name][level]
+                sc = ctxray_score(prompt)
+                print(
+                    f"    {task.name:<22} [{tag[:7]:<7}] {level:<22} → "
+                    f"{sc['total']:5.1f} ({sc['tier']})"
+                )
+        print()
+
+    # Model-first outer loop to minimize Ollama model swaps
+    for model_key in model_keys:
+        model_name = MODELS[model_key]["name"]
+        print(f"  --- Model: {model_name} ---")
+
+        for level, task_name, prompt, task in e10_prompts:
+            cell_key = (model_key, task_name, level)
+            if cell_key in completed:
+                continue
+
+            pass_rates = []
+            for _rep in range(k):
+                eval_result = evaluate_prompt(model_key, prompt, task)
+                pass_rates.append(eval_result["pass_rate"])
+
+            avg_rate = mean(pass_rates)
+            sc_total = ctxray_score(prompt)["total"]
+            row = {
+                "model": model_key,
+                "model_name": model_name,
+                "task": task_name,
+                "tag": E10_TAGS[task_name],
+                "level": level,
+                "pass_rates": pass_rates,
+                "avg_pass_rate": avg_rate,
+                "min_pass_rate": min(pass_rates),
+                "max_pass_rate": max(pass_rates),
+                "ctxray_score": sc_total,
+                "prompt_len": len(prompt),
+                "k": k,
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            }
+            all_results.append(row)
+            completed.add(cell_key)
+
+            status = (
+                "PASS" if avg_rate >= 0.9
+                else ("PARTIAL" if avg_rate > 0.1 else "FAIL")
+            )
+            done = len(completed)
+            print(
+                f"  [{done:>4}/{total_cells}] {model_name:<22} "
+                f"{task_name:<22} {level:<22} k={k} avg={avg_rate:.2f} {status}"
+            )
+            sys.stdout.flush()
+
+            # Atomic checkpoint after every cell
+            _save_e10_checkpoint(checkpoint_path, all_results, model_keys, k)
+
+    print(f"\n  E10 complete: {len(all_results)} cells saved to {checkpoint_path}")
+    return {"completed_cells": all_results}
 
 
 # ---------------------------------------------------------------------------
@@ -864,6 +1035,25 @@ def _spearman(x: list[float], y: list[float]) -> float:
 # ---------------------------------------------------------------------------
 
 
+def _sanitize_model_name(name: str) -> str:
+    """Turn 'mistral:7b-instruct' into 'mistral_7b_instruct' for filenames."""
+    return re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_").lower()
+
+
+def _output_tag(model_key: str) -> str:
+    """Return a filename-safe tag for a model key.
+
+    For pre-defined keys (qcoder, gpu_qwen9b, ...) returns the key as-is so
+    existing output filenames stay stable. For contributor-injected custom
+    entries, returns ``custom_<sanitized-model-name>`` so multiple contributors
+    don't overwrite each other's results.
+    """
+    cfg = MODELS.get(model_key, {})
+    if cfg.get("is_custom"):
+        return f"custom_{_sanitize_model_name(cfg['name'])}"
+    return model_key
+
+
 def _save(data: dict, filename: str) -> None:
     path = OUTPUT_DIR / filename
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
@@ -875,29 +1065,84 @@ def _save(data: dict, filename: str) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _parse_args(args: list[str]) -> tuple[str, str, str | None, str | None]:
+    """Parse CLI args. Returns (experiment, model_key, custom_name, custom_host)."""
+    experiment = args[0]
+    model_key = "qcoder"  # default: boundary model
+    custom_name: str | None = None
+    custom_host: str | None = None
+
+    i = 1
+    while i < len(args):
+        a = args[i]
+        if a == "--model" and i + 1 < len(args):
+            model_key = args[i + 1]
+            i += 2
+        elif a == "--model-name" and i + 1 < len(args):
+            custom_name = args[i + 1]
+            i += 2
+        elif a == "--host" and i + 1 < len(args):
+            custom_host = args[i + 1]
+            i += 2
+        else:
+            i += 1
+
+    return experiment, model_key, custom_name, custom_host
+
+
 def main() -> None:
     args = sys.argv[1:]
     if not args or args[0] in ("-h", "--help"):
         print(__doc__)
         return
 
-    experiment = args[0]
-    model_key = "qcoder"  # default: boundary model
+    experiment, model_key, custom_name, custom_host = _parse_args(args)
 
-    # Parse --model flag
-    for i, a in enumerate(args):
-        if a == "--model" and i + 1 < len(args):
-            model_key = args[i + 1]
+    # Contributor path: --model-name <n> [--host <url>] injects a custom entry
+    # into MODELS and makes it the target for single-model experiments.
+    if custom_name is not None:
+        host = custom_host or "http://localhost:11434"
+        MODELS["custom"] = {
+            "name": custom_name,
+            "host": host,
+            "is_custom": True,
+        }
+        model_key = "custom"
+        print(f"  Custom model: {custom_name} @ {host}")
+    elif custom_host is not None:
+        print("  ERROR: --host requires --model-name")
+        sys.exit(1)
 
     # Boundary models for E3/E4 (fast, at the capability threshold)
     both_models = ["qcoder", "gemma1b"]
 
-    # GPU models for E9 (PC via Tailscale, spans 1B-4B range)
+    # GPU models for the built-in E9/E10 multi-model runs (PC via Tailscale,
+    # not reachable by external contributors — they should use --model-name).
     gpu_models = ["gpu_qcoder", "gpu_gemma1b", "gpu_phi4", "gpu_gemma4b"]
 
-    # Check model availability
+    # Select models for each experiment, preferring the injected custom entry
+    # when the contributor provided --model-name.
+    using_custom = model_key == "custom"
+
     if experiment == "e9":
-        check_keys = gpu_models
+        e9_models = ["custom"] if using_custom else gpu_models
+        check_keys = e9_models
+    elif experiment == "e9-frontier":
+        e9_models = (
+            ["custom"] if using_custom else ["gpu_qwen9b", "gpu_llama8b", "gpu_gemma26b"]
+        )
+        check_keys = e9_models
+    elif experiment == "e10":
+        e10_models = (
+            ["custom"]
+            if using_custom
+            else ["gpu_qcoder", "gpu_gemma4b", "gpu_llama8b", "gpu_qwen9b", "gpu_phi4_14b"]
+        )
+        check_keys = e10_models
+    elif experiment in ("e2", "e3", "e4"):
+        # Multi-model dense experiments: custom runs solo against itself.
+        models_for_exp = ["custom"] if using_custom else both_models
+        check_keys = models_for_exp
     elif experiment in ("e0", "e1"):
         check_keys = [model_key]
     else:
@@ -914,20 +1159,17 @@ def main() -> None:
     elif experiment == "e1":
         run_e1(model_key)
     elif experiment == "e2":
-        run_e2(both_models)
+        run_e2(models_for_exp)
     elif experiment == "e3":
-        run_e3(both_models)
+        run_e3(models_for_exp)
     elif experiment == "e4":
-        run_e4(both_models)
+        run_e4(models_for_exp)
     elif experiment == "e9":
-        run_e9(gpu_models)
+        run_e9(e9_models)
     elif experiment == "e9-frontier":
-        frontier_models = ["gpu_qwen9b", "gpu_llama8b", "gpu_gemma26b"]
-        for mk in frontier_models:
-            if not check_model(mk):
-                print(f"  ERROR: {MODELS[mk]['name']} not available at {MODELS[mk]['host']}")
-                sys.exit(1)
-        run_e9(frontier_models)
+        run_e9(e9_models)
+    elif experiment == "e10":
+        run_e10(e10_models, k=10)
     elif experiment == "all":
         run_e0(model_key)
         run_e1(model_key)
@@ -936,7 +1178,7 @@ def main() -> None:
         run_e4(both_models)
     else:
         print(f"  Unknown experiment: {experiment}")
-        print("  Available: e0, e1, e2, e3, e4, e9, all")
+        print("  Available: e0, e1, e2, e3, e4, e9, e9-frontier, e10, all")
         sys.exit(1)
 
 
