@@ -92,9 +92,11 @@ E9 set from `experiments/data.py`, not anything from your session history.
 - **Not** used for any commercial or proprietary purpose. This directory
   is the canonical source; there is no private copy.
 
-## First contribution — fills the qwen3.5 9B→27B gap
+## Example contributions
 
-[`qwen3_5_27b.json`](qwen3_5_27b.json) — qwen3.5:27b E9 run. Key finding:
+### [`qwen3_5_27b.json`](qwen3_5_27b.json) — qwen3.5 size scaling
+
+Fills the gap between qwen3.5:9b (baseline) and gemma4:26b (baseline).
 
 | Model | vague | task_only | task_io | full_spec |
 |---|---:|---:|---:|---:|
@@ -102,7 +104,16 @@ E9 set from `experiments/data.py`, not anything from your session history.
 | `qwen3.5:27b` (this run) | 0.25 | 0.50 | 0.92 | 0.92 |
 
 **Identical.** Scaling qwen3.5 from 9B → 27B (3× parameters) produces zero
-improvement on E9 once the prompt reaches task_io specificity. This is a
-real data point about where prompt quality matters vs where raw scale
-matters — the kind of cross-family comparison only contributed runs can
-build.
+improvement on E9 once the prompt reaches task_io specificity. A real data
+point about where prompt quality matters vs where raw scale matters.
+
+### [`example_gemma3_1b.json`](example_gemma3_1b.json) — 1B specificity U-curve
+
+A single E9 run against gemma3:1b showing a legitimate U-curve: peak pass
+rate at `task_io` (0.92), drop at `full_spec` (0.67). The extra specificity
+seems to *confuse* the 1B model. Note: gemma3:1b is also present in the
+baseline small-set (with slightly different numbers due to the usual
+run-to-run variance at temperature 0 under different prompt loading
+conditions), so the aggregator reports it as a `merged` source — this
+file is retained because the single-run data was cited in the v1 launch
+discussion and the JSON is still a valid contributor-flow schema reference.
