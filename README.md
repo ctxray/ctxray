@@ -72,7 +72,7 @@ Full setup: [GitHub Action](#ci-integration) · [pre-commit](#pre-commit) · [`.
 
 `ctxray check "your prompt"` scores, lints, and rewrites in one command — no LLM, <50ms.
 
-Experimentally validated: prompts scoring below **43** have an **83% failure rate**. Above it, **94% succeed**. ctxray tells you which side you're on and what to fix.
+Experimentally validated on **3000+ LLM calls across 8 models** (1.5B → 27B): prompts at or above score **43** hit ~93% pass rate on executable code tests. Below 43 they average 72% or lower. ctxray tells you which side you're on and what to fix — see [`experiments/RESULTS.md`](experiments/RESULTS.md) for the full cross-model data.
 
 ```bash
 ctxray check "fix the auth bug in login.ts"        # threshold pass/fail + diagnostics
