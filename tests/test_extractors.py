@@ -59,6 +59,29 @@ class TestStructureDetection:
         assert dna.has_constraints is True
         assert dna.constraint_count >= 2
 
+    def test_constraints_imperative_without_modal(self):
+        """Imperative-style constraints without modal verbs (must/should) should
+        still fire has_constraints. Real user prompts often express constraints
+        with imperative sentences rather than "you must" phrasing.
+
+        Regression guard for the E10 experiment finding: the old regex only
+        matched modal verbs, so prompts like "Check divisibility by 15 before
+        checking 3 or 5" scored zero on has_constraints despite being a
+        perfectly valid constraint clause.
+        """
+        phrasings = [
+            "Check divisibility by 15 before checking 3 or 5 separately.",
+            "Preserve depth-first order of non-list elements.",
+            "Emit one tuple per maximal run of identical consecutive characters.",
+            "Assume arr is sorted in ascending order and use iterative halving.",
+            "Preserve first-occurrence order and drop later duplicates.",
+            "Compare characters column-by-column from index 0.",
+            "Repeat each character by its count in the order given.",
+        ]
+        for text in phrasings:
+            dna = extract_features(text, source="test", session_id="s1")
+            assert dna.has_constraints is True, f"Expected has_constraints=True for: {text!r}"
+
     def test_examples_detected(self):
         text = """Convert dates.
 

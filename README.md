@@ -7,7 +7,7 @@ X-ray your AI coding sessions across Claude Code, Cursor, ChatGPT, and 6 more to
 [![PyPI version](https://img.shields.io/pypi/v/ctxray)](https://pypi.org/project/ctxray/)
 [![Python 3.10+](https://img.shields.io/pypi/pyversions/ctxray)](https://pypi.org/project/ctxray/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-1955_passing-brightgreen)](https://github.com/ctxray/ctxray/actions)
+[![Tests](https://img.shields.io/badge/tests-1956_passing-brightgreen)](https://github.com/ctxray/ctxray/actions)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://github.com/ctxray/ctxray)
 
 ## Quick start

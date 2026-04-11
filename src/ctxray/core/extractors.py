@@ -40,8 +40,20 @@ _ERROR_RE = re.compile(
 )
 _ROLE_RE = re.compile(r"(?i)^(?:you are|act as|as a|role:)", re.MULTILINE)
 _CONSTRAINT_RE = re.compile(
-    r"(?i)\b(?:do not|don't|must not|never|avoid|must|should|ensure|make sure"
-    r"|only|without|except|unless)\b"
+    r"(?i)\b(?:"
+    # Modal/negation verbs (original set)
+    r"do not|don't|must not|never|avoid|must|should|ensure|make sure"
+    r"|only|without|except|unless"
+    # Assumption/precondition verbs — "assume X is Y"
+    r"|assume|assumes|assuming|guaranteed"
+    # Imperative constraint verbs — appear in constraint clauses after the task
+    r"|preserve|emit|repeat|compare|maintain|ignore|handle"
+    # Ordering phrases — "before checking X", "after processing Y"
+    r"|(?:before|after)\s+\w+ing"
+    # Order descriptors — "ascending order", "depth-first order", etc.
+    r"|(?:ascending|descending|depth-first|first-occurrence|breadth-first"
+    r"|sorted|reverse|chronological)\s+order"
+    r")\b"
 )
 _EXAMPLE_RE = re.compile(
     r"(?i)(?:example|e\.g\.|for instance|input\s*:.*output\s*:|before\s*:.*after\s*:)",
