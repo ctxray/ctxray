@@ -1,15 +1,38 @@
 # Contributed experiment runs
 
-This directory collects runs of the ctxray experiment harness against models
-the core dataset doesn't cover. Anyone with a local Ollama can contribute one.
+This directory collects runs of the ctxray E9 specificity-gradient experiment
+harness against models that neither our baseline nor the published
+**PartialOrderEval** (Zi et al. 2025,
+[arXiv:2508.03678](https://arxiv.org/abs/2508.03678)) dataset covers.
 
-## Baseline coverage (11 models)
+PartialOrderEval established the core specificity-gradient finding on
+Qwen2.5-Coder (1.5B/3B/7B/14B) and Llama-3.x (1B/3B/8B/**70B**) for code
+generation. The contributed collection here **extends** that work into
+directions they did not test.
 
-qwen3 0.6B · qwen3 4B · qwen3 8B · qwen3 14B · qwen3 32B ·
-llama3.2 1B · llama3.2 3B · llama3.1 8B · gemma2 2B · gemma2 9B · gemma4 26B
+## What's already covered (skip these)
 
-**Notable gaps:** Mistral family, Phi family, DeepSeek, Granite, Mixtral,
-Qwen3-MoE, anything >32B dense, anything fine-tuned.
+- **PartialOrderEval (2508.03678)**: Qwen2.5-Coder 1.5B/3B/7B/14B, Llama-3.x
+  1B/3B/8B/70B, code tasks (HumanEval + ParEval)
+- **Our ctxray baseline (11 models)**: qwen3 0.6B/4B/8B/14B/32B, llama3.2
+  1B/3B, llama3.1 8B, gemma2 2B/9B, gemma4 26B
+
+## High-value gap directions
+
+These are the model categories where a single contributed run is a **real
+extension** to the published literature:
+
+1. **Reasoning-RL models**: DeepSeek-R1-Distill variants, Qwen3-QwQ,
+   gpt-oss reasoning mode — PartialOrderEval did not test any reasoning model
+2. **MoE models**: Mixtral 8x7B/22B, Qwen3-MoE-A30B, DeepSeek-V2/V3 —
+   PartialOrderEval tested only dense
+3. **Mistral family**: any Mistral dense model — zero Mistral data in either
+   dataset
+4. **Phi family**: phi4 (14B+) — PartialOrderEval didn't include Phi
+5. **Gemma family**: gemma3:12b/27b, gemma4 variants not in baseline
+6. **Granite, Yi, Tulu, Nemotron**: any of these families
+7. **Fine-tuned / community models**: anything derived from a base we have
+   data for, to measure fine-tuning effects
 
 ## How to contribute (5–15 minutes)
 
@@ -92,28 +115,58 @@ E9 set from `experiments/data.py`, not anything from your session history.
 - **Not** used for any commercial or proprietary purpose. This directory
   is the canonical source; there is no private copy.
 
-## Example contributions
+## v2 dataset (2026-04-10)
 
-### [`qwen3_5_27b.json`](qwen3_5_27b.json) — qwen3.5 size scaling
+12 models run with **two methodology bugs fixed** — see the v2 section below
+for details. The full cross-model snapshot:
 
-Fills the gap between qwen3.5:9b (baseline) and gemma4:26b (baseline).
+| Model | vague | task_only | task_io | full_spec | Δ | Notes |
+|---|---:|---:|---:|---:|---:|---|
+| `qwen2.5-coder:1.5b` | 0.08 | 0.42 | 0.72 | 0.67 | +0.58 | **real U-curve** at full_spec |
+| `gemma3:1b` | 0.00 | 0.25 | 0.92 | 1.00 | +1.00 | |
+| `qwen3.5:4b` | 0.00 | 0.50 | 1.00 | 1.00 | +1.00 | |
+| `gemma3:4b` | 0.25 | 0.50 | 1.00 | 1.00 | +0.75 | |
+| `phi4-mini:latest` | 0.00 | 0.33 | 0.94 | 1.00 | +1.00 | lowest task_only |
+| `llama3.1:8b` | 0.00 | 0.50 | 0.83 | 1.00 | +1.00 | task_io below ceiling (fizzbuzz DeMorgan bug) |
+| `deepseek-r1:8b` | 0.00 | 0.50 | 1.00 | 1.00 | +1.00 | **reasoning RL** — same base as llama3.1:8b, +0.17 at task_io |
+| `qwen3.5:9b` | 0.25 | 0.50 | 1.00 | 1.00 | +0.75 | |
+| `phi4:14b` | 0.00 | 0.50 | 1.00 | 1.00 | +1.00 | |
+| `gemma4:26b` | 0.00 | 0.50 | 1.00 | 1.00 | +1.00 | MoE per project spec |
+| `qwen3.5:27b` | 0.25 | 0.50 | 1.00 | 1.00 | +0.75 | |
+| `qwen3.5:35b-a3b` | 0.25 | 0.50 | 1.00 | 1.00 | +0.75 | **MoE** (3B active) — identical to same-family dense |
 
-| Model | vague | task_only | task_io | full_spec |
-|---|---:|---:|---:|---:|
-| `qwen3.5:9b` (baseline) | 0.25 | 0.50 | 0.92 | 0.92 |
-| `qwen3.5:27b` (this run) | 0.25 | 0.50 | 0.92 | 0.92 |
+### Key v2 findings
 
-**Identical.** Scaling qwen3.5 from 9B → 27B (3× parameters) produces zero
-improvement on E9 once the prompt reaches task_io specificity. A real data
-point about where prompt quality matters vs where raw scale matters.
+- **qwen3.5 intra-family scale plateau**: qwen3.5:4b, 9b, 27b, and 35b-a3b
+  (MoE) all score identically at 0.25/0.50/1.00/1.00. Scaling from 4B to
+  27B (6.75×) within a single family produces zero E9 improvement. This is
+  a strictly stronger result than the v1 "9B = 27B" finding because it
+  holds across 3 additional sizes.
+- **MoE behaves like total size, not active size**: qwen3.5:35b-a3b (3B
+  active params) scores identically to qwen3.5:27b (dense). If MoE
+  behaved like its active-param count (3B), it should look like qwen3.5:4b
+  (which it does, but qwen3.5:4b also matches qwen3.5:27b, making the
+  test vacuous). A cleaner MoE-vs-active comparison needs models outside
+  the plateau range — Mixtral 8x7B (active 12B) vs a 12B dense is the
+  next logical experiment.
+- **Reasoning RL flattens the low end**: deepseek-r1:8b at task_io = 1.00
+  vs llama3.1:8b (same base) = 0.83. At full_spec both reach 1.00.
+  Reasoning helps task_io recovery specifically, not ceiling.
+- **qwen2.5-coder:1.5b real U-curve**: the only real specificity-hurts
+  signal in the v2 dataset. Coder-specialized 1.5B model drops from 0.72
+  (task_io) to 0.67 (full_spec). Worth investigating whether this is
+  specific to coder fine-tuning or generalizes to other small specialized
+  models.
+- **gemma3:1b U-curve was a v1 test artifact**: v1 showed gemma3:1b
+  dropping from 0.92 (task_io) to 0.67 (full_spec). v2 shows 0.92 → 1.00.
+  The v1 "U-curve" was entirely the two_sum test case bug capping scores
+  at 0.67. Corrected data removes the artifact.
 
-### [`example_gemma3_1b.json`](example_gemma3_1b.json) — 1B specificity U-curve
+### v2 methodology corrections (see `~/projects/knowledge/sessions/2026-04-10-ctxray-e9-contributor-bootstrap/` for full write-up)
 
-A single E9 run against gemma3:1b showing a legitimate U-curve: peak pass
-rate at `task_io` (0.92), drop at `full_spec` (0.67). The extra specificity
-seems to *confuse* the 1B model. Note: gemma3:1b is also present in the
-baseline small-set (with slightly different numbers due to the usual
-run-to-run variance at temperature 0 under different prompt loading
-conditions), so the aggregator reports it as a `merged` source — this
-file is retained because the single-run data was cited in the v1 launch
-discussion and the JSON is still a valid contributor-flow schema reference.
+Two bugs discovered during failure-mode analysis on the v1 baseline:
+
+1. **`experiments/data.py` two_sum test case bug**: `TestCase("two_sum([1, 5, 3, 7], 8)", "(1, 3)")` was mathematically impossible (5+7=12, not 8). This silently capped every correct model at 0.67 pass rate on two_sum across all v1 data, and two_sum was 42% of all v1 failures. Fixed by changing target from 8 to 12 so `(1, 3)` becomes the unique valid pair (minimum-delta fix preserving the original expected value).
+2. **`experiments/validate.py` num_predict truncation**: the `max_tokens=1024` default in `ollama_generate` truncated reasoning-model outputs when thinking tokens consumed the budget. deepseek-r1:8b scored 0.00 on flatten full_spec in v1 solely because R1's `<think>` tokens filled 1024 before any code was emitted. Fixed by bumping default to 4096.
+
+**v1 data is archived** at `.output/experiments/v1/` and should NOT be used for research claims going forward. v2 (this directory) is the canonical ctxray E9 dataset.

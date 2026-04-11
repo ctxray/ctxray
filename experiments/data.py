@@ -181,7 +181,7 @@ TASKS: list[Task] = [
         tests=[
             TestCase("two_sum([2, 7, 11, 15], 9)", "(0, 1)"),
             TestCase("two_sum([3, 2, 4], 6)", "(1, 2)"),
-            TestCase("two_sum([1, 5, 3, 7], 8)", "(1, 3)"),
+            TestCase("two_sum([1, 5, 3, 7], 12)", "(1, 3)"),
         ],
         prompts={
             "draft": "two sum",

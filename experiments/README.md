@@ -1,12 +1,30 @@
 # ctxray experiment harness
 
-Run the same prompt-quality experiments we used to calibrate ctxray's scoring
-against **your own Ollama model**, and (optionally) share the results so we can
-extend the cross-model comparison.
+Run prompt-specificity experiments against **your own Ollama model** and share
+the results so we can extend the cross-model comparison into the model
+families that existing literature hasn't covered.
 
-Current baseline dataset covers 11 models (qwen3 0.6B–32B, llama3.2 1/3B,
-llama3.1 8B, gemma2 2/9B, gemma4 26B). Gaps: Mistral, Phi, DeepSeek, Granite,
-Mixtral, anything >32B. **One contributed run fills a gap.**
+## Prior art
+
+This harness is a replication and extension of **PartialOrderEval** (Zi et al.
+2025, [arXiv:2508.03678](https://arxiv.org/abs/2508.03678), ACL IJCNLP 2025).
+Zi et al. established the core finding that prompt specificity and model scale
+interact for code generation — larger models consistently outperform smaller
+ones at every specificity level, and specificity disproportionately helps
+weaker models. Their sweep covers Qwen2.5-Coder 1.5B/3B/7B/14B and Llama-3.x
+1B/3B/8B/**70B** on HumanEval + ParEval tasks.
+
+**ctxray's ongoing baseline extends PartialOrderEval in four directions they
+did not cover:**
+
+1. **Reasoning-RL models** (DeepSeek-R1-Distill, Qwen3-QwQ)
+2. **MoE models** (Mixtral, Qwen3-MoE, DeepSeek-V2/V3)
+3. **Gemma, Phi, Mistral, Granite, and other families** they did not test
+4. **Sub-1B territory** (below their smallest model)
+
+Our current dataset covers 11 dense models (qwen3 0.6B–32B, llama3.2 1/3B,
+llama3.1 8B, gemma2 2/9B, gemma4 26B). **One contributed run in any of the
+four gap directions above is a real extension** to the published literature.
 
 ## Prerequisites
 
@@ -85,18 +103,37 @@ scores, and prompt lengths. Full details + schema + submission process:
 
 We'll aggregate contributed runs into a public leaderboard + dataset.
 Contributors are credited by GitHub handle. See
-[`contributed/example_gemma3_1b.json`](contributed/example_gemma3_1b.json)
-for an example output.
+[`contributed/qwen3_5_27b.json`](contributed/qwen3_5_27b.json) for the
+primary example output (fills the qwen3.5 9B→26B dense gap; shows zero
+improvement from 9B to 27B, the kind of finding the extended sweep is
+meant to surface).
 
-## Open questions a single contributed run can help answer
+## Open questions — the gaps PartialOrderEval did NOT cover
 
-- Does the filler-word / compression threshold move for **Mistral**'s tokenizer
-  family? (All 11 baseline models are Qwen/Llama/Gemma — no Mistral line.)
-- Do **MoE** models (Mixtral, Qwen3-MoE, DeepSeek-V2) behave like their dense
-  size, or like their active-param count?
-- Where does the complexity-penalty curve actually flatten? Baseline data says
-  ~8B, but only 2 models above that — very likely wrong.
-- Is the U-curve on position bias universal or architecture-specific?
+Zi et al. 2508.03678 tested Qwen2.5-Coder and Llama-3.x (dense) on HumanEval
+and ParEval code tasks. The following questions are **genuinely open** because
+they're outside that sweep:
+
+- **Reasoning-RL models** (DeepSeek-R1-Distill, Qwen3-QwQ): does RL
+  post-training flatten the vague→task_io gradient? A reasoning model that
+  "thinks through" underspecified prompts should be less specificity-sensitive
+  than same-base dense models. Untested.
+- **MoE models** (Mixtral, Qwen3-MoE-A30B, DeepSeek-V2/V3): do they behave
+  like their dense equivalent at total parameters, or at active parameters?
+  PartialOrderEval only tested dense.
+- **Mistral tokenizer family**: PartialOrderEval stayed within
+  Qwen/Llama tokenizers. Does Mistral's different tokenizer shift the
+  specificity threshold? Also untested.
+- **Gemma, Phi, Granite, Yi**: these families are absent from the published
+  sweep. Any contributed run adds a family to the matrix.
+- **Sub-1B territory**: PartialOrderEval's smallest is 1B. Our data goes to
+  0.6B. Does the U-curve (extra specificity *hurts* small models) appear at
+  an even sharper angle below 1B?
+- **Non-coding tasks**: PartialOrderEval uses HumanEval + ParEval (both code).
+  The specificity gradient might be qualitatively different on NL, math, or
+  multi-step reasoning tasks — ctxray scoring claims task generality but has
+  only been calibrated on code. (This is a planned future experiment; one
+  contributed run in non-coding territory would kickstart it.)
 
 ## Reproducibility notes
 

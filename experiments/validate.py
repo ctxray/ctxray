@@ -123,7 +123,7 @@ def ollama_generate(
     prompt: str,
     *,
     temperature: float = 0.0,
-    max_tokens: int = 1024,
+    max_tokens: int = 4096,
     timeout: int = 300,
 ) -> tuple[str, float]:
     """Call Ollama and return (response_text, elapsed_seconds)."""

@@ -2,7 +2,7 @@
   "experiment": "e9_specificity",
   "k": 3,
   "models": [
-    "qwen3.5:27b"
+    "qwen2.5-coder:1.5b"
   ],
   "total_calls": 48,
   "results": [
@@ -10,7 +10,7 @@
       "task": "fizzbuzz",
       "level": "vague",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
         0.0,
         0.0,
@@ -24,13 +24,13 @@
       "task": "fizzbuzz",
       "level": "task_only",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
-        1.0,
-        1.0,
-        1.0
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
       ],
-      "avg_pass_rate": 1.0,
+      "avg_pass_rate": 0.3333333333333333,
       "ctxray_score": 38.4,
       "prompt_len": 85
     },
@@ -38,13 +38,13 @@
       "task": "fizzbuzz",
       "level": "task_io",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
-        1.0,
-        1.0,
-        1.0
+        0.6666666666666666,
+        0.6666666666666666,
+        0.6666666666666666
       ],
-      "avg_pass_rate": 1.0,
+      "avg_pass_rate": 0.6666666666666666,
       "ctxray_score": 48.5,
       "prompt_len": 259
     },
@@ -52,13 +52,13 @@
       "task": "fizzbuzz",
       "level": "full_spec",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
-        1.0,
-        1.0,
-        1.0
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
       ],
-      "avg_pass_rate": 1.0,
+      "avg_pass_rate": 0.3333333333333333,
       "ctxray_score": 55.3,
       "prompt_len": 439
     },
@@ -66,13 +66,13 @@
       "task": "flatten",
       "level": "vague",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
-        1.0,
-        1.0,
-        1.0
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
       ],
-      "avg_pass_rate": 1.0,
+      "avg_pass_rate": 0.3333333333333333,
       "ctxray_score": 25.6,
       "prompt_len": 14
     },
@@ -80,13 +80,13 @@
       "task": "flatten",
       "level": "task_only",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
-        1.0,
-        1.0,
-        1.0
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
       ],
-      "avg_pass_rate": 1.0,
+      "avg_pass_rate": 0.3333333333333333,
       "ctxray_score": 37.3,
       "prompt_len": 89
     },
@@ -94,7 +94,7 @@
       "task": "flatten",
       "level": "task_io",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
         1.0,
         1.0,
@@ -108,7 +108,7 @@
       "task": "flatten",
       "level": "full_spec",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
         1.0,
         1.0,
@@ -122,7 +122,7 @@
       "task": "two_sum",
       "level": "vague",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
         0.0,
         0.0,
@@ -136,7 +136,7 @@
       "task": "two_sum",
       "level": "task_only",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
         0.0,
         0.0,
@@ -150,7 +150,7 @@
       "task": "two_sum",
       "level": "task_io",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
         1.0,
         1.0,
@@ -164,7 +164,7 @@
       "task": "two_sum",
       "level": "full_spec",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
         1.0,
         1.0,
@@ -178,7 +178,7 @@
       "task": "run_length_encode",
       "level": "vague",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
         0.0,
         0.0,
@@ -192,13 +192,13 @@
       "task": "run_length_encode",
       "level": "task_only",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
-        0.0,
-        0.0,
-        0.0
+        1.0,
+        1.0,
+        1.0
       ],
-      "avg_pass_rate": 0.0,
+      "avg_pass_rate": 1.0,
       "ctxray_score": 36.4,
       "prompt_len": 91
     },
@@ -206,13 +206,13 @@
       "task": "run_length_encode",
       "level": "task_io",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
-        1.0,
-        1.0,
-        1.0
+        0.0,
+        0.3333333333333333,
+        0.3333333333333333
       ],
-      "avg_pass_rate": 1.0,
+      "avg_pass_rate": 0.2222222222222222,
       "ctxray_score": 44.6,
       "prompt_len": 231
     },
@@ -220,13 +220,13 @@
       "task": "run_length_encode",
       "level": "full_spec",
       "model": "custom",
-      "model_name": "qwen3.5:27b",
+      "model_name": "qwen2.5-coder:1.5b",
       "pass_rates": [
-        1.0,
-        1.0,
-        1.0
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
       ],
-      "avg_pass_rate": 1.0,
+      "avg_pass_rate": 0.3333333333333333,
       "ctxray_score": 55.0,
       "prompt_len": 451
     }
