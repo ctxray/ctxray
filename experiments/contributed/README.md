@@ -51,7 +51,7 @@ your GitHub handle in the commit message.
 ## JSON schema
 
 Every file in this directory follows the same shape. Minimal example (see
-`example_gemma3_1b.json` for a real one):
+`qwen3_5_27b.json` for a real one):
 
 ```json
 {
@@ -92,10 +92,17 @@ E9 set from `experiments/data.py`, not anything from your session history.
 - **Not** used for any commercial or proprietary purpose. This directory
   is the canonical source; there is no private copy.
 
-## Example
+## First contribution — fills the qwen3.5 9B→27B gap
 
-[`example_gemma3_1b.json`](example_gemma3_1b.json) — gemma3:1b run from the
-harness smoke test. Shows a small but legitimate U-curve: peak pass rate at
-`task_io` (0.92), drop at `full_spec` (0.67) — the extra specificity seems
-to confuse the 1B model. Not in the baseline dataset because gemma3:1b
-wasn't in the original 11.
+[`qwen3_5_27b.json`](qwen3_5_27b.json) — qwen3.5:27b E9 run. Key finding:
+
+| Model | vague | task_only | task_io | full_spec |
+|---|---:|---:|---:|---:|
+| `qwen3.5:9b` (baseline) | 0.25 | 0.50 | 0.92 | 0.92 |
+| `qwen3.5:27b` (this run) | 0.25 | 0.50 | 0.92 | 0.92 |
+
+**Identical.** Scaling qwen3.5 from 9B → 27B (3× parameters) produces zero
+improvement on E9 once the prompt reaches task_io specificity. This is a
+real data point about where prompt quality matters vs where raw scale
+matters — the kind of cross-family comparison only contributed runs can
+build.

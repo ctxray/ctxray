@@ -141,7 +141,9 @@ def ollama_generate(
     # Disable thinking for qwen3 reasoning models via Ollama native API
     # (text-flag /no_think is ignored by qwen3.5 — all tokens go to thinking
     # field, response comes back empty). Ollama 0.20+ supports `think: false`.
-    if "qwen" in model_key:
+    # Check the real model name, not the internal key — contributor runs via
+    # --model-name use the opaque key "custom" regardless of the model family.
+    if "qwen" in cfg["name"].lower():
         body["think"] = False
 
     payload = json.dumps(body).encode()
