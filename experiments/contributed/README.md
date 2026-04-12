@@ -137,11 +137,11 @@ for details. The full cross-model snapshot:
 
 ### Key v2 findings
 
-- **qwen3.5 intra-family scale plateau**: qwen3.5:4b, 9b, 27b, and 35b-a3b
-  (MoE) all score identically at 0.25/0.50/1.00/1.00. Scaling from 4B to
-  27B (6.75×) within a single family produces zero E9 improvement. This is
-  a strictly stronger result than the v1 "9B = 27B" finding because it
-  holds across 3 additional sizes.
+- **qwen3.5 intra-family scale plateau (9B+)**: qwen3.5:9b, 27b, and
+  35b-a3b (MoE) all score identically at 0.25/0.50/1.00/1.00. Scaling
+  from 9B to 27B (3×) within a single family produces zero E9 improvement.
+  qwen3.5:4b differs at vague (0.00 instead of 0.25) but matches at
+  task_io+ (1.00/1.00), so the plateau starts at 9B, not 4B.
 - **MoE behaves like total size, not active size**: qwen3.5:35b-a3b (3B
   active params) scores identically to qwen3.5:27b (dense). If MoE
   behaved like its active-param count (3B), it should look like qwen3.5:4b
