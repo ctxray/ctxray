@@ -20,7 +20,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "typer>=0.9",
+    "typer>=0.24.1",
     "rich>=13.0",
     "scikit-learn>=1.4",
     "pydantic-settings>=2.0",
